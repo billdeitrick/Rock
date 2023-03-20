@@ -22,4 +22,15 @@
 //
 
 export type StreakDetailOptionsBag = {
+    /**
+     * Gets current streak text to be displayed.
+     */
+    currentStreak?: string | null ;
+
+    /**
+     * Gets longest streak text to be displayed.
+     */
+    longestStreak?: string | null ;
+
+    personHTML?: string | null;
 };

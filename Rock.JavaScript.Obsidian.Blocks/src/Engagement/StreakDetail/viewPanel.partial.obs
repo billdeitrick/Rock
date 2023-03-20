@@ -24,6 +24,7 @@
     import ValueDetailList from "@Obsidian/Controls/valueDetailList";
     import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
     import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
+    import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { StreakBag } from "@Obsidian/ViewModels/Blocks/Engagement/StreakDetail/streakBag";
     import { StreakDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Engagement/StreakDetail/streakDetailOptionsBag";
 
@@ -56,6 +57,8 @@
             return valueBuilder.build();
         }
 
+        valueBuilder.addHtmlValue("", props.options?.personHTML ?? "");
+
         return valueBuilder.build();
     });
 
@@ -65,6 +68,12 @@
 
         if (!props.modelValue) {
             return valueBuilder.build();
+        }
+
+        valueBuilder.addHtmlValue("Streak Type", props.modelValue?.streakType ?? "");
+        valueBuilder.addTextValue("Enrollment Date", `${RockDateTime.parseISO(props.modelValue.enrollmentDate ?? "")?.toASPString("d") ?? ""}`);
+        if(props.modelValue?.location?.text) {
+            valueBuilder.addTextValue("Location", props.modelValue.location.text);
         }
 
         return valueBuilder.build();
@@ -77,6 +86,9 @@
         if (!props.modelValue) {
             return valueBuilder.build();
         }
+
+        valueBuilder.addHtmlValue("Current Streak", props.options.currentStreak ?? "");
+        valueBuilder.addHtmlValue("Longest Streak", props.options.longestStreak ?? "");
 
         return valueBuilder.build();
     });

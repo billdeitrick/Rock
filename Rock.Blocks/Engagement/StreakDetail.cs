@@ -15,11 +15,6 @@
 // </copyright>
 //
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-
 using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
@@ -27,6 +22,12 @@ using Rock.Model;
 using Rock.Security;
 using Rock.ViewModels.Blocks;
 using Rock.ViewModels.Blocks.Engagement.StreakDetail;
+using Rock.Web.Cache;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
 
 namespace Rock.Blocks.Engagement
 {
@@ -53,6 +54,7 @@ namespace Rock.Blocks.Engagement
         private static class PageParameterKey
         {
             public const string StreakId = "StreakId";
+            public const string StreakTypeId = "StreakTypeId";
         }
 
         private static class NavigationUrlKey
@@ -76,7 +78,7 @@ namespace Rock.Blocks.Engagement
                 SetBoxInitialEntityState( box, rockContext );
 
                 box.NavigationUrls = GetBoxNavigationUrls();
-                box.Options = GetBoxOptions( box.IsEditable, rockContext );
+                box.Options = GetBoxOptions( box.IsEditable, box.Entity, rockContext );
                 box.QualifiedAttributeProperties = GetAttributeQualifiedColumns<Streak>();
 
                 return box;
@@ -90,9 +92,14 @@ namespace Rock.Blocks.Engagement
         /// <param name="isEditable"><c>true</c> if the entity is editable; otherwise <c>false</c>.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <returns>The options that provide additional details to the block.</returns>
-        private StreakDetailOptionsBag GetBoxOptions( bool isEditable, RockContext rockContext )
+        private StreakDetailOptionsBag GetBoxOptions( bool isEditable, StreakBag entity, RockContext rockContext )
         {
-            var options = new StreakDetailOptionsBag();
+            var options = new StreakDetailOptionsBag
+            {
+                CurrentStreak = GetStreakStateString( entity.CurrentStreakCount, entity.CurrentStreakStartDate ),
+                LongestStreak = GetStreakStateString( entity.LongestStreakCount, entity.LongestStreakStartDate, entity.LongestStreakEndDate ),
+                personHTML = GetPersonHtml( rockContext, entity )
+            };
 
             return options;
         }
@@ -172,34 +179,27 @@ namespace Rock.Blocks.Engagement
             {
                 return null;
             }
+            var streakTypeId = entity.StreakTypeId;
+            if ( streakTypeId == 0 )
+            {
+                streakTypeId = PageParameter( PageParameterKey.StreakTypeId ).AsInteger();
+            }
+            var streakTypeName = StreakTypeCache.Get( streakTypeId ).Name;
 
             return new StreakBag
             {
                 IdKey = entity.IdKey,
-                CreatedByPersonAlias = entity.CreatedByPersonAlias.ToListItemBag(),
-                CreatedByPersonAliasId = entity.CreatedByPersonAliasId,
-                CreatedDateTime = entity.CreatedDateTime,
+                EnrollmentDate = entity.EnrollmentDate,
+                Location = entity.Location.ToListItemBag(),
+                PersonAlias = entity.PersonAlias.ToListItemBag(),
                 CurrentStreakCount = entity.CurrentStreakCount,
                 CurrentStreakStartDate = entity.CurrentStreakStartDate,
                 EngagementCount = entity.EngagementCount,
-                EnrollmentDate = entity.EnrollmentDate,
-                ForeignGuid = entity.ForeignGuid,
-                ForeignId = entity.ForeignId,
-                ForeignKey = entity.ForeignKey,
-                InactiveDateTime = entity.InactiveDateTime,
                 IsActive = entity.IsActive,
-                Location = entity.Location.ToListItemBag(),
-                LocationId = entity.LocationId,
                 LongestStreakCount = entity.LongestStreakCount,
                 LongestStreakEndDate = entity.LongestStreakEndDate,
                 LongestStreakStartDate = entity.LongestStreakStartDate,
-                ModifiedByPersonAlias = entity.ModifiedByPersonAlias.ToListItemBag(),
-                ModifiedByPersonAliasId = entity.ModifiedByPersonAliasId,
-                ModifiedDateTime = entity.ModifiedDateTime,
-                PersonAlias = entity.PersonAlias.ToListItemBag(),
-                PersonAliasId = entity.PersonAliasId,
-                StreakType = entity.StreakType.ToListItemBag(),
-                StreakTypeId = entity.StreakTypeId
+                StreakType = entity.StreakType?.Name ?? streakTypeName
             };
         }
 
@@ -255,77 +255,15 @@ namespace Rock.Blocks.Engagement
                 return false;
             }
 
-            box.IfValidProperty( nameof( box.Entity.CreatedByPersonAlias ),
-                () => entity.CreatedByPersonAliasId = box.Entity.CreatedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.CreatedByPersonAliasId ),
-                () => entity.CreatedByPersonAliasId = box.Entity.CreatedByPersonAliasId );
-
-            box.IfValidProperty( nameof( box.Entity.CreatedDateTime ),
-                () => entity.CreatedDateTime = box.Entity.CreatedDateTime );
-
-            box.IfValidProperty( nameof( box.Entity.CurrentStreakCount ),
-                () => entity.CurrentStreakCount = box.Entity.CurrentStreakCount );
-
-            box.IfValidProperty( nameof( box.Entity.CurrentStreakStartDate ),
-                () => entity.CurrentStreakStartDate = box.Entity.CurrentStreakStartDate );
-
-            box.IfValidProperty( nameof( box.Entity.EngagementCount ),
-                () => entity.EngagementCount = box.Entity.EngagementCount );
-
             box.IfValidProperty( nameof( box.Entity.EnrollmentDate ),
                 () => entity.EnrollmentDate = box.Entity.EnrollmentDate );
-
-            box.IfValidProperty( nameof( box.Entity.ForeignGuid ),
-                () => entity.ForeignGuid = box.Entity.ForeignGuid );
-
-            box.IfValidProperty( nameof( box.Entity.ForeignId ),
-                () => entity.ForeignId = box.Entity.ForeignId );
-
-            box.IfValidProperty( nameof( box.Entity.ForeignKey ),
-                () => entity.ForeignKey = box.Entity.ForeignKey );
-
-            box.IfValidProperty( nameof( box.Entity.InactiveDateTime ),
-                () => entity.InactiveDateTime = box.Entity.InactiveDateTime );
-
-            /*box.IfValidProperty( nameof( box.Entity.IsActive ),
-                () => entity.IsActive = box.Entity.IsActive );*/
 
             box.IfValidProperty( nameof( box.Entity.Location ),
                 () => entity.LocationId = box.Entity.Location.GetEntityId<Location>( rockContext ) );
 
-            box.IfValidProperty( nameof( box.Entity.LocationId ),
-                () => entity.LocationId = box.Entity.LocationId );
-
-            box.IfValidProperty( nameof( box.Entity.LongestStreakCount ),
-                () => entity.LongestStreakCount = box.Entity.LongestStreakCount );
-
-            box.IfValidProperty( nameof( box.Entity.LongestStreakEndDate ),
-                () => entity.LongestStreakEndDate = box.Entity.LongestStreakEndDate );
-
-            box.IfValidProperty( nameof( box.Entity.LongestStreakStartDate ),
-                () => entity.LongestStreakStartDate = box.Entity.LongestStreakStartDate );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedByPersonAlias ),
-                () => entity.ModifiedByPersonAliasId = box.Entity.ModifiedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedByPersonAliasId ),
-                () => entity.ModifiedByPersonAliasId = box.Entity.ModifiedByPersonAliasId );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedDateTime ),
-                () => entity.ModifiedDateTime = box.Entity.ModifiedDateTime );
-
             box.IfValidProperty( nameof( box.Entity.PersonAlias ),
                 () => entity.PersonAliasId = box.Entity.PersonAlias.GetEntityId<PersonAlias>( rockContext ).Value );
 
-            box.IfValidProperty( nameof( box.Entity.PersonAliasId ),
-                () => entity.PersonAliasId = box.Entity.PersonAliasId );
-
-            box.IfValidProperty( nameof( box.Entity.StreakType ),
-                () => entity.StreakTypeId = box.Entity.StreakType.GetEntityId<StreakType>( rockContext ).Value );
-
-            box.IfValidProperty( nameof( box.Entity.StreakTypeId ),
-                () => entity.StreakTypeId = box.Entity.StreakTypeId );
 
             box.IfValidProperty( nameof( box.Entity.AttributeValues ),
                 () =>
@@ -598,6 +536,80 @@ namespace Rock.Blocks.Engagement
 
                 return ActionOk( refreshedBox );
             }
+        }
+
+        /// <summary>
+        /// Gets the streak state string.
+        /// </summary>
+        /// <param name="streakCount">The streak count.</param>
+        /// <param name="start">The start.</param>
+        /// <param name="end">The end.</param>
+        /// <returns></returns>
+        private string GetStreakStateString( int streakCount, DateTime? start, DateTime? end = null )
+        {
+            var dateString = GetStreakDateRangeString( start, end );
+
+            if ( dateString.IsNullOrWhiteSpace() )
+            {
+                return streakCount.ToString();
+            }
+
+            return string.Format( "{0} <small>{1}</small>", streakCount, dateString );
+        }
+
+        /// <summary>
+        /// Gets the streak date range string.
+        /// </summary>
+        /// <param name="start">The start.</param>
+        /// <param name="end">The end.</param>
+        /// <returns></returns>
+        private string GetStreakDateRangeString( DateTime? start, DateTime? end = null )
+        {
+            if ( !start.HasValue && !end.HasValue )
+            {
+                return string.Empty;
+            }
+
+            if ( !start.HasValue )
+            {
+                return string.Format( "Ended on {0}", end.ToShortDateString() );
+            }
+
+            if ( !end.HasValue )
+            {
+                return string.Format( "Started on {0}", start.ToShortDateString() );
+            }
+
+            return string.Format( "Ranging from {0} - {1}", start.ToShortDateString(), end.ToShortDateString() );
+        }
+
+        /// <summary>
+        /// Gets the person HTML.
+        /// </summary>
+        /// <returns></returns>
+        private string GetPersonHtml( RockContext rockContext, StreakBag entity )
+        {
+            var personImageStringBuilder = new StringBuilder();
+            var person = new PersonAliasService( rockContext ).GetPerson( entity.PersonAlias.Value.AsGuid() );
+            const string photoFormat = "<div class=\"photo-icon photo-round photo-round-sm pull-left margin-r-sm js-person-popover\" personid=\"{0}\" data-original=\"{1}&w=50\" style=\"background-image: url( '{2}' ); background-size: cover; background-repeat: no-repeat;\"></div>";
+            const string nameLinkFormat = @"
+    {0}
+    <p><small><a href='/Person/{1}'>View Profile</a></small></p>
+";
+            if ( person == null )
+            {
+                return "";
+            }
+
+            personImageStringBuilder.AppendFormat( photoFormat, person.Id, person.PhotoUrl, "~/Assets/Images/person-no-photo-unknown.svg" );
+            personImageStringBuilder.AppendFormat( nameLinkFormat, person.FullName, person.Id );
+
+            if ( person.TopSignalColor.IsNotNullOrWhiteSpace() )
+            {
+                personImageStringBuilder.Append( person.GetSignalMarkup() );
+            }
+
+            return personImageStringBuilder.ToString();
         }
 
         #endregion

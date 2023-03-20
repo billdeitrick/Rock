@@ -3,9 +3,22 @@
     <fieldset>
         <div class="row">
 
-            <div class="col-md-6">
-                <CheckBox v-model="isActive"
-                          label="Active" />
+            <div class="col-sm-6 col-md-4">
+                <PersonPicker v-if="!props.modelValue?.personAlias" v-model="personAlias"
+                              label="Person"
+                              rules="required" />
+                <template v-else>
+                    <RockLabel>Person</RockLabel> <br> {{ personAlias?.text }}
+                </template>
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <LocationPicker v-model="location"
+                              label="Location" />
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <DatePicker v-model="enrollmentDate"
+                              label="Enrollment Date"
+                              rules="required" />
             </div>
         </div>
 
@@ -16,9 +29,12 @@
 <script setup lang="ts">
     import { PropType, ref, watch } from "vue";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
-    import CheckBox from "@Obsidian/Controls/checkBox";
     import { watchPropertyChanges } from "@Obsidian/Utility/block";
     import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
+    import PersonPicker from "@Obsidian/Controls/personPicker";
+    import LocationPicker from "@Obsidian/Controls/locationItemPicker";
+    import DatePicker from "@Obsidian/Controls/datePicker.obs";
+    import RockLabel from "@Obsidian/Controls/rockLabel";
     import { StreakBag } from "@Obsidian/ViewModels/Blocks/Engagement/StreakDetail/streakBag";
     import { StreakDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Engagement/StreakDetail/streakDetailOptionsBag";
 
@@ -43,11 +59,13 @@
 
     const attributes = ref(props.modelValue.attributes ?? {});
     const attributeValues = ref(props.modelValue.attributeValues ?? {});
-    const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
+    const personAlias = propertyRef(props.modelValue.personAlias ?? undefined, "PersonAliasId");
+    const location = propertyRef(props.modelValue.location ?? undefined, "LocationId");
+    const enrollmentDate = propertyRef(props.modelValue.enrollmentDate ?? undefined, "EnrollmentDate");
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().
-    const propRefs = [isActive];
+    const propRefs = [personAlias, location, enrollmentDate];
 
     // #endregion
 
@@ -67,7 +85,9 @@
     watch(() => props.modelValue, () => {
         updateRefValue(attributes, props.modelValue.attributes ?? {});
         updateRefValue(attributeValues, props.modelValue.attributeValues ?? {});
-        updateRefValue(isActive, props.modelValue.isActive ?? false);
+        updateRefValue(personAlias, props.modelValue.personAlias ?? undefined);
+        updateRefValue(location, props.modelValue.location ?? undefined);
+        updateRefValue(enrollmentDate, props.modelValue.enrollmentDate ?? undefined);
     });
 
     // Determines which values we want to track changes on (defined in the
@@ -76,7 +96,9 @@
         const newValue: StreakBag = {
             ...props.modelValue,
             attributeValues: attributeValues.value,
-            isActive: isActive.value,
+            personAlias: personAlias.value,
+            location: location.value,
+            enrollmentDate: enrollmentDate.value
         };
 
         emit("update:modelValue", newValue);

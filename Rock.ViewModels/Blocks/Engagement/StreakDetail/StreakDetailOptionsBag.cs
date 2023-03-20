@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -19,5 +19,19 @@ namespace Rock.ViewModels.Blocks.Engagement.StreakDetail
 {
     public class StreakDetailOptionsBag
     {
+        /// <summary>
+        /// The current streak details text that needs to be displayed on the frontend
+        /// </summary>
+        public string CurrentStreak { get; set; }
+
+        /// <summary>
+        /// The longest streak details text that needs to be displayed on the frontend
+        /// </summary>
+        public string LongestStreak { get; set; }
+
+        /// <summary>
+        /// The person HTML to be displayed on the front end 
+        /// </summary>
+        public object personHTML;
     }
 }

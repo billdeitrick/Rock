@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -137,7 +137,7 @@ namespace Rock.ViewModels.Blocks.Engagement.StreakDetail
         /// <summary>
         /// Gets or sets the Rock.Model.StreakType.
         /// </summary>
-        public ListItemBag StreakType { get; set; }
+        public string StreakType { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the Rock.Model.StreakType to which this Streak belongs. This property is required.
