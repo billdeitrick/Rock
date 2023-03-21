@@ -2,9 +2,13 @@
 <template>
     <fieldset>
         <div class="row">
-
+            <div class="col-md-12">
+                <Alert v-if="!modelValue?.streakType" alertType="info" >A streak type is required.</Alert>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-sm-6 col-md-4">
-                <PersonPicker v-if="!props.modelValue?.personAlias" v-model="personAlias"
+                <PersonPicker v-if="isCreatingStreak" v-model="personAlias"
                               label="Person"
                               rules="required" />
                 <template v-else>
@@ -33,6 +37,7 @@
     import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
     import PersonPicker from "@Obsidian/Controls/personPicker";
     import LocationPicker from "@Obsidian/Controls/locationItemPicker";
+    import Alert from "@Obsidian/Controls/alert.obs";
     import DatePicker from "@Obsidian/Controls/datePicker.obs";
     import RockLabel from "@Obsidian/Controls/rockLabel";
     import { StreakBag } from "@Obsidian/ViewModels/Blocks/Engagement/StreakDetail/streakBag";
@@ -62,6 +67,7 @@
     const personAlias = propertyRef(props.modelValue.personAlias ?? undefined, "PersonAliasId");
     const location = propertyRef(props.modelValue.location ?? undefined, "LocationId");
     const enrollmentDate = propertyRef(props.modelValue.enrollmentDate ?? undefined, "EnrollmentDate");
+    const isCreatingStreak = props.modelValue?.personAlias == null;
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().

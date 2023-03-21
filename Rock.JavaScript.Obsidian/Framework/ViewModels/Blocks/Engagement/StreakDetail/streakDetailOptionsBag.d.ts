@@ -32,5 +32,10 @@ export type StreakDetailOptionsBag = {
      */
     longestStreak?: string | null ;
 
-    personHTML?: string | null;
+    /**
+     * Gets HTML of the Streak Chart to be displayed
+     */
+    chartHTML?: string | null ;
+
+    personHTML?: string | null ;
 };

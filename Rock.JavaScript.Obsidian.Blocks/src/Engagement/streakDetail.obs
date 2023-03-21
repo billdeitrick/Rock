@@ -17,6 +17,7 @@
                  :isEditVisible="isEditable"
                  :isFollowVisible="true"
                  :isSecurityHidden="false"
+                 :footerSecondaryActions="footerActions"
                  @cancelEdit="onCancelEdit"
                  @delete="onDelete"
                  @edit="onEdit"
@@ -149,6 +150,18 @@
         return config.options ?? {};
     });
 
+    const footerActions = computed((): PanelAction[] => {
+        return [
+                {
+                    title: "Rebuild",
+                    type: "danger",
+                    handler: () => {
+                        alert("clicked");
+                    }
+                }
+            ];
+    });
+
     // #endregion
 
     // #region Functions
@@ -250,6 +263,11 @@
             isEditable: true,
             validProperties: validProperties
         };
+
+        // if the streak Type is not present, do not save
+        if(!streakEditBag.value.streakType) {
+            return "";
+        }
 
         const result = await invokeBlockAction<StreakBag | string>("Save", {
             box: data

@@ -137,7 +137,7 @@ namespace Rock.ViewModels.Blocks.Engagement.StreakDetail
         /// <summary>
         /// Gets or sets the Rock.Model.StreakType.
         /// </summary>
-        public string StreakType { get; set; }
+        public ListItemBag StreakType { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the Rock.Model.StreakType to which this Streak belongs. This property is required.

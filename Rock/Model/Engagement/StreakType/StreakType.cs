@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -24,6 +24,7 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Rock.Data;
 using Rock.Utility;
+using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 
 namespace Rock.Model
@@ -178,5 +179,16 @@ namespace Rock.Model
         private ICollection<StreakTypeExclusion> _streakTypeExclusions;
 
         #endregion Navigation Properties
+
+        /// <summary>
+        /// Converts the StreakType to an instance of <see cref="ListItemBag"/>
+        /// Motive for creating the instance method to override the extension method ToListItemBag:
+        /// The extension method failed to provide the correct name when converting a cached streak type to a list bag item
+        /// </summary>
+        /// <returns>The <see cref="StreakType"/> as an instance of <see cref="ListItemBag"/></returns>
+        public ListItemBag ToListItemBag()
+        {
+            return new ListItemBag { Text = Name, Value = Guid.ToString() };
+        }
     }
 }

@@ -105,5 +105,5 @@ export type StreakBag = {
     personAliasId: number;
 
     /** Gets or sets the Rock.Model.StreakType. */
-    streakType?: string | null;
+    streakType?: ListItemBag | null;
 };

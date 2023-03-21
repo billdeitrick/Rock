@@ -30,8 +30,13 @@ namespace Rock.ViewModels.Blocks.Engagement.StreakDetail
         public string LongestStreak { get; set; }
 
         /// <summary>
+        /// The HTML of the Streak Chart that needs to be displayed on the frontend
+        /// </summary>
+        public string ChartHTML { get; set; }
+
+        /// <summary>
         /// The person HTML to be displayed on the front end 
         /// </summary>
-        public object personHTML;
+        public string personHTML;
     }
 }

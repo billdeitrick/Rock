@@ -2,6 +2,12 @@
 <template>
     <fieldset>
 
+        <div class="row">
+            <div class="col-md-12">
+                <ul v-html="options?.chartHTML" class="streak-chart margin-b-md">
+                </ul>
+            </div>
+        </div>
         <ValueDetailList :modelValue="topValues" />
 
         <div class="row">
@@ -70,7 +76,7 @@
             return valueBuilder.build();
         }
 
-        valueBuilder.addHtmlValue("Streak Type", props.modelValue?.streakType ?? "");
+        valueBuilder.addHtmlValue("Streak Type", props.modelValue?.streakType?.text ?? "");
         valueBuilder.addTextValue("Enrollment Date", `${RockDateTime.parseISO(props.modelValue.enrollmentDate ?? "")?.toASPString("d") ?? ""}`);
         if(props.modelValue?.location?.text) {
             valueBuilder.addTextValue("Location", props.modelValue.location.text);

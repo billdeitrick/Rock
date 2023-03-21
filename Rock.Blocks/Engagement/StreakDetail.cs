@@ -20,9 +20,12 @@ using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
+using Rock.SystemGuid;
 using Rock.ViewModels.Blocks;
 using Rock.ViewModels.Blocks.Engagement.StreakDetail;
+using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
+using Rock.Web.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -49,6 +52,7 @@ namespace Rock.Blocks.Engagement
     [Rock.SystemGuid.BlockTypeGuid( "1c98107f-dfbf-44bd-a860-0c9df2e6c495" )]
     public class StreakDetail : RockObsidianDetailBlockType
     {
+        private readonly int ChartBitsToShow = 350;
         #region Keys
 
         private static class PageParameterKey
@@ -98,6 +102,7 @@ namespace Rock.Blocks.Engagement
             {
                 CurrentStreak = GetStreakStateString( entity.CurrentStreakCount, entity.CurrentStreakStartDate ),
                 LongestStreak = GetStreakStateString( entity.LongestStreakCount, entity.LongestStreakStartDate, entity.LongestStreakEndDate ),
+                ChartHTML = StreakChartHTML( rockContext, entity ),
                 personHTML = GetPersonHtml( rockContext, entity )
             };
 
@@ -114,9 +119,15 @@ namespace Rock.Blocks.Engagement
         /// <returns><c>true</c> if the Streak is valid, <c>false</c> otherwise.</returns>
         private bool ValidateStreak( Streak streak, RockContext rockContext, out string errorMessage )
         {
-            errorMessage = null;
-
-            return true;
+            errorMessage = "";
+            if ( streak.IsValid )
+            {
+                return true;
+            }
+            var validationResult = streak.ValidationResults.FirstOrDefault();
+            var message = validationResult == null ? "The values entered are not valid." : validationResult.ErrorMessage;
+            errorMessage = message;
+            return false;
         }
 
         /// <summary>
@@ -184,8 +195,7 @@ namespace Rock.Blocks.Engagement
             {
                 streakTypeId = PageParameter( PageParameterKey.StreakTypeId ).AsInteger();
             }
-            var streakTypeName = StreakTypeCache.Get( streakTypeId ).Name;
-
+            ListItemBag streakType = entity.StreakType?.ToListItemBag() ?? StreakTypeCache.Get( streakTypeId ).ToListItemBag() ?? null;
             return new StreakBag
             {
                 IdKey = entity.IdKey,
@@ -199,7 +209,7 @@ namespace Rock.Blocks.Engagement
                 LongestStreakCount = entity.LongestStreakCount,
                 LongestStreakEndDate = entity.LongestStreakEndDate,
                 LongestStreakStartDate = entity.LongestStreakStartDate,
-                StreakType = entity.StreakType?.Name ?? streakTypeName
+                StreakType = streakType
             };
         }
 
@@ -353,7 +363,6 @@ namespace Rock.Blocks.Engagement
             {
                 // Create a new entity.
                 entity = new Streak();
-                entityService.Add( entity );
             }
 
             if ( entity == null )
@@ -419,19 +428,50 @@ namespace Rock.Blocks.Engagement
                     return actionError;
                 }
 
-                // Update the entity instance from the information in the bag.
-                if ( !UpdateEntityFromBox( entity, box, rockContext ) )
+                var isNew = entity.Id == 0;
+                string errorMessage = "";
+
+                if ( isNew )
                 {
-                    return ActionBadRequest( "Invalid data." );
+                    var personId = new PersonAliasService( rockContext ).GetPersonId( box.Entity.PersonAlias.Value.AsGuid() ).ToIntSafe();
+                    var streakTypeCache = StreakTypeCache.Get( box.Entity.StreakType.Value.AsGuid() );
+                    var streakTypeService = new StreakTypeService( rockContext );
+                    entity = streakTypeService.Enroll( streakTypeCache, personId, out errorMessage, entity.EnrollmentDate, entity.LocationId );
+
+                    if ( !entity.IsAuthorized( Authorization.VIEW, RequestContext.CurrentPerson ) )
+                    {
+                        entity.AllowPerson( Authorization.VIEW, RequestContext.CurrentPerson, rockContext );
+                    }
+
+                    if ( !entity.IsAuthorized( Authorization.EDIT, RequestContext.CurrentPerson ) )
+                    {
+                        entity.AllowPerson( Authorization.EDIT, RequestContext.CurrentPerson, rockContext );
+                    }
+
+                    if ( !entity.IsAuthorized( Authorization.ADMINISTRATE, RequestContext.CurrentPerson ) )
+                    {
+                        entity.AllowPerson( Authorization.ADMINISTRATE, RequestContext.CurrentPerson, rockContext );
+                    }
+                }
+                else
+                {
+                    // Update the entity instance from the information in the bag.
+                    if ( !UpdateEntityFromBox( entity, box, rockContext ) )
+                    {
+                        return ActionBadRequest( "Invalid data." );
+                    }
                 }
 
                 // Ensure everything is valid before saving.
-                if ( !ValidateStreak( entity, rockContext, out var validationMessage ) )
+                string validationMessage = "";
+                if ( entity == null )
+                {
+                    return ActionBadRequest( errorMessage );
+                }
+                if ( !ValidateStreak( entity, rockContext, out validationMessage ) )
                 {
                     return ActionBadRequest( validationMessage );
                 }
-
-                var isNew = entity.Id == 0;
 
                 rockContext.WrapTransaction( () =>
                 {
@@ -590,6 +630,10 @@ namespace Rock.Blocks.Engagement
         private string GetPersonHtml( RockContext rockContext, StreakBag entity )
         {
             var personImageStringBuilder = new StringBuilder();
+            if ( entity.PersonAlias == null )
+            {
+                return "";
+            }
             var person = new PersonAliasService( rockContext ).GetPerson( entity.PersonAlias.Value.AsGuid() );
             const string photoFormat = "<div class=\"photo-icon photo-round photo-round-sm pull-left margin-r-sm js-person-popover\" personid=\"{0}\" data-original=\"{1}&w=50\" style=\"background-image: url( '{2}' ); background-size: cover; background-repeat: no-repeat;\"></div>";
             const string nameLinkFormat = @"
@@ -610,6 +654,62 @@ namespace Rock.Blocks.Engagement
             }
 
             return personImageStringBuilder.ToString();
+        }
+
+        /// <summary>
+        /// The Streak Chart in HTML
+        /// </summary>
+        private string StreakChartHTML( RockContext rockContext, StreakBag entity )
+        {
+            var occurrenceEngagement = GetOccurrenceEngagement( rockContext, entity );
+
+            if ( occurrenceEngagement == null )
+            {
+                return "";
+            }
+
+            var stringBuilder = new StringBuilder();
+            var bitItemFormat = @"<li class=""binary-state-graph-bit {2} {3}"" title=""{0}""><span style=""height: {1}%""></span></li>";
+
+            for ( var i = 0; i < occurrenceEngagement.Length; i++ )
+            {
+                var occurrence = occurrenceEngagement[i];
+                var hasEngagement = occurrence != null && occurrence.HasEngagement;
+                var hasExclusion = occurrence != null && occurrence.HasExclusion;
+                var title = occurrence != null ? occurrence.DateTime.ToShortDateString() : string.Empty;
+
+                stringBuilder.AppendFormat( bitItemFormat,
+                    title, // 0
+                    hasEngagement ? 100 : 5, // 1
+                    hasEngagement ? "has-engagement" : string.Empty, // 2
+                    hasExclusion ? "has-exclusion" : string.Empty ); // 3
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Get the recent bits data for the chart
+        /// </summary>
+        /// <returns></returns>
+        private OccurrenceEngagement[] GetOccurrenceEngagement( RockContext rockContext, StreakBag entity )
+        {
+            if ( entity.StreakType == null || entity.PersonAlias == null )
+            {
+                return null;
+            }
+            OccurrenceEngagement[] _occurrenceEngagement = null;
+            var streakTypeService = new StreakTypeService( rockContext );
+            var streakTypeId = StreakTypeCache.Get( entity.StreakType.Value ).Id;
+            var personId = new PersonAliasService( rockContext ).GetPerson( entity.PersonAlias.Value.AsGuid() ).Id;
+
+            if ( personId > 0 && streakTypeId > 0 )
+            {
+                var errorMessage = string.Empty;
+                _occurrenceEngagement = streakTypeService.GetRecentEngagementBits( streakTypeId, personId, ChartBitsToShow, out errorMessage );
+            }
+
+            return _occurrenceEngagement;
         }
 
         #endregion
