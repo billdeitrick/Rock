@@ -21,7 +21,7 @@
 
             <tr v-else-if="gridErrorMessage">
                 <td class="grid-error" :colspan="visibleColumnCount">
-                    <Alert alertType="warning">{{ gridErrorMessage }}</Alert>
+                    <NotificationBox alertType="warning">{{ gridErrorMessage }}</NotificationBox>
                 </td>
             </tr>
 
@@ -186,7 +186,7 @@ table.table-obsidian th.grid-error > .alert {
 </style>
 
 <script setup lang="ts">
-    import Alert from "@Obsidian/Controls/alert.obs";
+    import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import LoadingIndicator from "@Obsidian/Controls/loadingIndicator";
     import ColumnHeaderRow from "./columnHeaderRow.partial.obs";
     import DataRows from "./dataRows.partial.obs";

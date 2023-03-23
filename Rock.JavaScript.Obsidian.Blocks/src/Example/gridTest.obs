@@ -106,6 +106,7 @@
         if (result.isSuccess && result.data) {
             const d = ref(result.data.rows ?? []);
             setTimeout(() => (d.value[0] as Record<string, Record<string, string>>)["name"]["firstName"] = "Daniel", 2000);
+            setTimeout(() => d.value.splice(2, 1), 4000);
             return {
                 rows: d.value
             };

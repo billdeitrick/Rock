@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { defineComponent, isReactive, PropType, shallowRef, ShallowRef, unref, VNode, watch } from "vue";
+import { defineComponent, isReactive, PropType, ref, Ref, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
@@ -412,6 +412,32 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
     return columns;
 }
 
+/**
+ * Gets the key to use on the internal cache object to load the cached data
+ * for the specified row.
+ *
+ * @param row The row whose identifier key is needed.
+ *
+ * @returns The identifier key of the row or `undefined` if it could not be determined.
+ */
+export function getRowKey(row: Record<string, unknown>, itemIdKey?: string): string | undefined {
+    if (!itemIdKey) {
+        return undefined;
+    }
+
+    const rowKey = row[itemIdKey];
+
+    if (typeof rowKey === "string") {
+        return rowKey;
+    }
+    else if (typeof rowKey === "number") {
+        return `${rowKey}`;
+    }
+    else {
+        return undefined;
+    }
+}
+
 // #endregion
 
 // #region Classes
@@ -500,21 +526,7 @@ export class GridRowCache implements IGridRowCache {
      * @returns The identifier key of the row or `undefined` if it could not be determined.
      */
     private getRowKey(row: Record<string, unknown>): string | undefined {
-        if (!this.rowItemIdKey) {
-            return undefined;
-        }
-
-        const rowKey = row[this.rowItemIdKey];
-
-        if (typeof rowKey === "string") {
-            return rowKey;
-        }
-        else if (typeof rowKey === "number") {
-            return `${rowKey}`;
-        }
-        else {
-            return undefined;
-        }
+        return getRowKey(row, this.rowItemIdKey);
     }
 
     /**
@@ -593,6 +605,8 @@ export class GridRowCache implements IGridRowCache {
 export class GridState implements IGridState {
     private internalRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
 
+    private itemIdKey?: string;
+
     private quickFilter: string = "";
 
     private columnFilters: Record<string, unknown | undefined> = {};
@@ -617,39 +631,80 @@ export class GridState implements IGridState {
         this.rowCache = new GridRowCache(itemIdKey);
         this.columns = columns;
         this.visibleColumns = columns;
+        this.itemIdKey = itemIdKey;
     }
+
+    // #region Property Accessors
 
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;
     }
 
-    public setDataRows(rows: Record<string, unknown>[]): void {
-        console.log("start reactive check");
-        // Need to watch entire rows array. This can be
-        // conditional on rows being reactive first.
-        // then when rows changes, check each row to see
-        // if it is being watched and add a watcher.
-        // Any rows that no longer exist have the watcher removed.
-        watch(() => rows, () => {
-            console.log("array change");
-        }, { deep: true });
-        for (let i = 0; i < rows.length; i++) {
-            if (isReactive(rows[i])) {
-                const row = rows[i];
+    // #endregion
 
-                watch(() => row, () => {
-                    this.rowCache.remove(row);
+    private rowWatchers: Record<string, WatchStopHandle> = {};
+
+    private updateRowWatchers(): void {
+        // Quick test, if we don't have an item id key, then just kill
+        // all the watchers.
+        if (!this.itemIdKey) {
+            Object.values(this.rowWatchers).forEach(wsh => wsh());
+            this.rowWatchers = {};
+            return;
+        }
+
+        const start = Date.now();
+        console.log("start reactive check");
+        const existingWatcherRowKeys = Object.keys(this.rowWatchers);
+        const currentRowKeys: Record<string, boolean> = {};
+
+        // Look for new rows that have been added.
+        for (let i = 0; i < this.internalRows.value.length; i++) {
+            const row = this.internalRows.value[i];
+            const rowKey = getRowKey(row, this.itemIdKey);
+
+            if (!rowKey) {
+                continue;
+            }
+
+            currentRowKeys[rowKey] = true;
+
+            if (!this.rowWatchers[rowKey]) {
+                const watcher = watch(() => row, () => {
                     console.log("Row changed", row);
+                    this.rowCache.remove(row);
                     this.updateFilteredRows();
                 }, {
                     deep: true
                 });
+
+                this.rowWatchers[rowKey] = watcher;
             }
         }
-        console.log("end reactive check");
+        const m1 = Date.now();
+
+        // Look for old rows that have been removed.
+        existingWatcherRowKeys.forEach(rk => {
+            if (!currentRowKeys[rk]) {
+                console.log("removed watcher for", rk);
+                this.rowWatchers[rk]();
+                delete this.rowWatchers[rk];
+            }
+        });
+        const stop = Date.now();
+        console.log("end reactive check", stop - start, m1 - start);
+    }
+
+    public setDataRows(rows: Record<string, unknown>[]): void {
         this.internalRows.value = rows;
         this.cache.clear();
         this.rowCache.clear();
+        this.updateRowWatchers();
+
+        watch(() => rows, () => {
+            this.updateRowWatchers();
+            this.updateFilteredRows();
+        }, { deep: true });
         this.updateFilteredRows();
     }
 
