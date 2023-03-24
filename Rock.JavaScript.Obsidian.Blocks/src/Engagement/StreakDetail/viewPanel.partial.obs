@@ -2,6 +2,12 @@
 <template>
     <fieldset>
 
+        <div v-if="rebuildActionSuccessMessage" class="row">
+            <div class="col-md-12">
+                <Alert alertType="success">{{ rebuildActionSuccessMessage }}</Alert>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-md-12">
                 <ul v-html="options?.chartHTML" class="streak-chart margin-b-md">
@@ -26,6 +32,7 @@
 
 <script setup lang="ts">
     import { computed, PropType, ref } from "vue";
+    import Alert from "@Obsidian/Controls/alert.obs";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import ValueDetailList from "@Obsidian/Controls/valueDetailList";
     import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
@@ -43,7 +50,9 @@
         options: {
             type: Object as PropType<StreakDetailOptionsBag>,
             required: true
-        }
+        },
+
+        rebuildActionSuccessMessage : String
     });
 
     // #region Values

@@ -80,6 +80,10 @@ namespace Rock.Blocks.Engagement
                 var box = new DetailBlockBox<StreakBag, StreakDetailOptionsBag>();
 
                 SetBoxInitialEntityState( box, rockContext );
+                if(box.Entity == null)
+                {
+                    return box;
+                }
 
                 box.NavigationUrls = GetBoxNavigationUrls();
                 box.Options = GetBoxOptions( box.IsEditable, box.Entity, rockContext );
@@ -635,7 +639,7 @@ namespace Rock.Blocks.Engagement
                 return "";
             }
             var person = new PersonAliasService( rockContext ).GetPerson( entity.PersonAlias.Value.AsGuid() );
-            const string photoFormat = "<div class=\"photo-icon photo-round photo-round-sm pull-left margin-r-sm js-person-popover\" personid=\"{0}\" data-original=\"{1}&w=50\" style=\"background-image: url( '{2}' ); background-size: cover; background-repeat: no-repeat;\"></div>";
+            const string photoFormat = "<div class=\"photo-icon photo-round photo-round-sm pull-left margin-r-sm js-person-popover\" personid=\"{0}\" data-original=\"{1}&w=50\" style=\"background-image: url({1}); background-size: cover; background-repeat: no-repeat;\"></div>";
             const string nameLinkFormat = @"
     {0}
     <p><small><a href='/Person/{1}'>View Profile</a></small></p>
@@ -645,7 +649,7 @@ namespace Rock.Blocks.Engagement
                 return "";
             }
 
-            personImageStringBuilder.AppendFormat( photoFormat, person.Id, person.PhotoUrl, "~/Assets/Images/person-no-photo-unknown.svg" );
+            personImageStringBuilder.AppendFormat( photoFormat, person.Id, person.PhotoUrl );
             personImageStringBuilder.AppendFormat( nameLinkFormat, person.FullName, person.Id );
 
             if ( person.TopSignalColor.IsNotNullOrWhiteSpace() )
@@ -698,7 +702,7 @@ namespace Rock.Blocks.Engagement
             {
                 return null;
             }
-            OccurrenceEngagement[] _occurrenceEngagement = null;
+            OccurrenceEngagement[] occurrenceEngagement = null;
             var streakTypeService = new StreakTypeService( rockContext );
             var streakTypeId = StreakTypeCache.Get( entity.StreakType.Value ).Id;
             var personId = new PersonAliasService( rockContext ).GetPerson( entity.PersonAlias.Value.AsGuid() ).Id;
@@ -706,10 +710,43 @@ namespace Rock.Blocks.Engagement
             if ( personId > 0 && streakTypeId > 0 )
             {
                 var errorMessage = string.Empty;
-                _occurrenceEngagement = streakTypeService.GetRecentEngagementBits( streakTypeId, personId, ChartBitsToShow, out errorMessage );
+                occurrenceEngagement = streakTypeService.GetRecentEngagementBits( streakTypeId, personId, ChartBitsToShow, out errorMessage );
             }
 
-            return _occurrenceEngagement;
+            return occurrenceEngagement;
+        }
+
+        /// <summary>
+        /// Performs the rebuild action on the Streak
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [BlockAction]
+        public BlockActionResult Rebuild(string key)
+        {
+            if ( key.IsNullOrWhiteSpace() )
+            {
+                return ActionNotFound();
+            }
+            using (RockContext rockContext = new RockContext())
+            {
+                var streakService = new StreakService( rockContext );
+                var streak = streakService.Get( key, !PageCache.Layout.Site.DisablePredictableIds );
+
+                if ( !streak.IsAuthorized( Authorization.ADMINISTRATE, RequestContext.CurrentPerson ) )
+                {
+                    return ActionUnauthorized( "You are not authorized to rebuild this item.");
+                }
+
+                var errorMessage = string.Empty;
+                StreakTypeService.RebuildStreakFromAttendance( streak.StreakTypeId, streak.PersonAlias.PersonId, out errorMessage );
+                if ( !errorMessage.IsNullOrWhiteSpace() )
+                {
+                    return ActionBadRequest(  errorMessage );
+                }
+
+                return ActionOk( "The streak rebuild was successful!" );
+            }
         }
 
         #endregion
