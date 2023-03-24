@@ -58,7 +58,7 @@ namespace Rock.Web.Cache.NonEntities
         /// <summary>
         /// Initializes a new instance of the <see cref="PersonOrVisitorCache"/> class.
         /// </summary>
-        /// <param name="preferences">The preferences.</param>
+        /// <param name="preferences">The preferences cached by this item.</param>
         private PersonOrVisitorCache( List<PersonPreferenceCache> preferences )
         {
             Preferences = preferences;
@@ -66,36 +66,72 @@ namespace Rock.Web.Cache.NonEntities
 
         #endregion
 
+        #region Static Methods
+
+        /// <summary>
+        /// Gets all of the cached person preferences for a person.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        /// <returns>A list of <see cref="PersonPreferenceCache"/> objects.</returns>
         public static List<PersonPreferenceCache> GetAllForPerson( int personId )
         {
             return GetOrAddExisting( GetPersonKey( personId ), () => QueryDbForPerson( personId ) ).Preferences;
         }
 
+        /// <summary>
+        /// Gets all of the cached person preferences for an anonymous visitor
+        /// by their <see cref="PersonAlias"/> identifier.
+        /// </summary>
+        /// <param name="personAliasId">The person alias identifier.</param>
+        /// <returns>A list of <see cref="PersonPreferenceCache"/> objects.</returns>
         public static List<PersonPreferenceCache> GetAllForVisitor( int personAliasId )
         {
             return GetOrAddExisting( GetVisitorKey( personAliasId ), () => QueryDbForVisitor( personAliasId ) ).Preferences;
         }
 
+        /// <summary>
+        /// Flushes the preference cache for the person.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
         public static void FlushPerson( int personId )
         {
             FlushItem( GetPersonKey( personId ) );
         }
 
+        /// <summary>
+        /// Flushes the preference cache for the visitor.
+        /// </summary>
+        /// <param name="personAliasId">The person alias identifier.</param>
         public static void FlushVisitor( int personAliasId )
         {
             FlushItem( GetVisitorKey( personAliasId ) );
         }
 
+        /// <summary>
+        /// Gets the cache item key for a person.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        /// <returns>A string that represents the cache item key.</returns>
         private static string GetPersonKey( int personId )
         {
             return $"person:{personId}";
         }
 
+        /// <summary>
+        /// Gets the cache item key for a visitor.
+        /// </summary>
+        /// <param name="personAliasId">The person alias identifier.</param>
+        /// <returns>A string that represents the cache item key.</returns>
         private static string GetVisitorKey( int personAliasId )
         {
             return $"visitor:{personAliasId}";
         }
 
+        /// <summary>
+        /// Queries the database to get preference records for a person.
+        /// </summary>
+        /// <param name="personId">The person identifier.</param>
+        /// <returns>An instance of <see cref="PersonOrVisitorCache"/> that will be added to the cache.</returns>
         private static PersonOrVisitorCache QueryDbForPerson( int personId )
         {
             using ( var rockContext = new RockContext() )
@@ -112,6 +148,11 @@ namespace Rock.Web.Cache.NonEntities
             }
         }
 
+        /// <summary>
+        /// Queries the database to get preference records for a visitor.
+        /// </summary>
+        /// <param name="personAliasId">The person alias identifier.</param>
+        /// <returns>An instance of <see cref="PersonOrVisitorCache"/> that will be added to the cache.</returns>
         private static PersonOrVisitorCache QueryDbForVisitor( int personAliasId )
         {
             using ( var rockContext = new RockContext() )
@@ -127,5 +168,7 @@ namespace Rock.Web.Cache.NonEntities
                 return new PersonOrVisitorCache( preferences );
             }
         }
+
+        #endregion
     }
 }
