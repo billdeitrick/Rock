@@ -516,7 +516,7 @@ namespace Rock.Blocks.Engagement
                     return actionError;
                 }
 
-                if ( !entityService.CanDelete( entity, out var errorMessage ) )
+                if ( !entityService.CanDelete( entity, out var errorMessage, RequestContext.CurrentPerson ) )
                 {
                     return ActionBadRequest( errorMessage );
                 }
