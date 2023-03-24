@@ -690,10 +690,15 @@ namespace Rock.Blocks.Prayer
         /// <param name="rockContext">The Rock Context.</param>
         private void DeleteAllRelatedNotes( PrayerRequest prayerRequest, RockContext rockContext )
         {
-            var prayerCommentNoteTypeId = NoteTypeCache.Get( Rock.SystemGuid.NoteType.PRAYER_COMMENT.AsGuid() ).Id;
+            var prayerRequestEntityTypeId = EntityTypeCache.Get( SystemGuid.EntityType.PRAYER_REQUEST.AsGuid() ).Id;
+            var noteTypeIdsForPrayerRequest = EntityNoteTypesCache.Get()
+                .EntityNoteTypes
+                .First( a => a.EntityTypeId.Equals( prayerRequestEntityTypeId ) )
+                .NoteTypeIds
+                .ToHashSet();
             var noteService = new NoteService( rockContext );
             var prayerRequestComments = noteService.Queryable()
-                .Where( n => n.NoteTypeId == prayerCommentNoteTypeId && n.EntityId == prayerRequest.Id );
+                .Where( n => noteTypeIdsForPrayerRequest.Contains( n.NoteTypeId ) && n.EntityId == prayerRequest.Id );
             rockContext.BulkDelete( prayerRequestComments );
         }
 
