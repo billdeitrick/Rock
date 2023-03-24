@@ -47,7 +47,7 @@ namespace Rock.Client
         public string ForeignKey { get; set; }
 
         /// <summary />
-        public bool IsPeriodicAccess { get; set; }
+        public bool IsEnduring { get; set; }
 
         /// <summary />
         public string Key { get; set; }
@@ -78,7 +78,7 @@ namespace Rock.Client
             this.EntityTypeId = source.EntityTypeId;
             this.ForeignGuid = source.ForeignGuid;
             this.ForeignKey = source.ForeignKey;
-            this.IsPeriodicAccess = source.IsPeriodicAccess;
+            this.IsEnduring = source.IsEnduring;
             this.Key = source.Key;
             this.LastAccessedDateTime = source.LastAccessedDateTime;
             this.PersonAliasId = source.PersonAliasId;

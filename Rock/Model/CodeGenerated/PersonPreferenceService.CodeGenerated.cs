@@ -115,7 +115,7 @@ namespace Rock.Model
             target.EntityTypeId = source.EntityTypeId;
             target.ForeignGuid = source.ForeignGuid;
             target.ForeignKey = source.ForeignKey;
-            target.IsPeriodicAccess = source.IsPeriodicAccess;
+            target.IsEnduring = source.IsEnduring;
             target.Key = source.Key;
             target.LastAccessedDateTime = source.LastAccessedDateTime;
             target.PersonAliasId = source.PersonAliasId;

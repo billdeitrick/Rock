@@ -900,6 +900,7 @@
     <Compile Include="Core\NotificationMessageTypeComponent.cs" />
     <Compile Include="Core\NotificationMessageTypeContainer.cs" />
     <Compile Include="Core\NotificationMessageTypes\SmsConversation.cs" />
+    <Compile Include="Data\ExcludeDefaultRestControllerAttribute.cs" />
     <Compile Include="Data\IncludeForModelMapAttribute.cs" />
     <Compile Include="Data\EntityContextState.cs" />
     <Compile Include="Data\EntitySaveHook.cs" />
@@ -1008,6 +1009,7 @@
     <Compile Include="Model\Core\NotificationMessage\NotificationMessage.SaveHook.cs" />
     <Compile Include="Model\Core\NotificationMessage\NotificationMessageService.cs" />
     <Compile Include="Model\Core\PersonPreference\PersonPreference.cs" />
+    <Compile Include="Model\Core\PersonPreference\PersonPreference.SaveHook.cs" />
     <Compile Include="Model\Core\PersonPreference\PersonPreferenceService.cs" />
     <Compile Include="Model\Event\AttendanceOccurrence\AttendanceOccurrence.SaveHook.cs" />
     <Compile Include="Model\Event\InteractiveExperienceAction\InteractiveExperienceAction.cs" />
@@ -1695,6 +1697,7 @@
     <Compile Include="Transactions\SendAttendanceOccurrenceRealTimeNotificationsTransaction.cs" />
     <Compile Include="Transactions\SendAttendanceRealTimeNotificationsTransaction.cs" />
     <Compile Include="Transactions\UpdateNotificationMessageBadgeCountTransaction.cs" />
+    <Compile Include="Transactions\UpdatePersonPreferenceLastAccessedTransaction.cs" />
     <Compile Include="Tv\Classes\AppleTvApplicationSettings.cs" />
     <Compile Include="Tv\Classes\ApplicationSettings.cs" />
     <Compile Include="Tv\TvHelper.cs" />
@@ -1892,6 +1895,7 @@
     <Compile Include="Utility\ExtensionMethods\StreamExtensions.cs" />
     <Compile Include="Utility\KeyHelper.cs" />
     <Compile Include="Utility\ExtensionMethods\Request.cs" />
+    <Compile Include="Utility\PersonPreferenceCollection.cs" />
     <Compile Include="Utility\PrayerRequestLastPrayedDetail.cs" />
     <Compile Include="Utility\PrayerRequestQueryOptions.cs" />
     <Compile Include="Utility\RockCurrencyCodeInfo.cs" />
@@ -1983,6 +1987,8 @@
     <Compile Include="Logging\RockLogConfiguration.cs" />
     <Compile Include="Web\Cache\NonEntities\DeepLinkCache.cs" />
     <Compile Include="Web\Cache\NonEntities\EntityTypeAttributesCache.cs" />
+    <Compile Include="Web\Cache\NonEntities\PersonOrVisitorCache.cs" />
+    <Compile Include="Web\Cache\NonEntities\PersonPreferenceCache.cs" />
     <Compile Include="Web\Cache\RockCacheConsumer.cs" />
     <Compile Include="Web\HttpModules\DeepLinks.cs" />
     <Compile Include="Web\PageRouteWasUpdatedConsumer.cs" />

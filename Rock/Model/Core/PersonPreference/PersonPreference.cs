@@ -31,7 +31,8 @@ namespace Rock.Model
     /// any entity.
     /// </summary>
     [RockDomain( "Core" )]
-    [Table( "PersonPreferences" )]
+    [Table( "PersonPreference" )]
+    [ExcludeDefaultRestController]
     [DataContract]
     [Rock.SystemGuid.EntityTypeGuid( Rock.SystemGuid.EntityType.PERSON_PREFERENCE )]
     public partial class PersonPreference : Entity<PersonPreference>
@@ -49,6 +50,18 @@ namespace Rock.Model
         [DataMember( IsRequired = true )]
         [Index( "IX_PersonAliasIdKey", 0, IsUnique = true )]
         public int PersonAliasId { get; set; }
+
+        // <entity-type-slug>-<entity-id>-{key}
+        /// <summary>
+        /// Gets or sets the unique key that identifies this preference. This
+        /// is unique to each related <see cref="PersonAliasId"/>.
+        /// </summary>
+        /// <value>The key that identifies this preference.</value>
+        [Required]
+        [MaxLength( 250 )]
+        [DataMember( IsRequired = true )]
+        [Index( "IX_PersonAliasIdKey", 1, IsUnique = true )]
+        public string Key { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the <see cref="EntityType"/> that this
@@ -68,18 +81,6 @@ namespace Rock.Model
         [DataMember]
         public int? EntityId { get; set; }
 
-        // <entity-type-slug>-<entity-id>-{key}
-        /// <summary>
-        /// Gets or sets the unique key that identifies this preference. This
-        /// is unique to each related <see cref="PersonAliasId"/>.
-        /// </summary>
-        /// <value>The key that identifies this preference.</value>
-        [Required]
-        [MaxLength( 250 )]
-        [DataMember( IsRequired = true )]
-        [Index( "IX_PersonAliasIdKey", 1, IsUnique = true )]
-        public string Key { get; set; }
-
         /// <summary>
         /// Gets or sets the preference value.
         /// </summary>
@@ -89,11 +90,11 @@ namespace Rock.Model
 
         /// <summary>
         /// Gets or sets a value indicating whether this preference is should
-        /// have an extended life. Periodic preferences have a life of 18 months
+        /// have an extended life. Enduring preferences have a life of 18 months
         /// since last accessed.
         /// </summary>
-        /// <value><c>true</c> if this preference has periodic access; otherwise, <c>false</c>.</value>
-        public bool IsPeriodicAccess { get; set; }
+        /// <value><c>true</c> if this preference is enduring; otherwise, <c>false</c>.</value>
+        public bool IsEnduring { get; set; }
 
         /// <summary>
         /// Gets or sets the date this preference was last accessed by the owner.

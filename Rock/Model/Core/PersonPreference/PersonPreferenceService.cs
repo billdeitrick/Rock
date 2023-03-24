@@ -15,8 +15,8 @@
 // </copyright>
 //
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Rock.Data;
 
@@ -24,58 +24,43 @@ namespace Rock.Model
 {
     public partial class PersonPreferenceService
     {
-        public List<PersonPreferenceCache> GetPersonPreferences( int personId )
+        public IQueryable<PersonPreference> GetPersonPreferencesQueryable( int personId )
         {
             return Queryable()
-                .Where( pp => pp.PersonAlias.PersonId == personId )
-                .Select( pp => new PersonPreferenceCache
-                {
-                    Id = pp.Id,
-                    PersonId = pp.PersonAlias.PersonId,
-                    PersonAliasId = pp.PersonAliasId,
-                    EntityTypeId = pp.EntityTypeId,
-                    EntityId = pp.EntityId,
-                    Key = pp.Key,
-                    Value = pp.Value,
-                    LastAccessedDateTime = pp.LastAccessedDateTime
-                } )
-                .ToList();
+                .Where( pp => pp.PersonAlias.PersonId == personId );
         }
 
-        public List<PersonPreferenceCache> GetPersonAliasPreferences( int personAliasId )
+        public IQueryable<PersonPreference> GetVisitorPreferencesQueryable( int personAliasId )
         {
             return Queryable()
-                .Where( pp => pp.PersonAliasId == personAliasId )
-                .Select( pp => new PersonPreferenceCache
-                {
-                    Id = pp.Id,
-                    PersonAliasId = pp.PersonAliasId,
-                    EntityTypeId = pp.EntityTypeId,
-                    EntityId = pp.EntityId,
-                    Key = pp.Key,
-                    Value = pp.Value,
-                    LastAccessedDateTime = pp.LastAccessedDateTime
-                } )
-                .ToList();
+                .Where( pp => pp.PersonAliasId == personAliasId );
         }
 
-        public class PersonPreferenceCache
+        public static string GetPreferencePrefix( IEntity entity )
         {
-            public int Id { get; set; }
+            if ( entity == null )
+            {
+                throw new ArgumentNullException( nameof( entity ) );
+            }
 
-            public int? PersonId { get; set; }
+            return GetPreferencePrefix( entity.GetType(), entity.Id );
+        }
 
-            public int PersonAliasId { get; set; }
+        public static string GetPreferencePrefix( Type type, int id )
+        {
+            if ( type.IsDynamicProxyType() )
+            {
+                type = type.BaseType;
+            }
 
-            public int? EntityTypeId { get; set; }
+            var prefix = type.Name.ToLower()
+                .SplitCase()
+                .Trim()
+                .Replace( " ", "-" );
 
-            public int? EntityId { get; set; }
+            prefix = Regex.Replace( prefix, "[^a-zA-Z0-9-]", string.Empty );
 
-            public string Key { get; set; }
-
-            public string Value { get; set; }
-
-            public DateTime LastAccessedDateTime { get; set; }
+            return $"{prefix}-{id}-";
         }
 
         private class HasDynamicPersonPreferencesAttribute : System.Attribute
