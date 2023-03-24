@@ -8,4 +8,5 @@ export const RockPageRoutes = {
     externalConnect: "/page/229",
     externalPrayerRequestEntry: "/page/233",
     externalLogin: "/page/207",
+    internalLogin: "/page/3"
 } as const;
