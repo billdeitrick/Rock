@@ -694,8 +694,7 @@ namespace Rock.Blocks.Prayer
             var noteTypeIdsForPrayerRequest = EntityNoteTypesCache.Get()
                 .EntityNoteTypes
                 .First( a => a.EntityTypeId.Equals( prayerRequestEntityTypeId ) )
-                .NoteTypeIds
-                .ToHashSet();
+                .NoteTypeIds;
             var noteService = new NoteService( rockContext );
             var prayerRequestComments = noteService.Queryable()
                 .Where( n => noteTypeIdsForPrayerRequest.Contains( n.NoteTypeId ) && n.EntityId == prayerRequest.Id );
