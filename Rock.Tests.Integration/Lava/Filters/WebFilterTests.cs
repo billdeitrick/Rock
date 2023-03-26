@@ -202,7 +202,7 @@ Employer:
             templateInput.Replace( "<mobilePhoneId>", mobilePhoneNumberTypeValueId.ToString() );
 
             var expectedOutput = @"
-Ted's other contact numbers are: (623) 555-3322,(623) 555-2444.'
+Ted's other contact numbers are: (623) 555-2444.'
 ";
 
             var mergeFields = new Dictionary<string, object> { { "CurrentPerson", GetWhereFilterTestPersonTedDecker() } };
@@ -230,14 +230,14 @@ Employer:RockSolidChurch<br>
             var mergeFields = new Dictionary<string, object> { { "CurrentPerson", GetWhereFilterTestPersonTedDecker() } };
 
             var templateInput = @"
-{% assign personPhones = CurrentPerson.PhoneNumbers | Where:'NumberTypeValue.Value == ""Home""' %}
+{% assign personPhones = CurrentPerson.PhoneNumbers | Where:'NumberTypeValue.Value == ""Mobile""' %}
 {% for phone in personPhones %}
     {{ phone.NumberTypeValue.Value }}: {{ phone.NumberFormatted }}<br>
 {% endfor %}
 ";
 
             var expectedOutput = @"
-Home: (623)555-3322 <br>
+Mobile: (623)555-3322 <br>
 ";
 
             TestHelper.AssertTemplateOutput( expectedOutput, templateInput, new LavaTestRenderOptions { MergeFields = mergeFields } );
