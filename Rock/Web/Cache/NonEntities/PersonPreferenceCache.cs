@@ -22,7 +22,7 @@ using Rock.Data;
 using Rock.Model;
 using Rock.Utility;
 
-namespace Rock.Web.Cache.NonEntities
+namespace Rock.Web.Cache
 {
     /// <summary>
     /// An instance of a cached person preference. Instances are not normally
@@ -109,61 +109,67 @@ namespace Rock.Web.Cache.NonEntities
         #region Private Static Methods
 
         /// <summary>
-        /// Gets the global preferences for a person. These are not attached
-        /// to a specific entity.
-        /// </summary>
-        /// <param name="personId">The person identifier.</param>
-        /// <returns>A list of <see cref="PersonPreferenceCache"/> objects that represent the preferences.</returns>
-        private static List<PersonPreferenceCache> GetPersonPreferences( int personId )
-        {
-            return PersonOrVisitorCache.GetAllForPerson( personId )
-                .Where( pp => !pp.EntityTypeId.HasValue )
-                .ToList();
-        }
-
-        /// <summary>
-        /// Gets the global preferences for a person. Only those attached to
-        /// the specified entity are returned.
+        /// Gets the preferences for a person. If <paramref name="entityTypeCache"/>
+        /// and <paramref name="entityId"/> are specified then only preferences that
+        /// are attached to that entity will be returned. Otherwise only the global
+        /// preferences that are not attached to any entity will be returned.
         /// </summary>
         /// <param name="personId">The person identifier.</param>
         /// <param name="entityTypeCache">The cache that describes the type of entity.</param>
         /// <param name="entityId">The entity identifier.</param>
         /// <returns>A list of <see cref="PersonPreferenceCache"/> objects that represent the preferences.</returns>
-        private static List<PersonPreferenceCache> GetPersonPreferences( int personId, EntityTypeCache entityTypeCache, int entityId )
+        private static List<PersonPreferenceCache> GetPersonPreferences( int personId, EntityTypeCache entityTypeCache, int? entityId )
         {
-            return PersonOrVisitorCache.GetAllForPerson( personId )
-                .Where( pp => pp.EntityTypeId == entityTypeCache.Id
-                    && pp.EntityId == entityId )
-                .ToList();
+            if ( entityTypeCache != null )
+            {
+                if ( !entityId.HasValue )
+                {
+                    throw new ArgumentNullException( "entityId", "Parameter is required when 'entityTypeCache' is not null." );
+                }
+
+                return PersonOrVisitorCache.GetAllForPerson( personId )
+                    .Where( pp => pp.EntityTypeId == entityTypeCache.Id
+                        && pp.EntityId == entityId.Value )
+                    .ToList();
+            }
+            else
+            {
+                return PersonOrVisitorCache.GetAllForPerson( personId )
+                    .Where( pp => !pp.EntityTypeId.HasValue )
+                    .ToList();
+            }
         }
 
         /// <summary>
-        /// Gets the global preferences for a visitor. These are not attached
-        /// to a specific entity.
-        /// </summary>
-        /// <param name="personAliasId">The person alias identifier.</param>
-        /// <returns>A list of <see cref="PersonPreferenceCache"/> objects that represent the preferences.</returns>
-        private static List<PersonPreferenceCache> GetVisitorPreferences( int personAliasId )
-        {
-            return PersonOrVisitorCache.GetAllForVisitor( personAliasId )
-                .Where( pp => !pp.EntityTypeId.HasValue )
-                .ToList();
-        }
-
-        /// <summary>
-        /// Gets the global preferences for a visitor. Only those attached to
-        /// the specified entity are returned.
+        /// Gets the preferences for a visitor. If <paramref name="entityTypeCache"/>
+        /// and <paramref name="entityId"/> are specified then only preferences that
+        /// are attached to that entity will be returned. Otherwise only the global
+        /// preferences that are not attached to any entity will be returned.
         /// </summary>
         /// <param name="personAliasId">The person alias identifier.</param>
         /// <param name="entityTypeCache">The cache that describes the type of entity.</param>
         /// <param name="entityId">The entity identifier.</param>
         /// <returns>A list of <see cref="PersonPreferenceCache"/> objects that represent the preferences.</returns>
-        private static List<PersonPreferenceCache> GetVisitorPreferences( int personAliasId, EntityTypeCache entityTypeCache, int entityId )
+        private static List<PersonPreferenceCache> GetVisitorPreferences( int personAliasId, EntityTypeCache entityTypeCache, int? entityId )
         {
-            return PersonOrVisitorCache.GetAllForVisitor( personAliasId )
-                .Where( pp => pp.EntityTypeId == entityTypeCache.Id
-                    && pp.EntityId == entityId )
-                .ToList();
+            if ( entityTypeCache != null )
+            {
+                if ( !entityId.HasValue )
+                {
+                    throw new ArgumentNullException( "entityId", "Parameter is required when 'entityTypeCache' is not null." );
+                }
+
+                return PersonOrVisitorCache.GetAllForVisitor( personAliasId )
+                    .Where( pp => pp.EntityTypeId == entityTypeCache.Id
+                        && pp.EntityId == entityId.Value )
+                    .ToList();
+            }
+            else
+            {
+                return PersonOrVisitorCache.GetAllForVisitor( personAliasId )
+                    .Where( pp => !pp.EntityTypeId.HasValue )
+                    .ToList();
+            }
         }
 
         #endregion
@@ -179,8 +185,8 @@ namespace Rock.Web.Cache.NonEntities
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person )
         {
-            var preferences = GetPersonPreferences( person.Id );
-            var prefix = string.Empty;
+            var preferences = GetPersonPreferences( person.Id, null, null );
+            var prefix = PersonPreferenceService.GetGlobalPreferencePrefix();
 
             return new PersonPreferenceCollection( person.Id, person.PrimaryAliasId, null, null, prefix, preferences );
         }
@@ -228,6 +234,27 @@ namespace Rock.Web.Cache.NonEntities
         }
 
         /// <summary>
+        /// Gets the person preference collection that will provide access
+        /// to preferences attached to a specific entity.
+        /// </summary>
+        /// <param name="person">The person object. The <see cref="Person.Aliases"/> property should be pre-fetched.</param>
+        /// <param name="entityTypeCache">The cache that describes the type of entity.</param>
+        /// <param name="entityId">The entity identifier.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
+        public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person, EntityTypeCache entityTypeCache, int entityId )
+        {
+            if ( entityTypeCache == null )
+            {
+                throw new ArgumentNullException( nameof( entityTypeCache ) );
+            }
+
+            var prefix = PersonPreferenceService.GetPreferencePrefix( entityTypeCache.GetEntityType(), entityId );
+            var preferences = GetPersonPreferences( person.Id, entityTypeCache, entityId );
+
+            return new PersonPreferenceCollection( person.Id, person.PrimaryAliasId, entityTypeCache.Id, entityId, prefix, preferences );
+        }
+
+        /// <summary>
         /// <para>
         /// Gets the visitor preference collection that will provide access
         /// to global preferences. These are unique to the individual but
@@ -245,8 +272,8 @@ namespace Rock.Web.Cache.NonEntities
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetVisitorPreferenceCollection( int personAliasId )
         {
-            var preferences = GetVisitorPreferences( personAliasId );
-            var prefix = string.Empty;
+            var preferences = GetVisitorPreferences( personAliasId, null, null );
+            var prefix = PersonPreferenceService.GetGlobalPreferencePrefix();
 
             return new PersonPreferenceCollection( null, personAliasId, null, null, prefix, preferences );
         }
@@ -309,6 +336,36 @@ namespace Rock.Web.Cache.NonEntities
             var preferences = GetVisitorPreferences( personAliasId, entityTypeCache, entity.Id );
 
             return new PersonPreferenceCollection( null, personAliasId, entityTypeCache.Id, entity.Id, prefix, preferences );
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets the visitor preference collection that will provide access
+        /// to preferences attached to the specified entity.
+        /// </para>
+        /// <para>
+        /// A visitor is a nameless person that has a unique person alias
+        /// record but is tied to the single nameless person record.
+        /// </para>
+        /// <para>
+        /// Do not call this with a person alias identifier for a regular person.
+        /// </para>
+        /// </summary>
+        /// <param name="personAliasId">The person alias identifier of the visitor.</param>
+        /// <param name="entityTypeCache">The cache that describes the type of entity.</param>
+        /// <param name="entityId">The entity identifier.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
+        public static PersonPreferenceCollection GetVisitorPreferenceCollection( int personAliasId, EntityTypeCache entityTypeCache, int entityId )
+        {
+            if ( entityTypeCache == null )
+            {
+                throw new ArgumentNullException( nameof( entityTypeCache ) );
+            }
+
+            var prefix = PersonPreferenceService.GetPreferencePrefix( entityTypeCache.GetEntityType(), entityId );
+            var preferences = GetVisitorPreferences( personAliasId, entityTypeCache, entityId );
+
+            return new PersonPreferenceCollection( null, personAliasId, entityTypeCache.Id, entityId, prefix, preferences );
         }
 
         /// <summary>

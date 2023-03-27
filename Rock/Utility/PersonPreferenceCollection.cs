@@ -7,7 +7,8 @@ using System.Linq;
 using Rock.Data;
 using Rock.Model;
 using Rock.Transactions;
-using Rock.Web.Cache.NonEntities;
+using Rock.ViewModels.Core;
+using Rock.Web.Cache;
 
 namespace Rock.Utility
 {
@@ -63,6 +64,15 @@ namespace Rock.Utility
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PersonPreferenceCollection"/> class.
+        /// This will have no preferences and not persist any changes to the database.
+        /// </summary>
+        internal PersonPreferenceCollection()
+            : this( null, null, null, null, string.Empty, Array.Empty<PersonPreferenceCache>() )
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersonPreferenceCollection"/> class.
         /// </summary>
         /// <param name="personId">The person identifier owning this collection, should be <c>null</c> for an anonymous visitor.</param>
         /// <param name="personAliasId">The person alias identifier owning this collection.</param>
@@ -87,7 +97,20 @@ namespace Rock.Utility
             // Order by Id so that preferences created earlier have priority.
             foreach ( var preference in preferences.OrderBy( p => p.Id ) )
             {
-                _preferences.AddOrIgnore( preference.Key, new PreferenceValue
+                var key = preference.Key;
+
+                if ( _prefix.Length > 0 )
+                {
+                    // Shouldn't really happen, but just to make sure.
+                    if ( !key.StartsWith( _prefix ) || key.Length == _prefix.Length )
+                    {
+                        continue;
+                    }
+
+                    key = key.Substring( _prefix.Length );
+                }
+
+                _preferences.AddOrIgnore( key, new PreferenceValue
                 {
                     Id = preference.Id,
                     Value = preference.Value ?? string.Empty,
@@ -105,12 +128,11 @@ namespace Rock.Utility
         /// </summary>
         /// <param name="key">The key whose value should be returned.</param>
         /// <returns>A string that represents the value. An empty string is returned if the key was not found.</returns>
-        public string GetPreferenceValue( string key )
+        public string GetValue( string key )
         {
-            var prefixedKey = $"{_prefix}{key}";
             var now = RockDateTime.Now;
 
-            if ( !_preferences.TryGetValue( prefixedKey, out var preference ) )
+            if ( !_preferences.TryGetValue( key, out var preference ) )
             {
                 return string.Empty;
             }
@@ -130,11 +152,9 @@ namespace Rock.Utility
         /// </summary>
         /// <param name="key">The key whose value should be set.</param>
         /// <param name="value">The new value. An empty string or <c>null</c> will delete the value.</param>
-        public void SetPreferenceValue( string key, string value )
+        public void SetValue( string key, string value )
         {
-            var prefixedKey = $"{_prefix}{key}";
-
-            _preferences.AddOrUpdate( prefixedKey,
+            _preferences.AddOrUpdate( key,
                 k => new PreferenceValue
                 {
                     Value = value ?? string.Empty,
@@ -147,7 +167,35 @@ namespace Rock.Utility
                 }
             );
 
-            _updatedKeys.Add( prefixedKey );
+            _updatedKeys.Add( key );
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets all value bags that represent all the current preference keys
+        /// and values.
+        /// </para>
+        /// <para>
+        /// This will not update the LastAccessedDateTime value.
+        /// </para>
+        /// </summary>
+        /// <returns>An enumeration of <see cref="PersonPreferenceValueBag"/> objects that represent all the keys and values.</returns>
+        public IEnumerable<PersonPreferenceValueBag> GetAllValueBags()
+        {
+            var bags = new List<PersonPreferenceValueBag>();
+
+            // Enumerator on ConcurrentDictionary is thread safe.
+            foreach ( var preference in _preferences )
+            {
+                bags.Add( new PersonPreferenceValueBag
+                {
+                    Key = preference.Key,
+                    Value = preference.Value.Value,
+                    LastAccessedDateTime = preference.Value.LastAccessedDateTime
+                } );
+            }
+
+            return bags;
         }
 
         /// <summary>
@@ -183,6 +231,16 @@ namespace Rock.Utility
         }
 
         /// <summary>
+        /// Gets the prefixed key.
+        /// </summary>
+        /// <param name="key">The key to be prefixed.</param>
+        /// <returns>A string that represents the prefixed key.</returns>
+        private string GetPrefixedKey( string key )
+        {
+            return _prefix.Length > 0 ? $"{_prefix}{key}" : key;
+        }
+
+        /// <summary>
         /// Saves the updated keys by adding, updating or deleting any
         /// person preference records that are needed.
         /// </summary>
@@ -213,7 +271,8 @@ namespace Rock.Utility
 
                 // Filter to just the keys that were modified. Tested this on
                 // up to 1,000 fake keys and SQL doesn't blow up.
-                qry = qry.Where( pp => updatedKeys.Contains( pp.Key ) );
+                var prefixedUpdatedKeys = updatedKeys.Select( GetPrefixedKey ).ToList();
+                qry = qry.Where( pp => prefixedUpdatedKeys.Contains( pp.Key ) );
 
                 // Order by Id so when we update below we always update the
                 // earliest value if there are duplicates.
@@ -226,6 +285,7 @@ namespace Rock.Utility
                 // updates, deletes or additions that need to be made.
                 foreach ( var key in updatedKeys )
                 {
+                    var prefixedKey = GetPrefixedKey( key );
                     string value;
 
                     if ( _preferences.TryGetValue( key, out var preferenceValue ) )
@@ -237,7 +297,7 @@ namespace Rock.Utility
                         value = null;
                     }
 
-                    var preference = preferences.Where( pp => pp.Key == key ).FirstOrDefault();
+                    var preference = preferences.Where( pp => pp.Key == prefixedKey ).FirstOrDefault();
 
                     // If the value is empty, then we need to delete the preference.
                     if ( value.IsNullOrWhiteSpace() )
@@ -267,7 +327,7 @@ namespace Rock.Utility
                         preference = new PersonPreference
                         {
                             PersonAliasId = _personAliasId.Value,
-                            Key = key,
+                            Key = prefixedKey,
                             EntityTypeId = _entityTypeId,
                             EntityId = _entityId,
                             Value = value,

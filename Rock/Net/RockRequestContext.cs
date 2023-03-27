@@ -69,9 +69,10 @@ namespace Rock.Net
         public virtual Person CurrentPerson => CurrentUser?.Person;
 
         /// <summary>
-        /// Gets the current visitor <see cref="PersonAlias"/> identifier.
+        /// Gets the current visitor <see cref="PersonAlias"/> identifier. If
+        /// a person is logged in then this value will be <c>null</c>.
         /// </summary>
-        /// <value>The current visitor identifier.</value>
+        /// <value>The current visitor <see cref="PersonAlias"/> identifier.</value>
         internal virtual int? CurrentVisitorId { get; private set; }
 
         /// <summary>
@@ -653,7 +654,7 @@ namespace Rock.Net
         {
             if ( CurrentPerson != null )
             {
-                return CurrentPerson.PrimaryAliasId;
+                return null;
             }
 
             var visitorKeyCookie = GetCookieValue( Rock.Personalization.RequestCookieKey.ROCK_VISITOR_KEY );

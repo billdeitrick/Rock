@@ -22,7 +22,7 @@ using System.Linq;
 using Rock.Data;
 using Rock.Model;
 
-namespace Rock.Web.Cache.NonEntities
+namespace Rock.Web.Cache
 {
     /// <summary>
     /// Caches all the person preference records on a per person or visitor

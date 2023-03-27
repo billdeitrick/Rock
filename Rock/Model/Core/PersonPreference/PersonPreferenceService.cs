@@ -100,6 +100,15 @@ namespace Rock.Model
             return $"{prefix}-{id}-";
         }
 
+        /// <summary>
+        /// Gets the preference prefix to use when not scoped to a specified entity.
+        /// </summary>
+        /// <returns>A string represents the prefix to use.</returns>
+        public static string GetGlobalPreferencePrefix()
+        {
+            return "global-0-";
+        }
+
         private class HasDynamicPersonPreferencesAttribute : System.Attribute
         {
 

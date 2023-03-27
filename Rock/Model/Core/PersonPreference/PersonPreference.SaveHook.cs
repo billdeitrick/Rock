@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 
 using Rock.Data;
-using Rock.Web.Cache.NonEntities;
+using Rock.Web.Cache;
 
 namespace Rock.Model
 {
