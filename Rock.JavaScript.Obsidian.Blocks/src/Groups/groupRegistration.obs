@@ -133,7 +133,7 @@
             validProperties: validProperties
         };
 
-        const result = await invokeBlockAction<GroupRegistrationBag | string>("Save", {
+        const result = await invokeBlockAction<GroupRegistrationBag>("Save", {
             box: data
         });
 

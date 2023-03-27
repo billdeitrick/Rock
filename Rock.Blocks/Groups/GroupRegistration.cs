@@ -280,7 +280,7 @@ namespace Rock.Blocks.Groups
 
             var group = GetGroup( rockContext );
 
-            bool groupIsFromQryString = groupGuid.HasValue && group.Guid == groupGuid.Value;
+            bool isFromBlockAttribute = groupGuid.HasValue && group.Guid == groupGuid.Value;
 
             if ( group == null )
             {
@@ -290,7 +290,7 @@ namespace Rock.Blocks.Groups
             {
                 var groupTypeGuids = this.GetAttributeValue( AttributeKey.AllowedGroupTypes ).SplitDelimitedValues().AsGuidList();
 
-                if ( groupIsFromQryString && groupTypeGuids.Any() && !groupTypeGuids.Contains( group.GroupType.Guid ) )
+                if ( !isFromBlockAttribute && groupTypeGuids.Any() && !groupTypeGuids.Contains( group.GroupType.Guid ) )
                 {
                     box.ErrorMessage = "The selected group is a restricted group type therefore this block cannot be used to add people to these groups (unless configured to allow).";
                 }
