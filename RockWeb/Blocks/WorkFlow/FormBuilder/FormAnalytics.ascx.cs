@@ -481,7 +481,7 @@ namespace RockWeb.Blocks.WorkFlow.FormBuilder
         public void SaveSettings()
         {
             string keyPrefix = string.Format( "form-analytics-{0}-", this.BlockId );
-            SetUserPreference( keyPrefix + UserPreferenceKeys.SlidingDateRange, drpSlidingDateRange.DelimitedValues, false );
+            SetUserPreference( keyPrefix + UserPreferenceKeys.SlidingDateRange, drpSlidingDateRange.DelimitedValues );
         }
 
         #endregion Methods

@@ -369,6 +369,14 @@ namespace Rock.Web.Cache
         }
 
         /// <summary>
+        /// Removes all cached items from the preference cache.
+        /// </summary>
+        public static void Clear()
+        {
+            PersonOrVisitorCache.Clear();
+        }
+
+        /// <summary>
         /// Flushes the cached preferences for the specified person.
         /// </summary>
         /// <param name="personId">The person identifier.</param>

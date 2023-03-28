@@ -53,8 +53,19 @@ namespace Rock.Model
 
         // <entity-type-slug>-<entity-id>-{key}
         /// <summary>
+        /// <para>
         /// Gets or sets the unique key that identifies this preference. This
         /// is unique to each related <see cref="PersonAliasId"/>.
+        /// </para>
+        /// <para>
+        /// The key should always follow the pattern of <c>{entity-type-slug}-{entity-id}-{user-key}</c>.
+        /// For example, a block preference might look like <c>block-283-show-inactive</c>.
+        /// </para>
+        /// <para>
+        /// In the case of a preference not attached to any entity it should
+        /// follow the pattern of <c>global-0-{user-key}</c>. For example,
+        /// a global user preference might look like <c>global-0-default-grid-page-size</c>.
+        /// </para>
         /// </summary>
         /// <value>The key that identifies this preference.</value>
         [Required]
