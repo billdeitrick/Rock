@@ -42,13 +42,53 @@ namespace Rock.Blocks.Prayer
 
     #region Block Attributes
 
-    [IntegerField( "Expires After (days)", "Default number of days until the request will expire.", false, 14, "", 0, AttributeKey.ExpireDays )]
-    [CategoryField( "Default Category", "If a category is not selected, choose a default category to use for all new prayer requests.", false, "Rock.Model.PrayerRequest", "", "", false, "4B2D88F5-6E45-4B4B-8776-11118C8E8269", "", 1, AttributeKey.DefaultCategory )]
-    [BooleanField( "Set Current Person To Requester", "Will set the current person as the requester. This is useful in self-entry situations.", false, order: 2 )]
-    [BooleanField( "Require Last Name", "Require that a last name be entered", true, "", 3 )]
-    [BooleanField( "Default To Public", "If enabled, all prayers will be set to public by default", false, "", 4 )]
-    [BooleanField( "Default Allow Comments Checked", "If true, the Allow Comments checkbox will be pre-checked for all new requests by default.", true, order: 5 )]
-    [BooleanField( "Require Campus", "Require that a campus be selected. The campus will not be displayed if there is only one available campus, in which case if this is set to true then the single campus is automatically used.", false, "", 6 )]
+    [IntegerField( "Expires After (days)",
+        Key = AttributeKey.ExpireDays,
+        Description = "Default number of days until the request will expire.",
+        IsRequired = false,
+        DefaultIntegerValue = 14,
+        Category = "",
+        Order = 0 )]
+
+    [CategoryField( "Default Category",
+        Description = "If a category is not selected, choose a default category to use for all new prayer requests.",
+        AllowMultiple = false,
+        EntityTypeName = "Rock.Model.PrayerRequest",
+        EntityTypeQualifierColumn = "",
+        EntityTypeQualifierValue = "",
+        IsRequired = false,
+        DefaultValue = "4B2D88F5-6E45-4B4B-8776-11118C8E8269",
+        Category = "",
+        Order = 1,
+        Key = AttributeKey.DefaultCategory )]
+
+    [BooleanField( "Set Current Person To Requester",
+        Description = "Will set the current person as the requester. This is useful in self-entry situations.",
+        DefaultBooleanValue = false,
+        Order = 2 )]
+
+    [BooleanField( "Require Last Name",
+        Description = "Require that a last name be entered",
+        DefaultBooleanValue = true,
+        Category = "",
+        Order = 3 )]
+
+    [BooleanField( "Default To Public",
+        Description = "If enabled, all prayers will be set to public by default",
+        DefaultBooleanValue = false,
+        Category = "",
+        Order = 4 )]
+
+    [BooleanField( "Default Allow Comments Checked",
+        Description = "If true, the Allow Comments checkbox will be pre-checked for all new requests by default.",
+        DefaultBooleanValue = true,
+        Order = 5 )]
+
+    [BooleanField( "Require Campus",
+        Description = "Require that a campus be selected. The campus will not be displayed if there is only one available campus, in which case if this is set to true then the single campus is automatically used.",
+        DefaultBooleanValue = false,
+        Category = "",
+        Order = 6 )]
 
     #endregion
 
