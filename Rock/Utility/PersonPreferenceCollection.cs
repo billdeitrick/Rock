@@ -110,13 +110,33 @@ namespace Rock.Utility
                     key = key.Substring( _prefix.Length );
                 }
 
-                _preferences.AddOrIgnore( key, new PreferenceValue
+                _preferences.TryAdd( key, new PreferenceValue
                 {
                     Id = preference.Id,
                     Value = preference.Value ?? string.Empty,
                     LastAccessedDateTime = preference.LastAccessedDateTime
                 } );
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersonPreferenceCollection"/> class
+        /// for use with a sub-prefix.
+        /// </summary>
+        /// <param name="personId">The person identifier owning this collection, should be <c>null</c> for an anonymous visitor.</param>
+        /// <param name="personAliasId">The person alias identifier owning this collection.</param>
+        /// <param name="entityTypeId">The entity type identifier.</param>
+        /// <param name="entityId">The entity identifier.</param>
+        /// <param name="prefix">The prefix to apply to user keys when accessing preferences.</param>
+        /// <param name="preferences">The preferences to initialize our known preference values with.</param>
+        private PersonPreferenceCollection( int? personId, int? personAliasId, int? entityTypeId, int? entityId, string prefix, ConcurrentDictionary<string, PreferenceValue> preferences )
+        {
+            _personId = personId;
+            _personAliasId = personAliasId;
+            _entityTypeId = entityTypeId;
+            _entityId = entityId;
+            _prefix = prefix;
+            _preferences = preferences;
         }
 
         #endregion
@@ -171,31 +191,20 @@ namespace Rock.Utility
         }
 
         /// <summary>
-        /// <para>
-        /// Gets all value bags that represent all the current preference keys
-        /// and values.
-        /// </para>
-        /// <para>
-        /// This will not update the LastAccessedDateTime value.
-        /// </para>
+        /// Gets all the keys currently in this collection.
         /// </summary>
-        /// <returns>An enumeration of <see cref="PersonPreferenceValueBag"/> objects that represent all the keys and values.</returns>
-        public IEnumerable<PersonPreferenceValueBag> GetAllValueBags()
+        /// <returns>A collection of strings that represent the keys.</returns>
+        public ICollection<string> GetKeys()
         {
-            var bags = new List<PersonPreferenceValueBag>();
+            var keys = new List<string>();
 
             // Enumerator on ConcurrentDictionary is thread safe.
             foreach ( var preference in _preferences )
             {
-                bags.Add( new PersonPreferenceValueBag
-                {
-                    Key = preference.Key,
-                    Value = preference.Value.Value,
-                    LastAccessedDateTime = preference.Value.LastAccessedDateTime
-                } );
+                keys.Add( preference.Key );
             }
 
-            return bags;
+            return keys;
         }
 
         /// <summary>
@@ -228,6 +237,60 @@ namespace Rock.Utility
             }
 
             SaveUpdatedKeys( updatedKeys );
+        }
+
+        /// <summary>
+        /// Gets a new <see cref="PersonPreferenceCollection"/> with only the
+        /// preferences that start with the given prefix.
+        /// </summary>
+        /// <param name="prefix">The prefix.</param>
+        /// <returns>A new instance of <see cref="PersonPreferenceCollection"/>.</returns>
+        public PersonPreferenceCollection WithPrefix( string prefix )
+        {
+            var prefixedPreferences = new ConcurrentDictionary<string, PreferenceValue>();
+
+            foreach ( var preference in _preferences )
+            {
+                var key = preference.Key;
+
+                if ( !key.StartsWith( prefix ) || key.Length == prefix.Length )
+                {
+                    continue;
+                }
+
+                key = key.Substring( prefix.Length );
+                prefixedPreferences.TryAdd( key, preference.Value );
+            }
+
+            return new PersonPreferenceCollection( _personId, _personAliasId, _entityTypeId, _entityId, $"{_prefix}{prefix}", prefixedPreferences );
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets all value bags that represent all the current preference keys
+        /// and values.
+        /// </para>
+        /// <para>
+        /// This will not update the LastAccessedDateTime value.
+        /// </para>
+        /// </summary>
+        /// <returns>An enumeration of <see cref="PersonPreferenceValueBag"/> objects that represent all the keys and values.</returns>
+        internal IEnumerable<PersonPreferenceValueBag> GetAllValueBags()
+        {
+            var bags = new List<PersonPreferenceValueBag>();
+
+            // Enumerator on ConcurrentDictionary is thread safe.
+            foreach ( var preference in _preferences )
+            {
+                bags.Add( new PersonPreferenceValueBag
+                {
+                    Key = preference.Key,
+                    Value = preference.Value.Value,
+                    LastAccessedDateTime = preference.Value.LastAccessedDateTime
+                } );
+            }
+
+            return bags;
         }
 
         /// <summary>
