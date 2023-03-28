@@ -27,6 +27,7 @@ using System.Web.UI.WebControls;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
+using Rock.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
 
@@ -1171,6 +1172,92 @@ namespace Rock.Web.UI
                 BlockUpdated( this, new BlockUpdatedEventArgs( this.BlockId ) );
             }
         }
+
+        #region Person Preferences
+
+        /// <summary>
+        /// Gets the global person preferences. These are unique to the person
+        /// but global across the entire system. Global preferences should be
+        /// used with extreme caution and care.
+        /// </summary>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetGlobalPersonPreferences()
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the current block.
+        /// </summary>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetBlockPersonPreferences()
+        {
+            return GetScopedPersonPreferences( BlockCache );
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the current block type.
+        /// </summary>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetBlockTypePersonPreferences()
+        {
+            return GetScopedPersonPreferences( BlockCache.BlockType );
+        }
+
+        #endregion
 
         #region User Preferences
 
