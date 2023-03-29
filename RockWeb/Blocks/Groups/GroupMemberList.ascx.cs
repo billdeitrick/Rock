@@ -252,7 +252,7 @@ namespace RockWeb.Blocks.Groups
                         .Contains( r.Id ) )
                         .Any();
 
-                    filterRequirements.PreferenceKeyPrefix = string.Format( "{0}-", groupId );
+                    filterRequirements.PreferenceKeyPrefix = string.Format( "req-{0}-", groupId );
                     filterRequirements.ApplyFilterClick += filterRequirements_ApplyFilterClick;
                     gGroupMemberRequirements.DataKeyNames = new string[] { "Id" };
                     gGroupMemberRequirements.PersonIdField = "PersonId";
