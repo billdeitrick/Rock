@@ -548,6 +548,9 @@ namespace Rock.Web.UI.Controls
         /// will be the same as the key.
         /// </para>
         /// <para>
+        /// Preferences are automatically saved during the page rendering stage.
+        /// </para>
+        /// <para>
         /// Note: Key is internally stored with a custom prefix and optionally
         /// the <see cref="PreferenceKeyPrefix"/> prefix to make it unique.
         /// </para>
