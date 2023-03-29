@@ -1259,7 +1259,7 @@ namespace Rock.Web.UI
 
         #endregion
 
-        #region User Preferences
+        #region User Preferences (Obsolete)
 
         /// <summary>
         /// Returns the application user preference value for the current user for a given key
@@ -1268,6 +1268,8 @@ namespace Rock.Web.UI
         /// <param name="key">A <see cref="System.String" /> representing the key to the user preference.</param>
         /// <returns>A <see cref="System.String" /> representing the user preference value. If a match for the key is not found,
         /// an empty string will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public string GetUserPreference( string key )
         {
             return RockPage.GetUserPreference( key );
@@ -1282,6 +1284,8 @@ namespace Rock.Web.UI
         /// user that begins with the key prefix.  Each <see cref="System.Collections.Generic.KeyValuePair{String,String}"/> includes
         /// a key <see cref="System.String"/> that represents the user preference key and a value <see cref="System.String"/> that
         /// represents the user preference value. If no preferences are found, an empty dictionary will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> GetUserPreferences( string keyPrefix )
         {
             return RockPage.GetUserPreferences( keyPrefix );
@@ -1295,6 +1299,8 @@ namespace Rock.Web.UI
         /// user preference.</param>
         /// <param name="value">A <see cref="System.String" /> that represents the value of the user preference.</param>
         /// <param name="saveValue">if set to <c>true</c> [save value].</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SetUserPreference( string key, string value, bool saveValue = true )
         {
             RockPage.SetUserPreference( key, value, saveValue );
@@ -1304,6 +1310,8 @@ namespace Rock.Web.UI
         /// Saves the user preferences.
         /// </summary>
         /// <param name="keyPrefix">The key prefix.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SaveUserPreferences( string keyPrefix )
         {
             RockPage.SaveUserPreferences( keyPrefix );
@@ -1313,6 +1321,8 @@ namespace Rock.Web.UI
         /// Deletes a user preference value for the specified key
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> representing the name of the key.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void DeleteUserPreference( string key )
         {
             RockPage.DeleteUserPreference( key );
@@ -1328,6 +1338,8 @@ namespace Rock.Web.UI
         /// <value>
         /// The block user preference prefix.
         /// </value>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         private string BlockUserPreferencePrefix
         {
             get
@@ -1342,6 +1354,8 @@ namespace Rock.Web.UI
         /// <param name="key">A <see cref="System.String" /> representing the key to the user preference.</param>
         /// <returns>A <see cref="System.String" /> representing the user preference value. If a match for the key is not found,
         /// an empty string will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public string GetBlockUserPreference( string key )
         {
             return RockPage.GetUserPreference( BlockUserPreferencePrefix + key );
@@ -1351,6 +1365,8 @@ namespace Rock.Web.UI
         /// Returns the preference values for the current user and the current block
         /// </summary>
         /// <returns></returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> GetBlockUserPreferences()
         {
             var userPreferences = RockPage.GetUserPreferences( BlockUserPreferencePrefix );
@@ -1368,6 +1384,8 @@ namespace Rock.Web.UI
         /// user preference.</param>
         /// <param name="value">A <see cref="System.String" /> that represents the value of the user preference.</param>
         /// <param name="saveValue">if set to <c>true</c> [save value].</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SetBlockUserPreference( string key, string value, bool saveValue = true )
         {
             RockPage.SetUserPreference( BlockUserPreferencePrefix + key, value, saveValue );
@@ -1376,6 +1394,8 @@ namespace Rock.Web.UI
         /// <summary>
         /// Saves this block's user preferences to the database
         /// </summary>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SaveBlockUserPreferences()
         {
             SaveUserPreferences( BlockUserPreferencePrefix );
@@ -1385,6 +1405,8 @@ namespace Rock.Web.UI
         /// Deletes a user preference value for the current user and block with the specified key
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> representing the name of the key.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void DeleteBlockUserPreference( string key )
         {
             RockPage.DeleteUserPreference( BlockUserPreferencePrefix + key );

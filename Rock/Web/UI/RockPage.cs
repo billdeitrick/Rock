@@ -3492,7 +3492,7 @@ Sys.Application.add_load(function () {
 
         #endregion
 
-        #region Static Helper Methods
+        #region Page Parameters
 
         /// <summary>
         /// Checks the page's RouteData values and then the query string for a
@@ -3613,6 +3613,10 @@ Sys.Application.add_load(function () {
 
             return parameters;
         }
+
+        #endregion
+
+        #region Static Helper Methods
 
         /// <summary>
         /// Adds a new CSS link that will be added to the page header prior to the page being rendered
@@ -4111,6 +4115,10 @@ Sys.Application.add_load(function () {
             return WebRequestHelper.GetClientIpAddress( new HttpRequestWrapper( HttpContext.Current?.Request ) );
         }
 
+        #endregion
+
+        #region Obsidian Fingerprinting
+
         /// <summary>
         /// Initializes the obsidian file fingerprint. This sets the initial
         /// fingerprint value and then if we are in Debug mode it monitors for
@@ -4234,6 +4242,8 @@ Sys.Application.add_load(function () {
             }
         }
 
+        #endregion
+
         #region User Preferences
 
         /// <summary>
@@ -4241,6 +4251,8 @@ Sys.Application.add_load(function () {
         /// </summary>
         /// <param name="key">A <see cref="System.String" /> representing the key to the user preference.</param>
         /// <returns>A <see cref="System.String" /> representing the specified user preference value, if a match is not found an empty string will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public string GetUserPreference( string key )
         {
             var values = SessionUserPreferences();
@@ -4260,6 +4272,8 @@ Sys.Application.add_load(function () {
         /// Each <see cref="System.Collections.Generic.KeyValuePair{String,String}"/> contains a key that represents the user preference key and a value that contains the user preference value associated
         /// with that key.
         /// </returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> GetUserPreferences( string keyPrefix )
         {
             var selectedValues = new Dictionary<string, string>();
@@ -4280,6 +4294,8 @@ Sys.Application.add_load(function () {
         /// <param name="key">A <see cref="System.String" /> representing the name of the key.</param>
         /// <param name="value">A <see cref="System.String" /> representing the preference value.</param>
         /// <param name="saveValue">if set to <c>true</c> [save value].</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SetUserPreference( string key, string value, bool saveValue = true )
         {
             var sessionValues = SessionUserPreferences();
@@ -4302,6 +4318,8 @@ Sys.Application.add_load(function () {
         /// Saves the user preferences.
         /// </summary>
         /// <param name="keyPrefix">The key prefix.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void SaveUserPreferences( string keyPrefix )
         {
             if ( CurrentPerson != null )
@@ -4320,6 +4338,8 @@ Sys.Application.add_load(function () {
         /// Deletes a user preference value for the specified key
         /// </summary>
         /// <param name="key">A <see cref="System.String"/> representing the name of the key.</param>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public void DeleteUserPreference( string key )
         {
             var sessionValues = SessionUserPreferences();
@@ -4341,6 +4361,8 @@ Sys.Application.add_load(function () {
         /// </summary>
         /// <returns>A <see cref="System.Collections.Generic.Dictionary{String, List}"/> containing the user preferences
         /// for the current user. If the current user is anonymous or unknown an empty dictionary will be returned.</returns>
+        [Obsolete( "Use the new PersonPreference methods instead." )]
+        [RockObsolete( "1.16" )]
         public Dictionary<string, string> SessionUserPreferences()
         {
             string sessionKey = string.Format( "{0}_{1}",
@@ -4362,8 +4384,6 @@ Sys.Application.add_load(function () {
 
             return userPreferences;
         }
-
-        #endregion
 
         #endregion
 
