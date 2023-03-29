@@ -4761,7 +4761,8 @@ namespace RockWeb.Blocks.Connection
             // If the opportunity is not yet set by the request or opportunity id params, then set it from preference
             if ( !ConnectionOpportunityId.HasValue )
             {
-                var userPreferenceOpportunityId = GetBlockUserPreference( UserPreferenceKey.ConnectionOpportunityId ).AsIntegerOrNull();
+                var preferences = GetBlockPersonPreferences();
+                var userPreferenceOpportunityId = preferences.GetValue( UserPreferenceKey.ConnectionOpportunityId ).AsIntegerOrNull();
 
                 if ( userPreferenceOpportunityId.HasValue && availableOpportunityIds.Contains( userPreferenceOpportunityId.Value ) )
                 {
@@ -4803,14 +4804,14 @@ namespace RockWeb.Blocks.Connection
         private string LoadSettingByConnectionType( string subKey )
         {
             var key = GetKeyForSettingByConnectionType( subKey );
+            var preferences = GetBlockPersonPreferences();
 
             if ( key.IsNullOrWhiteSpace() )
             {
                 return string.Empty;
             }
 
-            var value = GetBlockUserPreference( key );
-            return value;
+            return preferences.GetValue( key );
         }
 
         /// <summary>
@@ -4821,13 +4822,15 @@ namespace RockWeb.Blocks.Connection
         private void SaveSettingByConnectionType( string subKey, string value )
         {
             var key = GetKeyForSettingByConnectionType( subKey );
+            var preferences = GetBlockPersonPreferences();
 
             if ( key.IsNullOrWhiteSpace() )
             {
                 return;
             }
 
-            SetBlockUserPreference( key, value );
+            preferences.SetValue( key, value );
+            preferences.Save();
         }
 
         /// <summary>

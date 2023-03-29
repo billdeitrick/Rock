@@ -456,17 +456,17 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
         protected void rFilter_ApplyFilterClick( object sender, EventArgs e )
         {
-            rFilter.SaveUserPreference( "LastActivityDateRange", "Last Activity Date Range", sdrpLastActivityDateRange.DelimitedValues );
+            rFilter.SetFilterPreference( "LastActivityDateRange", "Last Activity Date Range", sdrpLastActivityDateRange.DelimitedValues );
             int? personId = ppRequester.PersonId;
-            rFilter.SaveUserPreference( "Requester", "Requester", personId.HasValue ? personId.Value.ToString() : string.Empty );
+            rFilter.SetFilterPreference( "Requester", "Requester", personId.HasValue ? personId.Value.ToString() : string.Empty );
 
             personId = ppConnector.PersonId;
-            rFilter.SaveUserPreference( "Connector", "Connector", personId.HasValue ? personId.Value.ToString() : string.Empty );
+            rFilter.SetFilterPreference( "Connector", "Connector", personId.HasValue ? personId.Value.ToString() : string.Empty );
 
-            rFilter.SaveUserPreference( "Campus", "Campus", cblCampusGridFilter.SelectedValues.AsDelimited( ";" ) );
-            rFilter.SaveUserPreference( "State", "State", cblState.SelectedValues.AsDelimited( ";" ) );
-            rFilter.SaveUserPreference( MakeKeyUniqueToOpportunity( "Status" ), "Status", cblStatus.SelectedValues.AsDelimited( ";" ) );
-            rFilter.SaveUserPreference( MakeKeyUniqueToOpportunity( "LastActivity" ), "Last Activity", cblLastActivity.SelectedValues.AsDelimited( ";" ) );
+            rFilter.SetFilterPreference( "Campus", "Campus", cblCampusGridFilter.SelectedValues.AsDelimited( ";" ) );
+            rFilter.SetFilterPreference( "State", "State", cblState.SelectedValues.AsDelimited( ";" ) );
+            rFilter.SetFilterPreference( MakeKeyUniqueToOpportunity( "Status" ), "Status", cblStatus.SelectedValues.AsDelimited( ";" ) );
+            rFilter.SetFilterPreference( MakeKeyUniqueToOpportunity( "LastActivity" ), "Last Activity", cblLastActivity.SelectedValues.AsDelimited( ";" ) );
 
             BindGrid();
         }
@@ -962,9 +962,9 @@ namespace RockWeb.Blocks.Connection
         {
             using ( var rockContext = new RockContext() )
             {
-                sdrpLastActivityDateRange.DelimitedValues = rFilter.GetUserPreference( "LastActivityDateRange" );
+                sdrpLastActivityDateRange.DelimitedValues = rFilter.GetFilterPreference( "LastActivityDateRange" );
                 var personService = new PersonService( rockContext );
-                int? personId = rFilter.GetUserPreference( "Requester" ).AsIntegerOrNull();
+                int? personId = rFilter.GetFilterPreference( "Requester" ).AsIntegerOrNull();
                 if ( personId.HasValue )
                 {
                     ppRequester.SetValue( personService.Get( personId.Value ) );
@@ -982,27 +982,27 @@ namespace RockWeb.Blocks.Connection
                 else
                 {
                     ppConnector.Visible = true;
-                    personId = rFilter.GetUserPreference( "Connector" ).AsIntegerOrNull();
+                    personId = rFilter.GetFilterPreference( "Connector" ).AsIntegerOrNull();
                     if ( personId.HasValue )
                     {
                         ppConnector.SetValue( personService.Get( personId.Value ) );
                     }
 
                     cblState.Visible = true;
-                    cblState.SetValues( rFilter.GetUserPreference( "State" ).SplitDelimitedValues().AsIntegerList() );
+                    cblState.SetValues( rFilter.GetFilterPreference( "State" ).SplitDelimitedValues().AsIntegerList() );
                 }
 
                 cblCampusGridFilter.Visible = !cpCampusFilterForPage.SelectedCampusId.HasValue;
                 cblCampusGridFilter.DataSource = CampusCache.All();
                 cblCampusGridFilter.DataBind();
-                cblCampusGridFilter.SetValues( rFilter.GetUserPreference( "Campus" ).SplitDelimitedValues().AsIntegerList() );
+                cblCampusGridFilter.SetValues( rFilter.GetFilterPreference( "Campus" ).SplitDelimitedValues().AsIntegerList() );
 
                 cblStatus.Items.Clear();
                 if ( SelectedOpportunityId.HasValue )
                 {
                     cblStatus.DataSource = new ConnectionOpportunityService( rockContext ).Get( SelectedOpportunityId.Value ).ConnectionType.ConnectionStatuses.OrderBy( a => a.Name ).ToList();
                     cblStatus.DataBind();
-                    cblStatus.SetValues( rFilter.GetUserPreference( MakeKeyUniqueToOpportunity( "Status" ) ).SplitDelimitedValues().AsIntegerList() );
+                    cblStatus.SetValues( rFilter.GetFilterPreference( MakeKeyUniqueToOpportunity( "Status" ) ).SplitDelimitedValues().AsIntegerList() );
                 }
 
                 cblLastActivity.Items.Clear();
@@ -1010,7 +1010,7 @@ namespace RockWeb.Blocks.Connection
                 {
                     cblLastActivity.DataSource = new ConnectionOpportunityService( rockContext ).Get( SelectedOpportunityId.Value ).ConnectionType.ConnectionActivityTypes.OrderBy( a => a.Name ).ToList();
                     cblLastActivity.DataBind();
-                    cblLastActivity.SetValues( rFilter.GetUserPreference( MakeKeyUniqueToOpportunity( "LastActivity" ) ).SplitDelimitedValues().AsIntegerList() );
+                    cblLastActivity.SetValues( rFilter.GetFilterPreference( MakeKeyUniqueToOpportunity( "LastActivity" ) ).SplitDelimitedValues().AsIntegerList() );
                 }
             }
         }
