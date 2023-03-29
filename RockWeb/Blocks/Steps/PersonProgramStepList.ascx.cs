@@ -645,8 +645,8 @@ namespace RockWeb.Blocks.Steps
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfGridFilter_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfGridFilter.SaveUserPreference( FilterKey.StepTypeName, tbStepTypeName.Text );
-            gfGridFilter.SaveUserPreference( FilterKey.StepStatusName, tbStepStatus.Text );
+            gfGridFilter.SetFilterPreference( FilterKey.StepTypeName, tbStepTypeName.Text );
+            gfGridFilter.SetFilterPreference( FilterKey.StepStatusName, tbStepStatus.Text );
             RenderGridView();
         }
 
@@ -657,7 +657,7 @@ namespace RockWeb.Blocks.Steps
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void gfGridFilter_ClearFilterClick( object sender, EventArgs e )
         {
-            gfGridFilter.DeleteUserPreferences();
+            gfGridFilter.DeleteFilterPreferences();
             BindFilter();
         }
 
@@ -666,10 +666,10 @@ namespace RockWeb.Blocks.Steps
         /// </summary>
         private void BindFilter()
         {
-            var stepTypeNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepTypeName );
+            var stepTypeNameFilter = gfGridFilter.GetFilterPreference( FilterKey.StepTypeName );
             tbStepTypeName.Text = !string.IsNullOrWhiteSpace( stepTypeNameFilter ) ? stepTypeNameFilter : string.Empty;
 
-            var stepStatusNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepStatusName );
+            var stepStatusNameFilter = gfGridFilter.GetFilterPreference( FilterKey.StepStatusName );
             tbStepStatus.Text = !string.IsNullOrWhiteSpace( stepStatusNameFilter ) ? stepStatusNameFilter : string.Empty;
         }
 
@@ -1209,8 +1209,8 @@ namespace RockWeb.Blocks.Steps
             var stepTypes = GetStepTypes();
 
             // Get filter values
-            var stepTypeNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepTypeName );
-            var stepStatusNameFilter = gfGridFilter.GetUserPreference( FilterKey.StepStatusName );
+            var stepTypeNameFilter = gfGridFilter.GetFilterPreference( FilterKey.StepTypeName );
+            var stepStatusNameFilter = gfGridFilter.GetFilterPreference( FilterKey.StepStatusName );
 
             // Apply step type filters
             if ( !string.IsNullOrEmpty( stepTypeNameFilter ) )
