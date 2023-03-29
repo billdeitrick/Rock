@@ -18,8 +18,7 @@
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
-using Rock.ViewModels.Blocks;
-using Rock.ViewModels.Blocks.Group.GroupRegistration;
+using Rock.ViewModels.Blocks.Groups.GroupRegistration;
 using Rock.ViewModels.Controls;
 using Rock.Web;
 using Rock.Web.Cache;
@@ -120,7 +119,10 @@ namespace Rock.Blocks.Groups
         EditorTheme = CodeEditorTheme.Rock,
         EditorHeight = 400,
         IsRequired = true,
-        DefaultValue = @"",
+        DefaultValue = @"
+<div class='alert alert-info'>
+    Please complete the form below to register for {{ Group.Name }}. 
+</div>",
         Category = "",
         Order = 7 )]
 
@@ -139,7 +141,10 @@ namespace Rock.Blocks.Groups
         EditorTheme = CodeEditorTheme.Rock,
         EditorHeight = 400,
         IsRequired = true,
-        DefaultValue = @"",
+        DefaultValue = @"
+<div class='alert alert-success'>
+    You have been registered for {{ Group.Name }}. You should be hearing from the leader soon.
+</div>",
         Category = "",
         Order = 9 )]
 
@@ -156,7 +161,7 @@ namespace Rock.Blocks.Groups
         Key = AttributeKey.RegisterButtonAltText,
         Description = "Alternate text to use for the Register button (default is 'Register').",
         IsRequired = false,
-        DefaultValue = "",
+        DefaultValue = "Register",
         Category = "",
         Order = 11 )]
 
@@ -183,7 +188,7 @@ namespace Rock.Blocks.Groups
 
     [Rock.SystemGuid.EntityTypeGuid( "bbce9c47-b14d-4122-86a0-08441dee2759" )]
     [Rock.SystemGuid.BlockTypeGuid( "5e000376-ff90-4962-a053-ec1473da5c45" )]
-    public class GroupRegistration : RockObsidianDetailBlockType
+    public class GroupRegistration : RockObsidianBlockType
     {
         #region Keys
 
@@ -230,7 +235,7 @@ namespace Rock.Blocks.Groups
         {
             using ( var rockContext = new RockContext() )
             {
-                var box = new DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag>();
+                var box = new GroupRegistrationBlockBox();
 
                 SetBoxInitialEntityState( box, rockContext );
                 GetSettings( rockContext, box );
@@ -240,40 +245,13 @@ namespace Rock.Blocks.Groups
         }
 
         /// <summary>
-        /// Validates the Group for any final information that might not be
-        /// valid after storing all the data from the client.
-        /// </summary>
-        /// <param name="group">The Group to be validated.</param>
-        /// <param name="rockContext">The rock context.</param>
-        /// <param name="errorMessage">On <c>false</c> return, contains the error message.</param>
-        /// <returns><c>true</c> if the Group is valid, <c>false</c> otherwise.</returns>
-        private bool ValidateGroup( Group group, RockContext rockContext, out string errorMessage )
-        {
-            errorMessage = null;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Gets the initial entity from page parameters or creates a new entity
-        /// if page parameters requested creation.
-        /// </summary>
-        /// <param name="rockContext">The rock context.</param>
-        /// <returns>The <see cref="Snippet"/> to be viewed or edited on the page.</returns>
-        private Group GetInitialEntity( RockContext rockContext )
-        {
-            return GetInitialEntity<Group, GroupService>( rockContext, PageParameterKey.GroupId );
-        }
-
-        /// <summary>
         /// Sets the initial entity state of the box. Populates the Entity or
         /// ErrorMessage properties depending on the entity and permissions.
         /// </summary>
         /// <param name="box">The box to be populated.</param>
         /// <param name="rockContext">The rock context.</param>
-        private void SetBoxInitialEntityState( DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag> box, RockContext rockContext )
+        private void SetBoxInitialEntityState( GroupRegistrationBlockBox box, RockContext rockContext )
         {
-            box.Options = new GroupRegistrationOptionsBag();
             box.Entity = new GroupRegistrationBag();
 
             Guid? groupGuid = GetAttributeValue( AttributeKey.Group ).AsGuidOrNull();
@@ -353,7 +331,7 @@ namespace Rock.Blocks.Groups
             return _group;
         }
 
-        private void GetSettings( RockContext rockContext, DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag> box )
+        private void GetSettings( RockContext rockContext, GroupRegistrationBlockBox box )
         {
             rockContext = rockContext ?? new RockContext();
             var group = GetGroup( rockContext );
@@ -366,18 +344,19 @@ namespace Rock.Blocks.Groups
                 mergeFields.Add( "Group", group );
 
                 string template = GetAttributeValue( AttributeKey.LavaTemplate );
-                box.Options.LavaOverview = template.ResolveMergeFields( mergeFields );
+                box.LavaOverview = template.ResolveMergeFields( mergeFields );
 
-                box.Options.IsEmailRequired = GetAttributeValue( AttributeKey.RequireEmail ).AsBoolean();
-                box.Options.IsMobilePhoneRequired = GetAttributeValue( AttributeKey.RequireMobilePhone ).AsBoolean();
-                box.Options.Mode = GetAttributeValue(AttributeKey.Mode);
-                box.Options.AutoFill = GetAttributeValue(AttributeKey.AutoFillForm).AsBoolean();
+                box.IsEmailRequired = GetAttributeValue( AttributeKey.RequireEmail ).AsBoolean();
+                box.IsMobilePhoneRequired = GetAttributeValue( AttributeKey.RequireMobilePhone ).AsBoolean();
+                box.Mode = GetAttributeValue(AttributeKey.Mode);
+                box.AutoFill = GetAttributeValue(AttributeKey.AutoFillForm).AsBoolean();
+                box.RegisterButtonAltText = GetAttributeValue(AttributeKey.RegisterButtonAltText);
 
                 string phoneLabel = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE ).Value;
                 phoneLabel = phoneLabel.Trim().EndsWith( "Phone" ) ? phoneLabel : phoneLabel + " Phone";
-                box.Options.PhoneLabel = phoneLabel;
+                box.PhoneLabel = phoneLabel;
 
-                if ( currentPerson != null && box.Options.AutoFill )
+                if ( currentPerson != null && box.AutoFill )
                 {
                     var personService = new PersonService( rockContext );
                     Person person = personService
@@ -388,7 +367,7 @@ namespace Rock.Blocks.Groups
                     box.Entity.LastName = currentPerson.LastName;
                     box.Entity.Email = currentPerson.Email;
 
-                    if ( box.Options.Mode != "Simple" )
+                    if ( box.Mode != "Simple" )
                     {
                         Guid homePhoneType = Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid();
                         var homePhone = person.PhoneNumbers
@@ -421,7 +400,7 @@ namespace Rock.Blocks.Groups
                             };
                         }
 
-                        if ( box.Options.Mode == "FullSpouse" )
+                        if ( box.Mode == "FullSpouse" )
                         {
                             var spouse = person.GetSpouse( rockContext );
                             if ( spouse != null )
@@ -465,10 +444,10 @@ namespace Rock.Blocks.Groups
 
                     // Between the group's GroupCapacity and DefaultGroupRole.MaxCount, grab the one we're closest to hitting, and how close we are to
                     // hitting it.
-                    box.Options.OpenSpots = Math.Min( openGroupSpots, openRoleSpots );
+                    box.OpenSpots = Math.Min( openGroupSpots, openRoleSpots );
                 }
 
-                if ( box.Options.OpenSpots <= 0 )
+                if ( box.OpenSpots <= 0 )
                 {
                     box.ErrorMessage = "This group is at or exceeds capacity.";
                 }
@@ -631,7 +610,7 @@ namespace Rock.Blocks.Groups
         /// <param name="box">The box that contains all the information required to save.</param>
         /// <returns>A new entity bag to be used when returning to view mode, or the URL to redirect to after creating a new entity.</returns>
         [BlockAction]
-        public BlockActionResult Save( DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag> box )
+        public BlockActionResult Save( GroupRegistrationBag box )
         {
             using ( var rockContext = new RockContext() )
             {
@@ -649,8 +628,8 @@ namespace Rock.Blocks.Groups
                 var isFullWithSpouse = GetAttributeValue( AttributeKey.Mode ) == "FullSpouse";
 
                 var isCurrentPerson = RequestContext.CurrentPerson != null && RequestContext.CurrentPerson.NickName.IsNotNullOrWhiteSpace() && RequestContext.CurrentPerson.LastName.IsNotNullOrWhiteSpace() &&
-                        box.Entity.FirstName.Trim().Equals( RequestContext.CurrentPerson.NickName.Trim(), StringComparison.OrdinalIgnoreCase ) &&
-                        box.Entity.LastName.Trim().Equals( RequestContext.CurrentPerson.LastName.Trim(), StringComparison.OrdinalIgnoreCase );
+                        box.FirstName.Trim().Equals( RequestContext.CurrentPerson.NickName.Trim(), StringComparison.OrdinalIgnoreCase ) &&
+                        box.LastName.Trim().Equals( RequestContext.CurrentPerson.LastName.Trim(), StringComparison.OrdinalIgnoreCase );
                 // Only use current person if the name entered matches the current person's name and autofill mode is true
                 if ( GetAttributeValue( AttributeKey.AutoFillForm ).AsBoolean() && isCurrentPerson )
                 {
@@ -660,7 +639,7 @@ namespace Rock.Blocks.Groups
                 // Try to find person by name/email 
                 if ( person == null )
                 {
-                    var personQuery = new PersonService.PersonMatchQuery( box.Entity.FirstName.Trim(), box.Entity.LastName.Trim(), box.Entity.Email.Trim(), box.Entity.MobilePhone.Trim() );
+                    var personQuery = new PersonService.PersonMatchQuery( box.FirstName.Trim(), box.LastName.Trim(), box.Email.Trim(), box.MobilePhone.Trim() );
                     person = personService.FindPerson( personQuery, true );
                 }
 
@@ -669,9 +648,9 @@ namespace Rock.Blocks.Groups
                 {
                     // If so, create the person and family record for the new person
                     person = new Person();
-                    person.FirstName = box.Entity.FirstName.Trim();
-                    person.LastName = box.Entity.LastName.Trim();
-                    person.Email = box.Entity.Email.Trim();
+                    person.FirstName = box.FirstName.Trim();
+                    person.LastName = box.LastName.Trim();
+                    person.Email = box.Email.Trim();
                     person.IsEmailActive = true;
                     person.EmailPreference = EmailPreference.EmailAllowed;
                     person.RecordTypeValueId = DefinedValueCache.Get( Rock.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON.AsGuid() ).Id;
@@ -684,7 +663,7 @@ namespace Rock.Blocks.Groups
                 else
                 {
                     // updating current existing person
-                    person.Email = box.Entity.Email;
+                    person.Email = box.Email;
 
                     // Get the current person's families
                     var families = person.GetFamilies( rockContext );
@@ -717,18 +696,18 @@ namespace Rock.Blocks.Groups
                 // If using a 'Full' view, save the phone numbers and address
                 if ( !isSimple )
                 {
-                    if ( !string.IsNullOrWhiteSpace( box.Entity.HomePhone ) )
+                    if ( !string.IsNullOrWhiteSpace( box.HomePhone ) )
                     {
-                        SetPhoneNumber( rockContext, person, box.Entity.HomePhone, false, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
+                        SetPhoneNumber( rockContext, person, box.HomePhone, false, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
                     }
-                    if ( !string.IsNullOrWhiteSpace( box.Entity.MobilePhone ) )
+                    if ( !string.IsNullOrWhiteSpace( box.MobilePhone ) )
                     {
-                        SetPhoneNumber( rockContext, person, box.Entity.MobilePhone, box.Entity.EnableSms, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
+                        SetPhoneNumber( rockContext, person, box.MobilePhone, box.EnableSms, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
                     }
 
-                    if ( box.Entity.Address != null )
+                    if ( box.Address != null )
                     {
-                        var location = new LocationService( rockContext ).Get( box.Entity.Address.Street1, box.Entity.Address.Street2, box.Entity.Address.City, box.Entity.Address.State, box.Entity.Address.PostalCode, box.Entity.Address.Country );
+                        var location = new LocationService( rockContext ).Get( box.Address.Street1, box.Address.Street2, box.Address.City, box.Address.State, box.Address.PostalCode, box.Address.Country );
                         if ( location != null )
                         {
                             if ( homeLocation == null )
@@ -745,7 +724,7 @@ namespace Rock.Blocks.Groups
                     }
 
                     // Check for the spouse
-                    if ( isFullWithSpouse && box.Entity.SpouseFirstName.IsNotNullOrWhiteSpace() && box.Entity.SpouseLastName.IsNotNullOrWhiteSpace() )
+                    if ( isFullWithSpouse && box.SpouseFirstName.IsNotNullOrWhiteSpace() && box.SpouseLastName.IsNotNullOrWhiteSpace() )
                     {
                         spouse = person.GetSpouse( rockContext );
                         bool isSpouseMatch = true;
@@ -754,14 +733,14 @@ namespace Rock.Blocks.Groups
                         var adultRole = familyType?.Roles?.FirstOrDefault( r => r.Guid.Equals( Rock.SystemGuid.GroupRole.GROUPROLE_FAMILY_MEMBER_ADULT.AsGuid() ) );
 
                         if ( spouse == null ||
-                            !box.Entity.SpouseFirstName.Trim().Equals( spouse.FirstName.Trim(), StringComparison.OrdinalIgnoreCase ) ||
-                            !box.Entity.SpouseLastName.Trim().Equals( spouse.LastName.Trim(), StringComparison.OrdinalIgnoreCase ) )
+                            !box.SpouseFirstName.Trim().Equals( spouse.FirstName.Trim(), StringComparison.OrdinalIgnoreCase ) ||
+                            !box.SpouseLastName.Trim().Equals( spouse.LastName.Trim(), StringComparison.OrdinalIgnoreCase ) )
                         {
                             spouse = new Person();
                             isSpouseMatch = false;
 
-                            spouse.FirstName = box.Entity.SpouseFirstName.FixCase();
-                            spouse.LastName = box.Entity.SpouseLastName.FixCase();
+                            spouse.FirstName = box.SpouseFirstName.FixCase();
+                            spouse.LastName = box.SpouseLastName.FixCase();
 
                             spouse.ConnectionStatusValueId = connectionStatus.Id;
                             spouse.RecordStatusValueId = recordStatus.Id;
@@ -780,20 +759,22 @@ namespace Rock.Blocks.Groups
                             person.MaritalStatusValueId = married.Id;
                         }
 
-                        spouse.Email = box.Entity.Email;
+                        spouse.Email = box.Email;
 
-                        if ( !isSpouseMatch || !string.IsNullOrWhiteSpace( box.Entity.HomePhone ) )
+                        if ( !isSpouseMatch || !string.IsNullOrWhiteSpace( box.HomePhone ) )
                         {
-                            SetPhoneNumber( rockContext, spouse, box.Entity.HomePhone, false, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
+                            SetPhoneNumber( rockContext, spouse, box.HomePhone, false, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
                         }
 
-                        if ( !isSpouseMatch || !string.IsNullOrWhiteSpace( box.Entity.SpouseMobilePhone ) )
+                        if ( !isSpouseMatch || !string.IsNullOrWhiteSpace( box.SpouseMobilePhone ) )
                         {
-                            SetPhoneNumber( rockContext, spouse, box.Entity.SpouseMobilePhone, box.Entity.EnableSpouseSms, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
+                        
+                            SetPhoneNumber( rockContext, spouse, box.SpouseMobilePhone, box.EnableSpouseSms, Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
                         }
                     }
                 }
 
+                string errorMessage = string.Empty;
                 // Save the registrations ( and launch workflows )
                 var newGroupMembers = new List<GroupMember>();
                 // Save the person/spouse and change history 
@@ -809,11 +790,9 @@ namespace Rock.Blocks.Groups
                         workflowType = WorkflowTypeCache.Get( workflowTypeGuid.Value );
                     }
 
-                    var errorMessage = string.Empty;
                     bool isAddPersonValid = AddPersonToGroup( rockContext, person, workflowType, newGroupMembers, out errorMessage );
                     if ( !isAddPersonValid )
                     {
-                        box.ErrorMessage = errorMessage;
                         return false;
                     }
 
@@ -822,7 +801,6 @@ namespace Rock.Blocks.Groups
                         isAddPersonValid = AddPersonToGroup( rockContext, spouse, workflowType, newGroupMembers, out errorMessage );
                         if ( !isAddPersonValid )
                         {
-                            box.ErrorMessage = errorMessage;
                             return false;
                         }
                     }
@@ -838,7 +816,7 @@ namespace Rock.Blocks.Groups
                     mergeFields.Add( "GroupMembers", newGroupMembers );
 
                     string template = GetAttributeValue( "ResultLavaTemplate" );
-                    box.Entity.ResultLavaTemplate = template.ResolveMergeFields( mergeFields );
+                    var resultLavaTemplate = template.ResolveMergeFields( mergeFields );
                     var linkedPageUrl = this.GetLinkedPageUrl( AttributeKey.ResultPage, new Dictionary<string, string>
                     {
                         [PageParameterKey.GroupId] = family.IdKey
@@ -850,11 +828,11 @@ namespace Rock.Blocks.Groups
                         return ActionContent( System.Net.HttpStatusCode.Created, linkedPageUrl );
                     }
 
-                    return ActionOk( box.Entity );
+                    return ActionOk( resultLavaTemplate );
                 }
                 else
                 {
-                    return ActionBadRequest( box.ErrorMessage );
+                    return ActionBadRequest( errorMessage );
                 }
             }
         }

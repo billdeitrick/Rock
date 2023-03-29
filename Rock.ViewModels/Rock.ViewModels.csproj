@@ -48,7 +48,7 @@
     <Compile Include="Blocks\Core\ScheduleDetail\ScheduleDetailOptionsBag.cs" />
     <Compile Include="Blocks\Crm\PhotoOptOut\PhotoOptOutBag.cs" />
     <Compile Include="Blocks\Groups\GroupRegistration\GroupRegistrationBag.cs" />
-    <Compile Include="Blocks\Groups\GroupRegistration\GroupRegistrationOptionsBag.cs" />
+    <Compile Include="Blocks\Groups\GroupRegistration\GroupRegistrationBlockBox.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryAccountInfoBag.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryCompletedStepBag.cs" />
     <Compile Include="Blocks\Security\AccountEntry\AccountEntryConfirmationSentStepBag.cs" />

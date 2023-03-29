@@ -1,169 +1,114 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Alert v-if="blockError" alertType="warning">{{ blockError }}</Alert>
+    <Panel :isDrawerOpen="false" :title="panelName" :hasCollapse="false" :hasFullscreen="true">
 
-    <Alert v-if="errorMessage" alertType="danger">{{ errorMessage }}</Alert>
+        <Alert v-if="blockError" alertType="warning">{{ blockError }}</Alert>
 
-    <DetailBlock v-if="!blockError"
-                 v-model:mode="panelMode"
-                 :name="panelName"
-                 :labels="blockLabels"
-                 :entityTypeGuid="entityTypeGuid"
-                 entityTypeName="Group"
-                 :isAuditHidden="false"
-                 :isBadgesVisible="true"
-                 :isDeleteVisible="false"
-                 :isEditVisible="isEditable"
-                 :isFollowVisible="true"
-                 :isSecurityHidden="false"
-                 @save="onSave">
+        <Alert v-if="errorMessage" alertType="danger">{{ errorMessage }}</Alert>
 
-        <template #view>
-            <ViewPanel v-model="groupRegistrationViewBag" :options="options" />
+        <div v-if="!blockError">
+            <div v-if="resultLavaTemplate" v-html="resultLavaTemplate">
+
+            </div>
+
+            <EditPanel v-else v-model="groupRegistrationBag" :options="options" />
+
+        </div>
+
+        <template #footerActions v-if="!resultLavaTemplate && !blockError">
+            <RockButton :btnSize="BtnSize.Default" :btnType="BtnType.Primary" @click="onSave">
+                {{ buttonText }}
+            </RockButton>
         </template>
 
-        <template #edit>
-            <EditPanel v-model="groupRegistrationBag" :options="options" />
-        </template>
-    </DetailBlock>
+    </Panel>
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from "vue";
-    import Alert from "@Obsidian/Controls/alert.obs";
-    import { EntityType } from "@Obsidian/SystemGuids/entityType";
-    import DetailBlock from "@Obsidian/Templates/detailBlock";
-    import { DetailPanelMode } from "@Obsidian/Enums/Controls/detailPanelMode";
-    import { PanelAction } from "@Obsidian/Types/Controls/panelAction";
-    import EditPanel from "./GroupRegistration/editPanel.partial.obs";
-    import ViewPanel from "./GroupRegistration/viewPanel.partial.obs";
-    import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
-    import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
-    import { GroupRegistrationBag } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationBag";
-    import { GroupRegistrationOptionsBag } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationOptionsBag";
+import { computed, ref } from "vue";
+import Alert from "@Obsidian/Controls/alert.obs";
+import EditPanel from "./GroupRegistration/editPanel.partial.obs";
+import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
+import { GroupRegistrationBlockBox } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationBlockBox";
+import { GroupRegistrationBag } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationBag";
+import RockButton from "@Obsidian/Controls/rockButton";
+import { BtnType } from "@Obsidian/Enums/Controls/btnType";
+import { BtnSize } from "@Obsidian/Enums/Controls/btnSize";
+import Panel from "@Obsidian/Controls/panel";
+import { makeUrlRedirectSafe } from "@Obsidian/Utility/url";
 
-    const config = useConfigurationValues<DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag>>();
-    const invokeBlockAction = useInvokeBlockAction();
+const config = useConfigurationValues<GroupRegistrationBlockBox>();
+const invokeBlockAction = useInvokeBlockAction();
 
-    // #region Values
+// #region Values
 
-    const blockError = ref("");
-    const errorMessage = ref("");
+const blockError = ref("");
+const errorMessage = ref("");
 
-    const groupRegistrationViewBag = ref(config.entity);
-    const groupRegistrationBag = ref<GroupRegistrationBag>({} as GroupRegistrationBag);
+const groupRegistrationBag = ref<GroupRegistrationBag>({} as GroupRegistrationBag);
+const resultLavaTemplate = ref<string>("");
+const buttonText = ref(config.registerButtonAltText ?? "Register");
 
-    const entityTypeGuid = EntityType.Group;
+// #endregion
 
-    const panelMode = ref<DetailPanelMode>(DetailPanelMode.View);
+// #region Computed Values
 
-    // The properties that are being edited in the UI. This is used to
-    // inform the server which incoming values have valid data in them.
-    const validProperties = [
-        "firstName",
-        "lastName",
-        "email",
-        "homePhone",
-        "mobilePhone",
-        "enableSms",
-        "address",
-        "spouseFirstName",
-        "spouseLastName",
-        "spouseMobilePhone",
-        "enableSpouseSms",
-        "spouseEmail"
-    ];
+/**
+ * The entity name to display in the block panel.
+ */
+const panelName = computed((): string => {
+    return "Group Registration";
+});
 
-    // #endregion
+const options = computed((): GroupRegistrationBlockBox => {
+    return config ?? { autoFill: true, isEmailRequired: true, isMobilePhoneRequired: false, openSpots: 2 };
+});
 
-    // #region Computed Values
+// #endregion
 
-    /**
-     * The entity name to display in the block panel.
-     */
-    const panelName = computed((): string => {
-        return "Group Registration";
+// #region Functions
+
+// #endregion
+
+// #region Event Handlers
+
+/**
+ * Event handler for the panel's Save event. Send the data to the server
+ * to be saved and then leave edit mode or redirect to target page.
+ *
+ * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
+ */
+async function onSave(): Promise<void> {
+    errorMessage.value = "";
+
+    const result = await invokeBlockAction<string>("Save", {
+        box: groupRegistrationBag.value
     });
 
-    /**
-     * The identifier key value for this entity.
-     */
+    if (result.isSuccess && result.data) {
 
-    /**
-     * Additional labels to display in the block panel.
-     */
-    const blockLabels = computed((): PanelAction[] | undefined => {
-        const labels: PanelAction[] = [];
-
-        if (panelMode.value !== DetailPanelMode.View) {
-            return undefined;
+        if (result.statusCode === 200 && typeof result.data === "string") {
+            resultLavaTemplate.value = result.data;
         }
-
-        return labels;
-    });
-
-    const isEditable = computed((): boolean => {
-        return config.isEditable === true;
-    });
-
-    const options = computed((): GroupRegistrationOptionsBag => {
-        return config.options ?? { autoFill: true, isEmailRequired: true, isMobilePhoneRequired: false, openSpots: 2 };
-    });
-
-    // #endregion
-
-    // #region Functions
-
-    // #endregion
-
-    // #region Event Handlers
-
-    /**
-     * Event handler for the panel's Save event. Send the data to the server
-     * to be saved and then leave edit mode or redirect to target page.
-     *
-     * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
-     */
-    async function onSave(): Promise<boolean | string> {
-        errorMessage.value = "";
-
-        const data: DetailBlockBox<GroupRegistrationBag, GroupRegistrationOptionsBag> = {
-            entity: groupRegistrationBag.value,
-            isEditable: true,
-            validProperties: validProperties
-        };
-
-        const result = await invokeBlockAction<GroupRegistrationBag>("Save", {
-            box: data
-        });
-
-        if (result.isSuccess && result.data) {
-            if (result.statusCode === 200 && typeof result.data === "object") {
-                groupRegistrationViewBag.value = result.data;
-                config.isEditable = false;
-                return true;
-            }
-            else if (result.statusCode === 201 && typeof result.data === "string") {
-                return result.data;
-            }
+        else if (result.statusCode === 201 && typeof result.data === "string") {
+            window.location.href = makeUrlRedirectSafe(result.data);
         }
-
-        errorMessage.value = result.errorMessage ?? "Unknown error while trying to save group.";
-
-        return false;
+    } else {
+        errorMessage.value = result.data ?? "Unknown error while trying to save group.";
     }
+}
 
-    // #endregion
+// #endregion
 
-    // Handle any initial error conditions or the need to go into edit mode.
-    if (config.errorMessage) {
-        blockError.value = config.errorMessage;
-    }
-    else if (!config.entity) {
-        blockError.value = "The specified group could not be viewed.";
-    }
-    else {
-        groupRegistrationBag.value = config.entity;
-        panelMode.value = DetailPanelMode.Add;
-    }
+// Handle any initial error conditions or the need to go into edit mode.
+if (config.errorMessage) {
+    blockError.value = config.errorMessage;
+}
+else if (!config.entity) {
+    blockError.value = "The specified group could not be viewed.";
+}
+else {
+    groupRegistrationBag.value = config.entity;
+}
+
 </script>

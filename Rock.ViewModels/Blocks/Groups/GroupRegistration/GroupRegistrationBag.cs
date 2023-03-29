@@ -18,7 +18,7 @@
 using Rock.ViewModels.Controls;
 using Rock.ViewModels.Utility;
 
-namespace Rock.ViewModels.Blocks.Group.GroupRegistration
+namespace Rock.ViewModels.Blocks.Groups.GroupRegistration
 {
     public class GroupRegistrationBag
     {

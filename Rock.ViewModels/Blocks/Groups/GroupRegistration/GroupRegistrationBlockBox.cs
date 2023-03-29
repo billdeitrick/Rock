@@ -15,10 +15,18 @@
 // </copyright>
 //
 
-namespace Rock.ViewModels.Blocks.Group.GroupRegistration
+namespace Rock.ViewModels.Blocks.Groups.GroupRegistration
 {
-    public class GroupRegistrationOptionsBag
+    public class GroupRegistrationBlockBox : BlockBox
     {
+        /// <summary>
+        /// Gets or sets the entity.
+        /// </summary>
+        /// <value>
+        /// The entity.
+        /// </value>
+        public GroupRegistrationBag Entity { get; set; }
+
         /// <summary>
         /// Gets or sets the mode.
         /// </summary>
@@ -74,5 +82,10 @@ namespace Rock.ViewModels.Blocks.Group.GroupRegistration
         /// The open spots.
         /// </value>
         public int OpenSpots { get; set; }
+
+        /// <summary>
+        /// Gets or sets the register button alt text
+        /// </summary>
+        public string RegisterButtonAltText { get; set; }
     }
 }

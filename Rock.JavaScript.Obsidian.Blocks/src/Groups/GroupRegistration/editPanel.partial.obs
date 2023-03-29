@@ -90,7 +90,7 @@ import CheckBox from "@Obsidian/Controls/checkBox";
 import EmailBox from "@Obsidian/Controls/emailBox";
 import { updateRefValue } from "@Obsidian/Utility/component";
 import { GroupRegistrationBag } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationBag";
-import { GroupRegistrationOptionsBag } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationOptionsBag";
+import { GroupRegistrationBlockBox } from "@Obsidian/ViewModels/Blocks/Groups/GroupRegistration/groupRegistrationBlockBox";
 
 const props = defineProps({
     modelValue: {
@@ -99,7 +99,7 @@ const props = defineProps({
     },
 
     options: {
-        type: Object as PropType<GroupRegistrationOptionsBag>,
+        type: Object as PropType<GroupRegistrationBlockBox>,
         required: true
     }
 });
@@ -111,6 +111,9 @@ const emit = defineEmits<{
 
 // #region Values
 
+const firstName = ref(props.modelValue.firstName ?? "");
+const lastName = ref(props.modelValue.lastName ?? "");
+const email = ref(props.modelValue.email ?? "");
 const homePhone = ref(props.modelValue.homePhone ?? "");
 const mobilePhone = ref(props.modelValue.mobilePhone ?? "");
 const mobilePhoneLabel = ref(props.options.phoneLabel ?? "");
@@ -127,9 +130,6 @@ const lavaOverview = ref(props.options.lavaOverview ?? "");
 
 // #region Computed Values
 const spouseMobilePhoneLabel = computed((): string => `Spouse ${mobilePhoneLabel.value}`);
-const firstName = computed((): string => props.options.autoFill ? props.modelValue.firstName ?? "" : "");
-const lastName = computed((): string => props.options.autoFill ? props.modelValue.lastName ?? "" : "");
-const email = computed((): string => props.options.autoFill ? props.modelValue.email ?? "" : "");
 const isFullMode = computed((): boolean => props.options.mode === "Full");
 const isFullWithSpouse = computed((): boolean => props.options.mode === "FullSpouse");
 const isAtNearCapacity = computed((): boolean => props.options.openSpots === 1);
