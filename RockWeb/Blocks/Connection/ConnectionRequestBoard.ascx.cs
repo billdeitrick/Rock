@@ -22,6 +22,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
+using CSScriptLibrary;
+
 using Newtonsoft.Json;
 //using NuGet;
 using Rock;
@@ -392,7 +395,10 @@ namespace RockWeb.Blocks.Connection
                 if ( currentValue != value )
                 {
                     ViewState[ViewStateKey.ConnectionOpportunityId] = value;
-                    SetBlockUserPreference( UserPreferenceKey.ConnectionOpportunityId, value.ToStringSafe() );
+
+                    var preferences = GetBlockPersonPreferences();
+                    preferences.SetValue( UserPreferenceKey.ConnectionOpportunityId, value.ToStringSafe() );
+                    preferences.Save();
                 }
             }
         }
