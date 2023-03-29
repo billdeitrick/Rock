@@ -175,7 +175,7 @@ namespace Rock.Blocks.Prayer
         {
             errorMessage = null;
 
-            return true;
+            return prayerRequest.IsValid;
         }
 
         /// <summary>
