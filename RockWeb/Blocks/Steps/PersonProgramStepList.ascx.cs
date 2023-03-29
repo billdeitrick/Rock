@@ -177,7 +177,7 @@ namespace RockWeb.Blocks.Steps
             /// <summary>
             /// The is card view user preference key
             /// </summary>
-            public const string IsCardView = "PersonProgramStepList.IsCardView";
+            public const string IsCardView = "is-card-view";
         }
 
         #endregion Keys
@@ -221,7 +221,8 @@ namespace RockWeb.Blocks.Steps
             {
                 SetProgramDetailsOnBlock();
 
-                var isCardViewPref = GetUserPreference( PreferenceKey.IsCardView ).AsBooleanOrNull();
+                var preferences = GetBlockPersonPreferences();
+                var isCardViewPref = preferences.GetValue( PreferenceKey.IsCardView ).AsBooleanOrNull();
 
                 if ( isCardViewPref.HasValue )
                 {
@@ -310,7 +311,11 @@ namespace RockWeb.Blocks.Steps
         {
             hfIsCardView.Value = false.ToString();
             RenderViewMode();
-            SetUserPreference( PreferenceKey.IsCardView, hfIsCardView.Value, true );
+
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( PreferenceKey.IsCardView, hfIsCardView.Value );
+            preferences.Save();
         }
 
         /// <summary>
@@ -322,7 +327,11 @@ namespace RockWeb.Blocks.Steps
         {
             hfIsCardView.Value = true.ToString();
             RenderViewMode();
-            SetUserPreference( PreferenceKey.IsCardView, hfIsCardView.Value, true );
+
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( PreferenceKey.IsCardView, hfIsCardView.Value );
+            preferences.Save();
         }
 
         /// <summary>

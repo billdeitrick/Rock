@@ -182,10 +182,10 @@ namespace RockWeb.Blocks.Connection
 
         #region Fields
 
-        private const string TOGGLE_ACTIVE_SETTING = "MyConnectionOpportunities_ToggleShowActive";
-        private const string TOGGLE_SETTING = "MyConnectionOpportunities_Toggle";
-        private const string SELECTED_OPPORTUNITY_SETTING = "MyConnectionOpportunities_SelectedOpportunity";
-        private const string CAMPUS_SETTING = "MyConnectionOpportunities_SelectedCampus";
+        private const string TOGGLE_ACTIVE_SETTING = "show-active";
+        private const string TOGGLE_SETTING = "my-opportunities";
+        private const string SELECTED_OPPORTUNITY_SETTING = "selected-opportunity";
+        private const string CAMPUS_SETTING = "selected-campus";
         private const string LAST_ACTIVITY = "LastActivity";
         private DateTime _midnightToday = RockDateTime.Today.AddDays( 1 );
         #endregion
@@ -262,15 +262,17 @@ namespace RockWeb.Blocks.Connection
 
             if ( !Page.IsPostBack )
             {
-                tglMyOpportunities.Checked = GetUserPreference( TOGGLE_SETTING ).AsBoolean( true );
-                tglShowActive.Checked = GetUserPreference( TOGGLE_ACTIVE_SETTING ).AsBoolean( true );
-                SelectedOpportunityId = GetUserPreference( SELECTED_OPPORTUNITY_SETTING ).AsIntegerOrNull();
+                var preferences = GetBlockPersonPreferences();
+
+                tglMyOpportunities.Checked = preferences.GetValue( TOGGLE_SETTING ).AsBoolean( true );
+                tglShowActive.Checked = preferences.GetValue( TOGGLE_ACTIVE_SETTING ).AsBoolean( true );
+                SelectedOpportunityId = preferences.GetValue( SELECTED_OPPORTUNITY_SETTING ).AsIntegerOrNull();
 
                 // NOTE: Don't include Inactive Campuses for the "Campus Filter for Page"
                 cpCampusFilterForPage.Campuses = CampusCache.All( false );
                 cpCampusFilterForPage.Items[0].Text = "All";
 
-                cpCampusFilterForPage.SelectedCampusId = GetUserPreference( CAMPUS_SETTING ).AsIntegerOrNull();
+                cpCampusFilterForPage.SelectedCampusId = preferences.GetValue( CAMPUS_SETTING ).AsIntegerOrNull();
 
                 GetSummaryData();
 
@@ -311,7 +313,11 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void cpCampusPickerForPage_SelectedIndexChanged( object sender, EventArgs e )
         {
-            SetUserPreference( CAMPUS_SETTING, cpCampusFilterForPage.SelectedCampusId.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( CAMPUS_SETTING, cpCampusFilterForPage.SelectedCampusId.ToString() );
+            preferences.Save();
+
             GetSummaryData();
         }
 
@@ -326,7 +332,11 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void tglMyOpportunities_CheckedChanged( object sender, EventArgs e )
         {
-            SetUserPreference( TOGGLE_SETTING, tglMyOpportunities.Checked.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( TOGGLE_SETTING, tglMyOpportunities.Checked.ToString() );
+            preferences.Save();
+
             BindSummaryData();
         }
 
@@ -337,7 +347,11 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void tglShowActive_CheckedChanged( object sender, EventArgs e )
         {
-            SetUserPreference( TOGGLE_ACTIVE_SETTING, tglShowActive.Checked.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( TOGGLE_ACTIVE_SETTING, tglShowActive.Checked.ToString() );
+            preferences.Save();
+
             SummaryState = null;
             BindSummaryData();
         }
@@ -414,7 +428,10 @@ namespace RockWeb.Blocks.Connection
         protected void rptConnectionOpportunities_ItemCommand( object source, RepeaterCommandEventArgs e )
         {
             string selectedOpportunityValue = e.CommandArgument.ToString();
-            SetUserPreference( SELECTED_OPPORTUNITY_SETTING, selectedOpportunityValue );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( SELECTED_OPPORTUNITY_SETTING, selectedOpportunityValue );
+            preferences.Save();
 
             SelectedOpportunityId = selectedOpportunityValue.AsIntegerOrNull();
 

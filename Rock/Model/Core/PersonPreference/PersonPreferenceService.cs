@@ -90,8 +90,9 @@ namespace Rock.Model
                 type = type.BaseType;
             }
 
-            var prefix = type.Name.ToLower()
+            var prefix = type.Name
                 .SplitCase()
+                .ToLower()
                 .Trim()
                 .Replace( " ", "-" );
 

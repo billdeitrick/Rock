@@ -107,9 +107,9 @@ namespace RockWeb.Blocks.Cms
 
         #region Fields
 
-        private const string STATUS_FILTER_SETTING = "ContentChannelNavigation_StatusFilter";
-        private const string CATEGORY_FILTER_SETTING = "ContentChannelNavigation_CategoryFilter";
-        private const string SELECTED_CHANNEL_SETTING = "ContentChannelNavigation_SelectedChannelId";
+        private const string STATUS_FILTER_SETTING = "status-filter";
+        private const string CATEGORY_FILTER_SETTING = "category-filter";
+        private const string SELECTED_CHANNEL_SETTING = "selected-channel";
 
         #endregion
 
@@ -181,9 +181,11 @@ namespace RockWeb.Blocks.Cms
 
             if ( !Page.IsPostBack )
             {
+                var preferences = GetBlockPersonPreferences();
+
                 BindFilter();
 
-                tglStatus.Checked = GetUserPreference( STATUS_FILTER_SETTING ).AsBoolean();
+                tglStatus.Checked = preferences.GetValue( STATUS_FILTER_SETTING ).AsBoolean();
 
                 SelectedChannelId = PageParameter( "ContentChannelId" ).AsIntegerOrNull();
 
@@ -199,7 +201,7 @@ namespace RockWeb.Blocks.Cms
 
                 if ( !SelectedChannelId.HasValue )
                 {
-                    SelectedChannelId = GetUserPreference( SELECTED_CHANNEL_SETTING ).AsIntegerOrNull();
+                    SelectedChannelId = preferences.GetValue( SELECTED_CHANNEL_SETTING ).AsIntegerOrNull();
                 }
 
                 if ( ddlCategory.Visible )
@@ -209,12 +211,14 @@ namespace RockWeb.Blocks.Cms
                     {
                         var categoryId = CategoryCache.Get( categoryGuid.Value )?.Id;
 
-                        SetUserPreference( CATEGORY_FILTER_SETTING, categoryId.ToString() );
+                        preferences.SetValue( CATEGORY_FILTER_SETTING, categoryId.ToString() );
+                        preferences.Save();
+
                         ddlCategory.SetValue( categoryId );
                     }
                     else
                     {
-                        ddlCategory.SetValue( GetUserPreference( CATEGORY_FILTER_SETTING ).AsIntegerOrNull() );
+                        ddlCategory.SetValue( preferences.GetValue( CATEGORY_FILTER_SETTING ).AsIntegerOrNull() );
                     }
                 }
 
@@ -266,10 +270,12 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void ddlCategory_OnSelectedIndexChanged( object sender, EventArgs e )
         {
-            SetUserPreference( CATEGORY_FILTER_SETTING, ddlCategory.SelectedValue );
             var categoryGuid = CategoryCache.Get( ddlCategory.SelectedValue.AsInteger() )?.Guid;
-
             var queryString = new Dictionary<string, string>();
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( CATEGORY_FILTER_SETTING, ddlCategory.SelectedValue );
+            preferences.Save();
 
             if ( categoryGuid.HasValue )
             {
@@ -287,7 +293,11 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void tgl_CheckedChanged( object sender, EventArgs e )
         {
-            SetUserPreference( STATUS_FILTER_SETTING, tglStatus.Checked.ToString() );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( STATUS_FILTER_SETTING, tglStatus.Checked.ToString() );
+            preferences.Save();
+
             GetData();
         }
 
@@ -299,7 +309,10 @@ namespace RockWeb.Blocks.Cms
         protected void rptChannels_ItemCommand( object source, RepeaterCommandEventArgs e )
         {
             string selectedChannelValue = e.CommandArgument.ToString();
-            SetUserPreference( SELECTED_CHANNEL_SETTING, selectedChannelValue );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( SELECTED_CHANNEL_SETTING, selectedChannelValue );
+            preferences.Save();
 
             SelectedChannelId = selectedChannelValue.AsIntegerOrNull();
 
@@ -607,7 +620,11 @@ namespace RockWeb.Blocks.Cms
                     categoryId = ddlCategory.SelectedValueAsId();
                 }
 
-                SetUserPreference( CATEGORY_FILTER_SETTING, categoryId.ToString() );
+                var preferences = GetBlockPersonPreferences();
+
+                preferences.SetValue( CATEGORY_FILTER_SETTING, categoryId.ToString() );
+                preferences.Save();
+
                 ddlCategory.SetValue( categoryId );
 
                 var parentCategoryGuid = GetAttributeValue( AttributeKey.ParentCategory ).AsGuidOrNull();
