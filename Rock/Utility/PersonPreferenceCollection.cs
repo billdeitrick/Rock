@@ -208,6 +208,16 @@ namespace Rock.Utility
         }
 
         /// <summary>
+        /// Determines whether the specified key exists in the collection.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns><c>true</c> if the specified key exists; otherwise, <c>false</c>.</returns>
+        public bool ContainsKey( string key )
+        {
+            return _preferences.TryGetValue( key, out var preference ) && preference.Value.IsNotNullOrWhiteSpace();
+        }
+
+        /// <summary>
         /// Saves all the changes that have been made.
         /// </summary>
         public void Save()

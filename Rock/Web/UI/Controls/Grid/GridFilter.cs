@@ -82,19 +82,19 @@ namespace Rock.Web.UI.Controls
             RockBlock rockBlock = this.RockBlock();
             if ( rockBlock != null )
             {
-                string blockKeyPrefix = string.Format( "grid-filter-{0}-", rockBlock.BlockId );
+                var preferences = rockBlock.GetBlockPersonPreferences().WithPrefix( "grid-filter-" );
+                var gridFilterKeys = preferences.GetKeys();
 
-                foreach ( var userPreference in rockBlock.GetUserPreferences( blockKeyPrefix ) )
+                foreach ( var key in gridFilterKeys )
                 {
-                    var blockKey = userPreference.Key.Replace( blockKeyPrefix, string.Empty );
-                    var keyName = blockKey.Split( new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries );
-                    if ( blockKey.Contains( "|" ) && keyName.Length == 2 )
+                    var keyName = key.Split( new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries );
+                    if ( key.Contains( "|" ) && keyName.Length == 2 )
                     {
                         // only load userPreferences that are stored in the {key}|{name} format
                         // and make sure there isn't more than one with the same key
                         if ( !_userPreferences.Any( a => a.Key == keyName[0] ) )
                         {
-                            _userPreferences.Add( new UserPreference( keyName[0], keyName[1], userPreference.Value ) );
+                            _userPreferences.Add( new UserPreference( keyName[0], keyName[1], preferences.GetValue( key ) ) );
                         }
                     }
                 }
@@ -538,38 +538,28 @@ namespace Rock.Web.UI.Controls
             RockBlock rockBlock = this.RockBlock();
             if ( rockBlock != null )
             {
-                string keyPrefix = string.Format( "grid-filter-{0}-", rockBlock.BlockId );
+                var preferences = rockBlock.GetBlockPersonPreferences().WithPrefix( "grid-filter-" );
 
                 foreach ( var userPreference in _userPreferences )
                 {
-                    string keyPrefixUserPreferenceKey = string.Format( "{0}{1}|", keyPrefix, userPreference.Key );
-                    string key = string.Format( "{0}{1}", keyPrefixUserPreferenceKey, userPreference.Name);
+                    string keyPrefixUserPreferenceKey = $"{userPreference.Key}|";
+                    string key = $"{keyPrefixUserPreferenceKey}{userPreference.Name}";
 
                     // No duplicate user preference key values before the '|' are allowed.
                     // This search for any keys that match before the '|' but mismatch after '|' and delete it before writing the user preference.
-                    int? personEntityTypeId = EntityTypeCache.Get( Person.USER_VALUE_ENTITY ).Id;
+                    var duplicateKeys = preferences.GetKeys()
+                        .Where( k => k.StartsWith( keyPrefixUserPreferenceKey ) && k != key )
+                        .ToList();
 
-                    using ( var rockContext = new Rock.Data.RockContext() )
+                    foreach ( var duplicateKey in duplicateKeys )
                     {
-                        var attributeService = new Model.AttributeService( rockContext );
-                        var attributes = attributeService
-                            .Queryable()
-                            .Where( a => a.EntityTypeId == personEntityTypeId )
-                            .Where( a => a.Key.StartsWith( keyPrefixUserPreferenceKey ) )
-                            .Where( a => a.Key != key );
-
-                        if ( attributes.Count() != 0 )
-                        {
-                            foreach ( var attribute in attributes )
-                            {
-                                rockBlock.DeleteUserPreference( attribute.Key );
-                            }
-                        }
-                        rockContext.SaveChanges();
+                        preferences.SetValue( duplicateKey, string.Empty );
                     }
 
-                    rockBlock.SetUserPreference( key, userPreference.Value );
+                    preferences.SetValue( key, userPreference.Value );
                 }
+
+                preferences.Save();
             }
         }
 
@@ -581,13 +571,15 @@ namespace Rock.Web.UI.Controls
             RockBlock rockBlock = this.RockBlock();
             if ( rockBlock != null && _userPreferences != null )
             {
-                string keyPrefix = string.Format( "grid-filter-{0}-", rockBlock.BlockId ) + this.UserPreferenceKeyPrefix;
+                var keyPrefix = $"grid-filter-{UserPreferenceKeyPrefix}";
+                var preferences = rockBlock.GetBlockPersonPreferences().WithPrefix( keyPrefix );
 
                 foreach ( var userPreference in _userPreferences )
                 {
-                    rockBlock.DeleteUserPreference( string.Format( "{0}{1}|{2}", keyPrefix, userPreference.Key, userPreference.Name ) );
+                    preferences.SetValue( $"{keyPrefix}{userPreference.Key}|{userPreference.Name}", string.Empty );
                 }
 
+                preferences.Save();
                 _userPreferences.Clear();
             }
         }
