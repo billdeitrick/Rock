@@ -1333,22 +1333,6 @@ namespace Rock.Web.UI
         #region User Preferences for a specific block
 
         /// <summary>
-        /// Gets the prefix for a user preference key that includes the block id so that it specific to the this block
-        /// </summary>
-        /// <value>
-        /// The block user preference prefix.
-        /// </value>
-        [Obsolete( "Use the new PersonPreference methods instead." )]
-        [RockObsolete( "1.16" )]
-        private string BlockUserPreferencePrefix
-        {
-            get
-            {
-                return PersonService.GetBlockUserPreferenceKeyPrefix( this.BlockId );
-            }
-        }
-
-        /// <summary>
         /// Returns the user preference value for the current user and block for a given key
         /// </summary>
         /// <param name="key">A <see cref="System.String" /> representing the key to the user preference.</param>
@@ -1358,7 +1342,7 @@ namespace Rock.Web.UI
         [RockObsolete( "1.16" )]
         public string GetBlockUserPreference( string key )
         {
-            return RockPage.GetUserPreference( BlockUserPreferencePrefix + key );
+            return GetBlockPersonPreferences().GetValue( key );
         }
 
         /// <summary>
@@ -1369,12 +1353,15 @@ namespace Rock.Web.UI
         [RockObsolete( "1.16" )]
         public Dictionary<string, string> GetBlockUserPreferences()
         {
-            var userPreferences = RockPage.GetUserPreferences( BlockUserPreferencePrefix );
-            int blockUserPreferencePrefixLength = BlockUserPreferencePrefix.Length;
+            var preferences = GetBlockPersonPreferences();
+            var prefs = new Dictionary<string, string>();
 
-            // remove the block id prefix since we only want the key that the block knows about
-            var blockUserPreferences = userPreferences.ToDictionary( k => k.Key.Substring( blockUserPreferencePrefixLength ), v => v.Value );
-            return blockUserPreferences;
+            foreach ( var key in preferences.GetKeys() )
+            {
+                prefs.AddOrIgnore( key, preferences.GetValue( key ) );
+            }
+
+            return prefs;
         }
 
         /// <summary>
@@ -1388,7 +1375,12 @@ namespace Rock.Web.UI
         [RockObsolete( "1.16" )]
         public void SetBlockUserPreference( string key, string value, bool saveValue = true )
         {
-            RockPage.SetUserPreference( BlockUserPreferencePrefix + key, value, saveValue );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( key, value );
+
+            // Ignore the saveValue option, it's legacy.
+            preferences.Save();
         }
 
         /// <summary>
@@ -1398,7 +1390,7 @@ namespace Rock.Web.UI
         [RockObsolete( "1.16" )]
         public void SaveBlockUserPreferences()
         {
-            SaveUserPreferences( BlockUserPreferencePrefix );
+            // This now does nothing as we save on each key when set in legacy mode.
         }
 
         /// <summary>
@@ -1409,7 +1401,11 @@ namespace Rock.Web.UI
         [RockObsolete( "1.16" )]
         public void DeleteBlockUserPreference( string key )
         {
-            RockPage.DeleteUserPreference( BlockUserPreferencePrefix + key );
+            var preferences = GetBlockPersonPreferences();
+
+            preferences.SetValue( key, string.Empty );
+
+            preferences.Save();
         }
 
         #endregion
