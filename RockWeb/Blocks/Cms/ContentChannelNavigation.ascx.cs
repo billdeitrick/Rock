@@ -411,11 +411,11 @@ namespace RockWeb.Blocks.Cms
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         void gfFilter_ApplyFilterClick( object sender, EventArgs e )
         {
-            gfFilter.SaveUserPreference( "Date Range", drpDateRange.DelimitedValues );
-            gfFilter.SaveUserPreference( "Status", ddlStatus.SelectedValue );
-            gfFilter.SaveUserPreference( "Title", tbTitle.Text );
+            gfFilter.SetFilterPreference( "Date Range", drpDateRange.DelimitedValues );
+            gfFilter.SetFilterPreference( "Status", ddlStatus.SelectedValue );
+            gfFilter.SetFilterPreference( "Title", tbTitle.Text );
             int personId = ppCreatedBy.PersonId ?? 0;
-            gfFilter.SaveUserPreference( "Created By", personId.ToString() );
+            gfFilter.SetFilterPreference( "Created By", personId.ToString() );
 
             if ( SelectedChannelId.HasValue && AvailableAttributes != null )
             {
@@ -427,7 +427,7 @@ namespace RockWeb.Blocks.Cms
                         try
                         {
                             var values = attribute.FieldType.Field.GetFilterValues( filterControl, attribute.QualifierValues, Rock.Reporting.FilterMode.SimpleFilter );
-                            gfFilter.SaveUserPreference( MakeKeyUniqueToChannel( SelectedChannelId.Value, attribute.Key ), attribute.Name, values.ToJson() );
+                            gfFilter.SetFilterPreference( MakeKeyUniqueToChannel( SelectedChannelId.Value, attribute.Key ), attribute.Name, values.ToJson() );
                         }
                         catch
                         {
@@ -545,17 +545,17 @@ namespace RockWeb.Blocks.Cms
 
         private void BindFilter()
         {
-            drpDateRange.DelimitedValues = gfFilter.GetUserPreference( "Date Range" );
+            drpDateRange.DelimitedValues = gfFilter.GetFilterPreference( "Date Range" );
             ddlStatus.BindToEnum<ContentChannelItemStatus>( true );
-            int? statusID = gfFilter.GetUserPreference( "Status" ).AsIntegerOrNull();
+            int? statusID = gfFilter.GetFilterPreference( "Status" ).AsIntegerOrNull();
             if ( statusID.HasValue )
             {
                 ddlStatus.SetValue( statusID.Value.ToString() );
             }
 
-            tbTitle.Text = gfFilter.GetUserPreference( "Title" );
+            tbTitle.Text = gfFilter.GetFilterPreference( "Title" );
 
-            int? personId = gfFilter.GetUserPreference( "Created By" ).AsIntegerOrNull();
+            int? personId = gfFilter.GetFilterPreference( "Created By" ).AsIntegerOrNull();
 
             if ( personId.HasValue && personId.Value != 0 )
             {
@@ -810,7 +810,7 @@ namespace RockWeb.Blocks.Cms
                 .Where( i => i.ContentChannelId == selectedChannel.Id );
 
             var drp = new DateRangePicker();
-            drp.DelimitedValues = gfFilter.GetUserPreference( "Date Range" );
+            drp.DelimitedValues = gfFilter.GetFilterPreference( "Date Range" );
             if ( drp.LowerValue.HasValue )
             {
                 isFiltered = true;
@@ -830,21 +830,21 @@ namespace RockWeb.Blocks.Cms
                 itemQry = itemQry.Where( i => i.StartDateTime <= upperDate );
             }
 
-            var status = gfFilter.GetUserPreference( "Status" ).ConvertToEnumOrNull<ContentChannelItemStatus>();
+            var status = gfFilter.GetFilterPreference( "Status" ).ConvertToEnumOrNull<ContentChannelItemStatus>();
             if ( status.HasValue )
             {
                 isFiltered = true;
                 itemQry = itemQry.Where( i => i.Status == status );
             }
 
-            string title = gfFilter.GetUserPreference( "Title" );
+            string title = gfFilter.GetFilterPreference( "Title" );
             if ( !string.IsNullOrWhiteSpace( title ) )
             {
                 isFiltered = true;
                 itemQry = itemQry.Where( i => i.Title.Contains( title ) );
             }
 
-            int? personId = gfFilter.GetUserPreference( "Created By" ).AsIntegerOrNull();
+            int? personId = gfFilter.GetFilterPreference( "Created By" ).AsIntegerOrNull();
             if ( personId.HasValue && personId.Value != 0 )
             {
                 isFiltered = true;
@@ -955,7 +955,7 @@ namespace RockWeb.Blocks.Cms
                             phAttributeFilters.Controls.Add( wrapper );
                         }
 
-                        string savedValue = gfFilter.GetUserPreference( MakeKeyUniqueToChannel( channel.Id, attribute.Key ) );
+                        string savedValue = gfFilter.GetFilterPreference( MakeKeyUniqueToChannel( channel.Id, attribute.Key ) );
                         if ( !string.IsNullOrWhiteSpace( savedValue ) )
                         {
                             try
