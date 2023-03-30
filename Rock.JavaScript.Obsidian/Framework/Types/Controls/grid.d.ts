@@ -174,6 +174,16 @@ export type GridActionCallback = (event: Event) => void | Promise<void>;
  */
 export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridState) => boolean;
 
+export type SortValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
+
+export type FilterValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => unknown | undefined;
+
+export type QuickFilterValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | undefined;
+
+export type ValueFormatterFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
+
+export type UniqueValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
+
 export type StandardCellProps = {
     column: {
         type: PropType<GridColumnDefinition>,
@@ -249,7 +259,7 @@ export type GridColumnDefinition = {
     format: VNode | Component;
 
     /** Gets the value to use when filtering on the quick filter. */
-    quickFilterValue: (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | undefined;
+    quickFilterValue: QuickFilterValueFunction;
 
     /**
      * Gets the unique value representation of the cell value. For example,
@@ -261,7 +271,7 @@ export type GridColumnDefinition = {
     sortValue?: ValueFormatterFunction;
 
     /** Gets the value to use when filtering. */
-    filterValue: (row: Record<string, unknown>, column: GridColumnDefinition) => unknown | undefined;
+    filterValue: FilterValueFunction;
 
     filter?: GridColumnFilter;
 
@@ -269,8 +279,6 @@ export type GridColumnDefinition = {
 
     cache: IGridCache;
 };
-
-export type ValueFormatterFunction = (row: Record<string, unknown>, column: GridColumnDefinition) => string | number | undefined;
 
 export type GridColumnFilter = {
     component: Component;

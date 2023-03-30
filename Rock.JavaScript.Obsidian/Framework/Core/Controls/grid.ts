@@ -15,66 +15,121 @@
 // </copyright>
 //
 
-import { defineComponent, isReactive, PropType, ref, Ref, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
-import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort } from "@Obsidian/Types/Controls/grid";
+import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
 import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
 
-const defaultCell = defineComponent({
-    props: {
-        column: {
-            type: Object as PropType<GridColumnDefinition>,
-            required: true
-        },
-        row: {
-            type: Object as PropType<Record<string, unknown>>,
-            required: true
-        }
-    },
-
-    setup(props) {
-        return () => props.column.field ? props.row[props.column.field] : "";
-    }
-});
-
 // #region Standard Component Props
 
 export const standardColumnProps = {
+    /** The name that uniquely identifies this column in the grid. */
     name: {
         type: String as PropType<string>,
         default: ""
     },
 
+    /** The title of the column, this is displayed in the table header. */
     title: {
         type: String as PropType<string>,
         required: false
     },
 
-    textValue: {
-        type: Object as PropType<(((row: Record<string, unknown>, column: GridColumnDefinition) => string | number | undefined) | string)>,
+    /**
+     * The name of the field on the row that will contain the data. This is
+     * used by default columns and other features to automatically display
+     * the data. If you are building a completely custom column it is not
+     * required.
+     */
+    field: {
+        type: String as PropType<string>,
         required: false
     },
 
+    /**
+     * Overrides the default method of obtaining the value to use when matching
+     * against the quick filter. If not specified then the value of of the row
+     * in the `field` property will be used if it is a supported type. A
+     * function may be specified which will be called with the row and column
+     * definition and must return either a string or undefined. If a plain
+     * string is specified then it will be used as a Lava Template which will
+     * be passed the `row` object.
+     */
+    quickFilterValue: {
+        type: Object as PropType<QuickFilterValueFunction | string>,
+        required: false
+    },
+
+    /**
+     * The name of the field on the row that will contain the data to be used
+     * when sorting. If this is not specified then the value from `field` will
+     * be used by default. If no `title` is specified then the column will not
+     * be sortable.
+     */
     sortField: {
         type: String as PropType<string>,
         required: false
     },
 
+    /**
+     * Specifies how to get the sort value to use when sorting by this column.
+     * This will override the `sortField` setting. If a function is be provided
+     * then it will be called with the row and the column definition and must
+     * return either a string, number or undefined. If a string is provided
+     * then it will be used as a Lava Template which will be passed the `row`
+     * object used to calculate the value. If no `title` is specified then the
+     * column will not be sortable.
+     */
     sortValue: {
-        type: Object as PropType<(((row: Record<string, unknown>, column: GridColumnDefinition) => string | number | undefined) | string)>,
+        type: Object as PropType<(SortValueFunction | string)>,
         required: false
     },
 
+    /**
+     * Enabled filtering of this column and specifies what type of filtering
+     * will be done.
+     */
     filter: {
         type: Object as PropType<GridColumnFilter>,
         required: false
     },
 
+    /**
+     * Specifies how to get the value to use when filtering by this column.
+     * This is used on combination with the `filter` setting only. If a
+     * function is be provided then it will be called with the row and the
+     * column definition and must return a value recognized by the filter.
+     * If a string is provided then it will be used as a Lava Template which
+     * will be passed the `row` object used to calculate the value.
+     */
     filterValue: {
-        type: Object as PropType<(((row: Record<string, unknown>, column: GridColumnDefinition) => string | number | undefined) | string)>,
+        type: Object as PropType<(FilterValueFunction | string)>,
+        required: false
+    },
+
+    /**
+     * Specifies how to determine the unique value for cells in this column.
+     * This is used by some operations to find only the distinct values of
+     * the entire dataset. If specified then the function will be passed the
+     * row and column definition and must return either a string, number or
+     * undefined. Otherwise the value of the row in `field` will be used to
+     * determine this value.
+     */
+    uniqueValue: {
+        type: Object as PropType<UniqueValueFunction>,
+        required: false
+    },
+
+    /**
+     * Provides a custom component that will be used to format and display
+     * the cell. This is rarely needed as you can usually accomplish the same
+     * with a template that defines the body content.
+     */
+    format: {
+        type: Object as PropType<VNode>,
         required: false
     }
 };
@@ -141,7 +196,7 @@ export function pickExistingFilterMatches(needle: unknown, haystack: unknown): b
     return needle.some(n => deepEqual(n, haystack, true));
 }
 
-export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridState): boolean {
+export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, grid: IGridState): boolean {
     if (!needle || typeof needle !== "object") {
         return false;
     }
@@ -191,33 +246,33 @@ export function numberFilterMatches(needle: unknown, haystack: unknown, column: 
         }
 
         const cacheKey = `number-filter-${column.name}.top-${nCount}`;
-        let topn = gridData.cache[cacheKey] as number | undefined;
+        let topn = grid.cache[cacheKey] as number | undefined;
 
         if (topn === undefined) {
-            topn = calculateColumnTopNRowValue(gridData.rows, nCount, column);
-            gridData.cache[cacheKey] = topn;
+            topn = calculateColumnTopNRowValue(grid.rows, nCount, column, grid);
+            grid.cache[cacheKey] = topn;
         }
 
         return haystack >= topn;
     }
     else if (needle["method"] === NumberFilterMethod.AboveAverage) {
         const cacheKey = `number-filter-${column.name}.average`;
-        let average = gridData.cache[cacheKey] as number | undefined;
+        let average = grid.cache[cacheKey] as number | undefined;
 
         if (average === undefined) {
-            average = calculateColumnAverageValue(gridData.rows, column);
-            gridData.cache[cacheKey] = average;
+            average = calculateColumnAverageValue(grid.rows, column, grid);
+            grid.cache[cacheKey] = average;
         }
 
         return haystack > average;
     }
     else if (needle["method"] === NumberFilterMethod.BelowAverage) {
         const cacheKey = `number-filter-${column.name}.average`;
-        let average = gridData.cache[cacheKey] as number | undefined;
+        let average = grid.cache[cacheKey] as number | undefined;
 
         if (average === undefined) {
-            average = calculateColumnAverageValue(gridData.rows, column);
-            gridData.cache[cacheKey] = average;
+            average = calculateColumnAverageValue(grid.rows, column, grid);
+            grid.cache[cacheKey] = average;
         }
 
         return haystack < average;
@@ -231,11 +286,11 @@ export function numberFilterMatches(needle: unknown, haystack: unknown, column: 
 
 // #region Functions
 
-export function calculateColumnAverageValue(rows: Record<string, unknown>[], column: GridColumnDefinition): number {
+export function calculateColumnAverageValue(rows: Record<string, unknown>[], column: GridColumnDefinition, grid: IGridState): number {
     let count = 0;
     let total = 0;
     for (const row of rows) {
-        const rowValue = column.filterValue(row, column);
+        const rowValue = column.filterValue(row, column, grid);
 
         if (typeof rowValue === "number") {
             total += rowValue;
@@ -246,11 +301,11 @@ export function calculateColumnAverageValue(rows: Record<string, unknown>[], col
     return count === 0 ? 0 : total / count;
 }
 
-export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], rowCount: number, column: GridColumnDefinition): number {
+export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], rowCount: number, column: GridColumnDefinition, grid: IGridState): number {
     const values: number[] = [];
 
     for (const row of rows) {
-        const rowValue = column.filterValue(row, column);
+        const rowValue = column.filterValue(row, column, grid);
 
         if (typeof rowValue === "number") {
             values.push(rowValue);
@@ -342,8 +397,6 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
                 else if (typeof v === "number") {
                     return v.toString();
                 }
-
-
                 else {
                     return undefined;
                 }
@@ -357,7 +410,7 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
             };
         }
 
-        let filterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => unknown) | string>(node, "filterValue");
+        let filterValue = getVNodeProp<FilterValueFunction | string>(node, "filterValue");
 
         if (filterValue === undefined) {
             filterValue = (r, c): unknown => {
@@ -371,12 +424,12 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
         else if (typeof filterValue === "string") {
             const template = filterValue;
 
-            filterValue = (row): string | undefined => {
+            filterValue = (row): unknown => {
                 return resolveMergeFields(template, { row });
             };
         }
 
-        let uniqueValue = getVNodeProp<ValueFormatterFunction>(node, "uniqueValue");
+        let uniqueValue = getVNodeProp<UniqueValueFunction>(node, "uniqueValue");
 
         if (!uniqueValue) {
             uniqueValue = (r, c) => {
@@ -504,7 +557,7 @@ export class GridRowCache implements IGridRowCache {
     private cache: IGridCache = new GridCache();
 
     /** The key name to use on the row objects to find the row identifier. */
-    private rowItemIdKey?: string;
+    private rowItemKey?: string;
 
     /**
      * Creates a new grid row cache object that provides caching for each row.
@@ -514,7 +567,7 @@ export class GridRowCache implements IGridRowCache {
      * @param itemIdKey The key name to use on the row objects to find the row identifier.
      */
     public constructor(itemIdKey: string | undefined) {
-        this.rowItemIdKey = itemIdKey;
+        this.rowItemKey = itemIdKey;
     }
 
     /**
@@ -526,18 +579,18 @@ export class GridRowCache implements IGridRowCache {
      * @returns The identifier key of the row or `undefined` if it could not be determined.
      */
     private getRowKey(row: Record<string, unknown>): string | undefined {
-        return getRowKey(row, this.rowItemIdKey);
+        return getRowKey(row, this.rowItemKey);
     }
 
     /**
      * Sets the key that will be used when accessing a row to determine its
      * unique identifier in the grid. This will also clear all cached data.
      *
-     * @param itemIdKey The key name to use on the row objects to find the row identifier.
+     * @param itemKey The key name to use on the row objects to find the row identifier.
      */
-    public setRowItemIdKey(itemIdKey: string | undefined): void {
-        if (this.rowItemIdKey !== itemIdKey) {
-            this.rowItemIdKey = itemIdKey;
+    public setRowItemKey(itemKey: string | undefined): void {
+        if (this.rowItemKey !== itemKey) {
+            this.rowItemKey = itemKey;
             this.clear();
         }
     }
@@ -603,9 +656,20 @@ export class GridRowCache implements IGridRowCache {
 }
 
 export class GridState implements IGridState {
+    // #region Properties
+
     private internalRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
 
-    private itemIdKey?: string;
+    /** This tracks the state of each row when operating in reactive mode. */
+    private rowReactiveTracker: Record<string, string> = {};
+
+    /** The handle that can be used to stop watching row changes. */
+    private internalRowsWatcher?: WatchStopHandle;
+
+    /** Determines if we are monitoring for changes to the row data. */
+    private liveUpdates: boolean;
+
+    private itemKey?: string;
 
     private quickFilter: string = "";
 
@@ -627,12 +691,30 @@ export class GridState implements IGridState {
 
     public rowCache: IGridRowCache;
 
-    constructor(columns: GridColumnDefinition[], itemIdKey: string | undefined) {
-        this.rowCache = new GridRowCache(itemIdKey);
+    // #endregion
+
+    // #region Constructors
+
+    constructor(columns: GridColumnDefinition[], liveUpdates: boolean) {
+        this.rowCache = new GridRowCache(undefined);
         this.columns = columns;
         this.visibleColumns = columns;
-        this.itemIdKey = itemIdKey;
+        this.liveUpdates = liveUpdates;
     }
+
+    /**
+     * Dispose of all resources this grid state has. This includes any watchers
+     * and other things that might need to be manually destroyed to free up
+     * memory. A common pattern would be to call this in the onUmounted() callback.
+     */
+    public dispose(): void {
+        if (this.internalRowsWatcher) {
+            this.internalRowsWatcher();
+            this.internalRowsWatcher = undefined;
+        }
+    }
+
+    // #endregion
 
     // #region Property Accessors
 
@@ -642,69 +724,85 @@ export class GridState implements IGridState {
 
     // #endregion
 
-    private rowWatchers: Record<string, WatchStopHandle> = {};
+    private initializeReactiveTracker(): void {
+        const rows = unref(this.internalRows);
 
-    private updateRowWatchers(): void {
-        // Quick test, if we don't have an item id key, then just kill
-        // all the watchers.
-        if (!this.itemIdKey) {
-            Object.values(this.rowWatchers).forEach(wsh => wsh());
-            this.rowWatchers = {};
-            return;
+        this.rowReactiveTracker = {};
+
+        for (let i = 0; i < rows.length; i++) {
+            const key = getRowKey(rows[i], this.itemKey);
+
+            if (key) {
+                this.rowReactiveTracker[key] = JSON.stringify(rows[i]);
+            }
         }
+    }
 
-        const start = Date.now();
-        console.log("start reactive check");
-        const existingWatcherRowKeys = Object.keys(this.rowWatchers);
-        const currentRowKeys: Record<string, boolean> = {};
+    private detectRowChanges(): void {
+        const rows = unref(this.internalRows);
+        const knownKeys: string[] = [];
 
-        // Look for new rows that have been added.
-        for (let i = 0; i < this.internalRows.value.length; i++) {
-            const row = this.internalRows.value[i];
-            const rowKey = getRowKey(row, this.itemIdKey);
+        // Loop through all the rows we still have and check for any that
+        // are new or have been modified.
+        for (let i = 0; i < rows.length; i++) {
+            const key = getRowKey(rows[i], this.itemKey);
 
-            if (!rowKey) {
+            if (!key) {
                 continue;
             }
 
-            currentRowKeys[rowKey] = true;
+            // Save the key for later.
+            knownKeys.push(key);
 
-            if (!this.rowWatchers[rowKey]) {
-                const watcher = watch(() => row, () => {
-                    console.log("Row changed", row);
-                    this.rowCache.remove(row);
-                    this.updateFilteredRows();
-                }, {
-                    deep: true
-                });
-
-                this.rowWatchers[rowKey] = watcher;
+            if (!this.rowReactiveTracker[key]) {
+                console.log("Row added", rows[i]);
+            }
+            else if (this.rowReactiveTracker[key] !== JSON.stringify(rows[i])) {
+                console.log("Row updated", rows[i]);
+                this.rowReactiveTracker[key] = JSON.stringify(rows[i]);
+                this.rowCache.remove(rows[i]);
             }
         }
-        const m1 = Date.now();
 
-        // Look for old rows that have been removed.
-        existingWatcherRowKeys.forEach(rk => {
-            if (!currentRowKeys[rk]) {
-                console.log("removed watcher for", rk);
-                this.rowWatchers[rk]();
-                delete this.rowWatchers[rk];
+        // Loop through all the row key values that are being tracked and
+        // see if any no longer exist in our data set.
+        const oldKeys = Object.keys(this.rowReactiveTracker);
+        for (let i = 0; i < oldKeys.length; i++) {
+            if (!knownKeys.includes(oldKeys[i])) {
+                console.log("Removed row id", oldKeys[i]);
+                // TODO: Remove the cache data for a row by it's key.
+                delete this.rowReactiveTracker[oldKeys[i]];
             }
-        });
-        const stop = Date.now();
-        console.log("end reactive check", stop - start, m1 - start);
+        }
+    }
+
+    public setItemKey(value: string | undefined): void {
+        this.itemKey = value;
+        (this.rowCache as GridRowCache).setRowItemKey(value);
     }
 
     public setDataRows(rows: Record<string, unknown>[]): void {
+        // Stop watching the old rows if we are currently watching for changes.
+        if (this.internalRowsWatcher) {
+            this.internalRowsWatcher();
+            this.internalRowsWatcher = undefined;
+        }
+
+        // Update out internal rows and clear all the cache.
         this.internalRows.value = rows;
         this.cache.clear();
         this.rowCache.clear();
-        this.updateRowWatchers();
 
-        watch(() => rows, () => {
-            this.updateRowWatchers();
-            this.updateFilteredRows();
-        }, { deep: true });
+        // Start watching for changes if we are reactive.
+        if (this.liveUpdates) {
+            this.initializeReactiveTracker();
+
+            this.internalRowsWatcher = watch(() => rows, () => {
+                this.detectRowChanges();
+                this.updateFilteredRows();
+            }, { deep: true });
+        }
+
         this.updateFilteredRows();
     }
 
@@ -747,7 +845,7 @@ export class GridState implements IGridState {
                         return true;
                     }
 
-                    const value: unknown = column.filterValue(row, column);
+                    const value: unknown = column.filterValue(row, column, this);
 
                     if (value === undefined) {
                         return false;
@@ -796,7 +894,7 @@ export class GridState implements IGridState {
             let value: string | number | undefined;
 
             if (sortValue) {
-                value = sortValue(r, column);
+                value = sortValue(r, column, this);
             }
             else {
                 value = undefined;
@@ -833,3 +931,19 @@ export class GridState implements IGridState {
 }
 
 // #endregion
+
+// #region Internal Components
+
+/**
+ * This is a special cell we use when no default format cell has been defined.
+ */
+const defaultCell = defineComponent({
+    props: standardCellProps,
+
+    setup(props) {
+        return () => props.column.field ? props.row[props.column.field] : "";
+    }
+});
+
+// #endregion
+

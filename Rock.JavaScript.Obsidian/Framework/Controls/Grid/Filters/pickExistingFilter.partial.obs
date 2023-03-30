@@ -64,11 +64,11 @@
 
         console.log(`${Date.now()}: Starting Process`);
         for (let i = 0; i < rows.length; i++) {
-            const value = props.column.uniqueValue(rows[i], props.column);
+            const value = props.column.uniqueValue(rows[i], props.column, props.grid);
 
             if (value && valueRows[value] === undefined) {
                 const quickFilterValue = props.column.quickFilterValue(rows[i], props.column, props.grid) ?? "";
-                let filterValue = props.column.filterValue(rows[i], props.column);
+                let filterValue = props.column.filterValue(rows[i], props.column, props.grid);
 
                 if (filterValue === undefined) {
                     continue;
@@ -77,7 +77,7 @@
                 valueRows[value] = {
                     row: rows[i],
                     selected: false,
-                    sortValue: props.column.sortValue?.(rows[i], props.column) ?? "",
+                    sortValue: props.column.sortValue?.(rows[i], props.column, props.grid) ?? "",
                     quickFilterValue: quickFilterValue.toLowerCase(),
                     filterValue
                 };
@@ -104,7 +104,7 @@
         if (props.column.field) {
             for (const value of distinctValues.value) {
                 if (value.selected) {
-                    values.push(props.column.filterValue(value.row, props.column));
+                    values.push(props.column.filterValue(value.row, props.column, props.grid));
                 }
             }
         }

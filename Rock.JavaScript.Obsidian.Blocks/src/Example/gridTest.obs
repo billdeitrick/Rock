@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Grid ref="myGrid" :data="loadGridData" itemId="guid" stickyHeader>
+    <Grid ref="myGrid" :data="loadGridData" keyField="guid" liveUpdates stickyHeader>
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
                 {{ row.name.firstName }} {{ row.name.lastName }}

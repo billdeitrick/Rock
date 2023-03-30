@@ -195,7 +195,7 @@ table.table-obsidian th.grid-error > .alert {
     import { computed, PropType, ref, shallowRef, useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { getColumnDefinitions, GridRowCache, GridState } from "@Obsidian/Core/Controls/grid";
+    import { getColumnDefinitions, GridState } from "@Obsidian/Core/Controls/grid";
     import { ColumnSort, GridAction, GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
 
@@ -215,8 +215,23 @@ table.table-obsidian th.grid-error > .alert {
             default: []
         },
 
-        itemId: {
+        /**
+         * Identifies the key that will be used to uniquely identify each
+         * row. This is not required but many advanced features of the grid
+         * require this to function.
+         */
+        keyField: {
             type: String as PropType<string>,
+            required: false
+        },
+
+        /**
+         * Determines if the grid will monitor for changes in the data of
+         * existing rows, new rows and removed rows. Should not be used for
+         * grids with more than 1,000 rows. This property is not reactive.
+         */
+        liveUpdates: {
+            type: Boolean as PropType<boolean>,
             required: false
         },
 
@@ -237,7 +252,8 @@ table.table-obsidian th.grid-error > .alert {
 
     const gridState: GridState = new GridState(
         getColumnDefinitions(slots["default"]?.() ?? []),
-        props.itemId);
+        props.liveUpdates ?? false);
+    gridState.setItemKey(props.keyField);
 
     const gridActions = ref<GridAction[]>([]);
     const currentPage = ref(1);
@@ -312,10 +328,8 @@ table.table-obsidian th.grid-error > .alert {
         updateVisibleRows();
     });
 
-    watch(() => props.itemId, () => {
-        if (gridState.rowCache instanceof GridRowCache) {
-            gridState.rowCache.setRowItemIdKey(props.itemId);
-        }
+    watch(() => props.keyField, () => {
+        gridState.setItemKey(props.keyField);
     });
 
     watch(gridState.sortedRows, () => {
