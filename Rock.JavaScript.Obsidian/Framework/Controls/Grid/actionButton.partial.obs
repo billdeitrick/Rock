@@ -36,14 +36,14 @@
         return props.action.iconCssClass || "fa fa-square";
     });
 
-    const onActionClick = async (event: Event): Promise<void> => {
+    const onActionClick = async (): Promise<void> => {
         if (props.action.handler && !props.action.disabled && !props.action.executing) {
             // This is a special case where we modify the original object.
             // It is only used internally by the Grid so this is safe.
             props.action.executing = true;
 
             try {
-                const result = props.action.handler(event);
+                const result = props.action.handler();
 
                 if (isPromise(result)) {
                     await result;

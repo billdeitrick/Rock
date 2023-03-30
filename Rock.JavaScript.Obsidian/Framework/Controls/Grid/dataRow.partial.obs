@@ -7,11 +7,11 @@
 <script setup lang="ts">
     import { PropType } from "vue";
     import DataCell from "./dataCell.partial.obs";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
-            type: Array as PropType<GridColumnDefinition[]>,
+            type: Array as PropType<ColumnDefinition[]>,
             default: []
         },
 

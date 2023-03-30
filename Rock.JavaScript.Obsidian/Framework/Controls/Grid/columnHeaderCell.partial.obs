@@ -30,7 +30,7 @@
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { computed, nextTick, PropType, ref, watch } from "vue";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         filterValue: {
@@ -45,7 +45,7 @@
         },
 
         column: {
-            type: Object as PropType<GridColumnDefinition>,
+            type: Object as PropType<ColumnDefinition>,
             required: true
         },
 

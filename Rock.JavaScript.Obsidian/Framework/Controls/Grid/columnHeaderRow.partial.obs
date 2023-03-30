@@ -14,11 +14,11 @@
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { PropType, ref } from "vue";
     import ColumnHeaderCell from "./columnHeaderCell.partial.obs";
-    import { ColumnSort, GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
-            type: Array as PropType<GridColumnDefinition[]>,
+            type: Array as PropType<ColumnDefinition[]>,
             default: []
         },
 

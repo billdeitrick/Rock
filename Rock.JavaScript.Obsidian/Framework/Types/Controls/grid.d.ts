@@ -17,6 +17,8 @@
 
 import { Component, PropType, ShallowRef, VNode } from "vue";
 
+// #region Caching
+
 /**
  * Defines a generic grid cache object. This can be used to store and get
  * data from a cache. The cache is unique to the grid instance so there is
@@ -147,71 +149,244 @@ export interface IGridRowCache {
     addOrReplace<T = unknown>(row: Record<string, unknown>, key: string, value: T): T;
 }
 
-export interface IGridState {
-    readonly cache: IGridCache;
+// #endregion
 
-    readonly rowCache: IGridRowCache;
-
-    readonly columns: GridColumnDefinition[];
-
-    readonly rows: Record<string, unknown>[];
-
-    readonly filteredRows: ShallowRef<Record<string, unknown>[]>;
-
-    readonly sortedRows: ShallowRef<Record<string, unknown>[]>;
-
-    readonly visibleRows: ShallowRef<Record<string, unknown>[]>;
-
-    setDataRows(rows: Record<string, unknown>[]): void;
-}
+// #region Functions and Callbacks
 
 /** A function that will be called in response to an action. */
-export type GridActionCallback = (event: Event) => void | Promise<void>;
+export type GridActionFunction = () => void | Promise<void>;
+
+/**
+ * A function that will be called to determine the value used when filtering
+ * against the quick filter text. This value will be cached by the grid until
+ * the row is modified.
+ *
+ * @param row The data object that represents the row.
+ * @param column The column definition for this operation.
+ * @param grid The grid that owns this operation.
+ *
+ * @returns The text that will be used when performing quick filtering or `undefined` if it is not supported.
+ */
+export type QuickFilterValueFunction = (row: Record<string, unknown>, column: ColumnDefinition, grid: IGridState) => string | undefined;
+
+/**
+ * A function that will be called to determine the sortable value of a cell.
+ * This value will be cached by the grid until the row is modified.
+ *
+ * @param row The data object that represents the row.
+ * @param column The column definition for this operation.
+ * @param grid The grid that owns this operation.
+ *
+ * @returns The value that will be used when sorting this column or `undefined` if no value is available.
+ */
+export type SortValueFunction = (row: Record<string, unknown>, column: ColumnDefinition, grid: IGridState) => string | number | undefined;
+
+/**
+ * A function that will be called to determine the value to use when
+ * performing a column filter operation. This value will be cached by the
+ * grid until the row is modified.
+ *
+ * @param row The data object that represents the row.
+ * @param column The column definition for this operation.
+ * @param grid The grid that owns this operation.
+ *
+ * @returns The value that will be used by the {@link ColumnFilterMatchesFunction} function.
+ */
+export type FilterValueFunction = (row: Record<string, unknown>, column: ColumnDefinition, grid: IGridState) => unknown | undefined;
+
+/**
+ * A function that will be called to determine the unique value of the cell.
+ * This is used to differentiate two values that display the same but actually
+ * represent two distinct things. For example, two people might have the same
+ * name but a different identifier. But two dollar amounts of $10.23 and $10.23
+ * should both return the same value from this function. This value will be
+ * cached by the grid until the row is modified.
+ *
+ * @param row The data object that represents the row.
+ * @param column The column definition for this operation.
+ * @param grid The grid that owns this operation.
+ *
+ * @returns The value that uniquely identifies this cell.
+ */
+export type UniqueValueFunction = (row: Record<string, unknown>, column: ColumnDefinition, grid: IGridState) => string | number | undefined;
 
 /**
  * A function that will be called in order to determine if a row matches the
  * filtering request for the column.
+ *
+ * @param needle The filter value entered in the column filter.
+ * @param haystack The filter value provided by the row to be matched against.
+ * @param column The column definition for this operation.
+ * @param grid The grid that owns this operation.
+ *
+ * @returns True if `haystack` matches `needle`, otherwise false.
  */
-export type GridColumnFilterMatchesCallback = (needle: unknown, haystack: unknown, column: GridColumnDefinition, gridData: IGridState) => boolean;
+export type ColumnFilterMatchesFunction = (needle: unknown, haystack: unknown, column: ColumnDefinition, grid: IGridState) => boolean;
 
-export type SortValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
+// #endregion
 
-export type FilterValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => unknown | undefined;
+// #region Component Props
 
-export type QuickFilterValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | undefined;
-
-export type ValueFormatterFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
-
-export type UniqueValueFunction = (row: Record<string, unknown>, column: GridColumnDefinition, grid: IGridState) => string | number | undefined;
-
-export type StandardCellProps = {
-    column: {
-        type: PropType<GridColumnDefinition>,
-        required: true
+/** The standard properties available on all columns. */
+type StandardColumnProps = {
+    /**
+     * The unique name that identifies this column in the grid.
+     */
+    name: {
+        type: PropType<string>,
+        default: ""
     },
 
-    row: {
-        type: PropType<Record<string, unknown>>,
-        required: true
-    }
-};
-
-export type StandardFilterProps = {
-    modelValue: {
-        type: PropType<unknown>,
+    /** The title of the column, this is displayed in the table header. */
+    title: {
+        type: PropType<string>,
         required: false
     },
 
+    /**
+     * The name of the field on the row that will contain the data. This is
+     * used by default columns and other features to automatically display
+     * the data. If you are building a completely custom column it is not
+     * required.
+     */
+    field: {
+        type: PropType<string>,
+        required: false
+    },
+
+    /**
+     * Overrides the default method of obtaining the value to use when matching
+     * against the quick filter. If not specified then the value of of the row
+     * in the `field` property will be used if it is a supported type. A
+     * function may be specified which will be called with the row and column
+     * definition and must return either a string or undefined. If a plain
+     * string is specified then it will be used as a Lava Template which will
+     * be passed the `row` object.
+     */
+    quickFilterValue: {
+        type: PropType<QuickFilterValueFunction | string>,
+        required: false
+    },
+
+    /**
+     * The name of the field on the row that will contain the data to be used
+     * when sorting. If this is not specified then the value from `field` will
+     * be used by default. If no `title` is specified then the column will not
+     * be sortable.
+     */
+    sortField: {
+        type: PropType<string>,
+        required: false
+    },
+
+    /**
+     * Specifies how to get the sort value to use when sorting by this column.
+     * This will override the `sortField` setting. If a function is be provided
+     * then it will be called with the row and the column definition and must
+     * return either a string, number or undefined. If a string is provided
+     * then it will be used as a Lava Template which will be passed the `row`
+     * object used to calculate the value. If no `title` is specified then the
+     * column will not be sortable.
+     */
+    sortValue: {
+        type: PropType<(SortValueFunction | string)>,
+        required: false
+    },
+
+    /**
+     * Enabled filtering of this column and specifies what type of filtering
+     * will be done.
+     */
+    filter: {
+        type: PropType<ColumnFilter>,
+        required: false
+    },
+
+    /**
+     * Specifies how to get the value to use when filtering by this column.
+     * This is used on combination with the `filter` setting only. If a
+     * function is be provided then it will be called with the row and the
+     * column definition and must return a value recognized by the filter.
+     * If a string is provided then it will be used as a Lava Template which
+     * will be passed the `row` object used to calculate the value.
+     */
+    filterValue: {
+        type: PropType<(FilterValueFunction | string)>,
+        required: false
+    },
+
+    /**
+     * Specifies how to determine the unique value for cells in this column.
+     * This is used by some operations to find only the distinct values of
+     * the entire dataset. For example, two people might have the same name
+     * and thus look the same when displayed, but in reality they are different
+     * people so this method should return a unique value for each. If
+     * specified then the function will be passed the row and column definition
+     * and must return either a string, number or undefined. Otherwise the
+     * value of the row in `field` will be used to determine this value.
+     */
+    uniqueValue: {
+        type: PropType<UniqueValueFunction>,
+        required: false
+    },
+
+    /**
+     * Provides a custom component that will be used to format and display
+     * the cell. This is rarely needed as you can usually accomplish the same
+     * with a template that defines the body content.
+     */
+    format: {
+        type: PropType<VNode>,
+        required: false
+    }
+};
+
+/** The standard properties available on cells. */
+export type StandardCellProps = {
+    /** The column definition that this cell is being displayed in. */
     column: {
-        type: PropType<GridColumnDefinition>,
+        type: PropType<ColumnDefinition>,
         required: true
     },
 
+    /** The data object that represents the row for this cell. */
+    row: {
+        type: PropType<Record<string, unknown>>,
+        required: true
+    },
+
+    /** The grid this cell is being displayed inside of. */
     grid: {
         type: PropType<IGridState>,
         required: true
     }
 };
+
+/**
+ * The standard properties that are made available to column filter
+ * components.
+ */
+export type StandardFilterProps = {
+    /** The currently selected filter value. */
+    modelValue: {
+        type: PropType<unknown>,
+        required: false
+    },
+
+    /** The column that this filter will be applied to. */
+    column: {
+        type: PropType<ColumnDefinition>,
+        required: true
+    },
+
+    /** The gird that this filter is being displayed inside of. */
+    grid: {
+        type: PropType<IGridState>,
+        required: true
+    }
+};
+
+// #endregion
 
 /** Defines a single action related to a Grid control. */
 export type GridAction = {
@@ -232,7 +407,7 @@ export type GridAction = {
     iconCssClass?: string;
 
     /** The callback function that will handle the action. */
-    handler?: GridActionCallback;
+    handler?: GridActionFunction;
 
     /** If true then the action will be disabled and not respond to clicks. */
     disabled?: boolean;
@@ -241,7 +416,10 @@ export type GridAction = {
     executing: boolean;
 };
 
-export type GridColumnDefinition = {
+/**
+ * Defines the structure and properties of a column in the grid.
+ */
+export type ColumnDefinition = {
     /** The unique name of this column. */
     name: string;
 
@@ -263,48 +441,90 @@ export type GridColumnDefinition = {
 
     /**
      * Gets the unique value representation of the cell value. For example,
-     * a Person column might return the person Guid.
+     * two people might have the same display name so they will look identical.
+     * But in reality they have a different identifier and are two different
+     * people.
      */
-    uniqueValue: ValueFormatterFunction;
+    uniqueValue: UniqueValueFunction;
 
     /** Gets the value to use when sorting. */
-    sortValue?: ValueFormatterFunction;
+    sortValue?: SortValueFunction;
 
-    /** Gets the value to use when filtering. */
+    /** Gets the value to use when performing column filtering. */
     filterValue: FilterValueFunction;
 
-    filter?: GridColumnFilter;
+    /** Gets the filter to use to perform column filtering. */
+    filter?: ColumnFilter;
 
+    /** All properties and attributes that were defined on the column. */
     props: Record<string, unknown>;
-
-    cache: IGridCache;
 };
 
-export type GridColumnFilter = {
+/**
+ * Defines a column filter. This contains the information required to display
+ * the column filter UI as well as perform the row filtering.
+ */
+export type ColumnFilter = {
+    /** The component that will handle displaying the UI for the filter. */
     component: Component;
 
-    matches: GridColumnFilterMatchesCallback;
+    /**
+     * The function that will be called on each row to determine if it
+     * matches the filter value.
+     */
+    matches: ColumnFilterMatchesFunction;
 };
 
-export type FilterComponentProps = {
-    modelValue: {
-        type: PropType<unknown>,
-        required: false
-    },
-
-    column: {
-        type: PropType<GridColumnDefinition>,
-        required: true
-    },
-
-    rows: {
-        type: PropType<Record<string, unknown>[]>,
-        required: true
-    }
-};
-
+/**
+ * Defines the information required to handle sorting on a single column.
+ */
 export type ColumnSort = {
+    /** The name of the column to be sorted. */
     column: string;
 
+    /** True if the column should be sorted in descending order. */
     isDescending: boolean;
 };
+
+/**
+ * Defines the public interface for tracking the state of a grid.
+ * Implementations are in charge of all the heavy lifting of a grid to handle
+ * filtering, sorting and other operations that don't require a direct UI.
+ */
+export interface IGridState {
+    /**
+     * The cache object for the grid. This can be used to store custom data
+     * related to the grid as a whole.
+     */
+    readonly cache: IGridCache;
+
+    /**
+     * The cache object for specific rows. This can be used to store custom
+     * data related to a single row of the grid.
+     */
+    readonly rowCache: IGridRowCache;
+
+    /** The defined columns on the grid. */
+    readonly columns: ColumnDefinition[];
+
+    /** The set of all rows that are known by the grid. */
+    readonly rows: Record<string, unknown>[];
+
+    /** The current set of rows that have passed the filters. */
+    readonly filteredRows: ShallowRef<Record<string, unknown>[]>;
+
+    /** The current set of rows that have been filtered and sorted. */
+    readonly sortedRows: ShallowRef<Record<string, unknown>[]>;
+
+    /**
+     * Gets the cache key to use for storing column specific data for a
+     * component.
+     *
+     * @param column The column that will determine the cache key prefix.
+     * @param component The identifier or name of the component wanting to access the cache.
+     * @param key The key that the component wishes to access or store data in.
+     *
+     * @returns A string should be used as the cache key.
+     */
+    getColumnCacheKey(column: ColumnDefinition, component: string, key: string): string;
+}

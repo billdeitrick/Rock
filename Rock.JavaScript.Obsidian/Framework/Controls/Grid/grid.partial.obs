@@ -196,7 +196,7 @@ table.table-obsidian th.grid-error > .alert {
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
     import { getColumnDefinitions, GridState } from "@Obsidian/Core/Controls/grid";
-    import { ColumnSort, GridAction, GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, GridAction, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
 
     /*
@@ -267,8 +267,8 @@ table.table-obsidian th.grid-error > .alert {
     const visibleRows = shallowRef<Record<string, unknown>[]>([]);
     const pageCount = ref(0);
     const pagerMessage = ref("");
-    const visibleColumnDefinitions = ref<GridColumnDefinition[]>([]);
-    const columns: GridColumnDefinition[] = getColumnDefinitions(slots["default"]?.() ?? []);
+    const visibleColumnDefinitions = ref<ColumnDefinition[]>([]);
+    const columns: ColumnDefinition[] = getColumnDefinitions(slots["default"]?.() ?? []);
 
     const visibleColumnCount = computed((): number => {
         return visibleColumnDefinitions.value.length;

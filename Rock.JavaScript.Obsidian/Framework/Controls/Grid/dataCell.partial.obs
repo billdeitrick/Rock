@@ -6,11 +6,11 @@
 
 <script setup lang="ts">
     import { PropType } from "vue";
-    import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         column: {
-            type: Object as PropType<GridColumnDefinition>,
+            type: Object as PropType<ColumnDefinition>,
             required: true
         },
 

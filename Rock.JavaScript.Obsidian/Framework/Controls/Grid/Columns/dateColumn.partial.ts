@@ -16,7 +16,7 @@
 //
 
 import { standardColumnProps } from "@Obsidian/Core/Controls/grid";
-import { GridColumnDefinition } from "@Obsidian/Types/Controls/grid";
+import { ColumnDefinition, QuickFilterValueFunction } from "@Obsidian/Types/Controls/grid";
 import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
 import { defineComponent, PropType, VNode } from "vue";
 import DateColumnCell from "../Cells/dateCell.partial.obs";
@@ -31,8 +31,8 @@ export default defineComponent({
         },
 
         quickFilterValue: {
-            type: Object as PropType<((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)>,
-            default: (r: Record<string, unknown>, c: GridColumnDefinition) => {
+            type: Object as PropType<QuickFilterValueFunction | string>,
+            default: (r: Record<string, unknown>, c: ColumnDefinition) => {
                 if (!c.field) {
                     return undefined;
                 }

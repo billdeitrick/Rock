@@ -15,9 +15,9 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { Component, defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
-import { GridColumnFilter, GridColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ValueFormatterFunction, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction } from "@Obsidian/Types/Controls/grid";
+import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
@@ -25,126 +25,83 @@ import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attr
 
 // #region Standard Component Props
 
-export const standardColumnProps = {
-    /** The name that uniquely identifies this column in the grid. */
+/**
+ * Defines the standard properties available on all columns.
+ */
+export const standardColumnProps: StandardColumnProps = {
     name: {
         type: String as PropType<string>,
         default: ""
     },
 
-    /** The title of the column, this is displayed in the table header. */
     title: {
         type: String as PropType<string>,
         required: false
     },
 
-    /**
-     * The name of the field on the row that will contain the data. This is
-     * used by default columns and other features to automatically display
-     * the data. If you are building a completely custom column it is not
-     * required.
-     */
     field: {
         type: String as PropType<string>,
         required: false
     },
 
-    /**
-     * Overrides the default method of obtaining the value to use when matching
-     * against the quick filter. If not specified then the value of of the row
-     * in the `field` property will be used if it is a supported type. A
-     * function may be specified which will be called with the row and column
-     * definition and must return either a string or undefined. If a plain
-     * string is specified then it will be used as a Lava Template which will
-     * be passed the `row` object.
-     */
     quickFilterValue: {
         type: Object as PropType<QuickFilterValueFunction | string>,
         required: false
     },
 
-    /**
-     * The name of the field on the row that will contain the data to be used
-     * when sorting. If this is not specified then the value from `field` will
-     * be used by default. If no `title` is specified then the column will not
-     * be sortable.
-     */
     sortField: {
         type: String as PropType<string>,
         required: false
     },
 
-    /**
-     * Specifies how to get the sort value to use when sorting by this column.
-     * This will override the `sortField` setting. If a function is be provided
-     * then it will be called with the row and the column definition and must
-     * return either a string, number or undefined. If a string is provided
-     * then it will be used as a Lava Template which will be passed the `row`
-     * object used to calculate the value. If no `title` is specified then the
-     * column will not be sortable.
-     */
     sortValue: {
         type: Object as PropType<(SortValueFunction | string)>,
         required: false
     },
 
-    /**
-     * Enabled filtering of this column and specifies what type of filtering
-     * will be done.
-     */
     filter: {
-        type: Object as PropType<GridColumnFilter>,
+        type: Object as PropType<ColumnFilter>,
         required: false
     },
 
-    /**
-     * Specifies how to get the value to use when filtering by this column.
-     * This is used on combination with the `filter` setting only. If a
-     * function is be provided then it will be called with the row and the
-     * column definition and must return a value recognized by the filter.
-     * If a string is provided then it will be used as a Lava Template which
-     * will be passed the `row` object used to calculate the value.
-     */
     filterValue: {
         type: Object as PropType<(FilterValueFunction | string)>,
         required: false
     },
 
-    /**
-     * Specifies how to determine the unique value for cells in this column.
-     * This is used by some operations to find only the distinct values of
-     * the entire dataset. If specified then the function will be passed the
-     * row and column definition and must return either a string, number or
-     * undefined. Otherwise the value of the row in `field` will be used to
-     * determine this value.
-     */
     uniqueValue: {
         type: Object as PropType<UniqueValueFunction>,
         required: false
     },
 
-    /**
-     * Provides a custom component that will be used to format and display
-     * the cell. This is rarely needed as you can usually accomplish the same
-     * with a template that defines the body content.
-     */
     format: {
         type: Object as PropType<VNode>,
         required: false
     }
 };
 
+/** The standard properties available on cells. */
 export const standardCellProps: StandardCellProps = {
     column: {
-        type: Object as PropType<GridColumnDefinition>,
+        type: Object as PropType<ColumnDefinition>,
         required: true
     },
+
     row: {
         type: Object as PropType<Record<string, unknown>>,
+        required: true
+    },
+
+    grid: {
+        type: Object as PropType<IGridState>,
         required: true
     }
 };
 
+/**
+ * The standard properties that are made available to column filter
+ * components.
+ */
 export const standardFilterProps: StandardFilterProps = {
     modelValue: {
         type: Object as PropType<unknown>,
@@ -152,7 +109,7 @@ export const standardFilterProps: StandardFilterProps = {
     },
 
     column: {
-        type: Object as PropType<GridColumnDefinition>,
+        type: Object as PropType<ColumnDefinition>,
         required: true
     },
 
@@ -166,24 +123,41 @@ export const standardFilterProps: StandardFilterProps = {
 
 // #region Filter Matches Functions
 
+/**
+ * The text column filter that performs a substring search to see if the
+ * `needle` is contained within the `haystack`.
+ *
+ * @private This is used internally by Rock and should not be used directly.
+ *
+ * @param needle The filter value defined in the UI component.
+ * @param haystack The filter value from the row that must match the `needle`.
+ *
+ * @returns True if `haystack` matches the `needle` and should be included in the results.
+ */
 export function textFilterMatches(needle: unknown, haystack: unknown): boolean {
     if (typeof (needle) !== "string") {
         return false;
     }
 
-    if (!needle) {
+    if (!needle || !haystack || typeof haystack !== "string") {
         return true;
     }
 
-    const lowerNeedle = needle.toLowerCase();
-
-    if (haystack && typeof (haystack) === "string") {
-        return haystack.toLowerCase().includes(lowerNeedle);
-    }
-
-    return false;
+    return haystack.toLowerCase().includes(needle.toLowerCase());
 }
 
+/**
+ * The column filter compares the `needle` against the `haystack` to see if
+ * they match. This is a deep equality check so if they are arrays or objects
+ * then all child objects and properties must match exactly.
+ *
+ * @private This is used internally by Rock and should not be used directly.
+ *
+ * @param needle The filter value defined in the UI component.
+ * @param haystack The filter value from the row that must match the `needle`.
+ *
+ * @returns True if `haystack` matches the `needle` and should be included in the results.
+ */
 export function pickExistingFilterMatches(needle: unknown, haystack: unknown): boolean {
     if (!Array.isArray(needle)) {
         return false;
@@ -196,7 +170,18 @@ export function pickExistingFilterMatches(needle: unknown, haystack: unknown): b
     return needle.some(n => deepEqual(n, haystack, true));
 }
 
-export function numberFilterMatches(needle: unknown, haystack: unknown, column: GridColumnDefinition, grid: IGridState): boolean {
+/**
+ * The number column filter that performs a comparison of `haystack` and
+ * the value and comparison type inside `needle` to see if it matches.
+ *
+ * @private This is used internally by Rock and should not be used directly.
+ *
+ * @param needle The filter value defined in the UI component.
+ * @param haystack The filter value from the row that must match the `needle`.
+ *
+ * @returns True if `haystack` matches the `needle` and should be included in the results.
+ */
+export function numberFilterMatches(needle: unknown, haystack: unknown, column: ColumnDefinition, grid: IGridState): boolean {
     if (!needle || typeof needle !== "object") {
         return false;
     }
@@ -245,35 +230,26 @@ export function numberFilterMatches(needle: unknown, haystack: unknown, column: 
             return false;
         }
 
-        const cacheKey = `number-filter-${column.name}.top-${nCount}`;
-        let topn = grid.cache[cacheKey] as number | undefined;
-
-        if (topn === undefined) {
-            topn = calculateColumnTopNRowValue(grid.rows, nCount, column, grid);
-            grid.cache[cacheKey] = topn;
-        }
+        const cacheKey = grid.getColumnCacheKey(column, "number-filter", `top-${nCount}`);
+        const topn = grid.cache.getOrAdd(cacheKey, () => {
+            return calculateColumnTopNRowValue(nCount, column, grid);
+        });
 
         return haystack >= topn;
     }
     else if (needle["method"] === NumberFilterMethod.AboveAverage) {
-        const cacheKey = `number-filter-${column.name}.average`;
-        let average = grid.cache[cacheKey] as number | undefined;
-
-        if (average === undefined) {
-            average = calculateColumnAverageValue(grid.rows, column, grid);
-            grid.cache[cacheKey] = average;
-        }
+        const cacheKey = grid.getColumnCacheKey(column, "number-filter", "average");
+        const average = grid.cache.getOrAdd(cacheKey, () => {
+            return calculateColumnAverageValue(column, grid);
+        });
 
         return haystack > average;
     }
     else if (needle["method"] === NumberFilterMethod.BelowAverage) {
-        const cacheKey = `number-filter-${column.name}.average`;
-        let average = grid.cache[cacheKey] as number | undefined;
-
-        if (average === undefined) {
-            average = calculateColumnAverageValue(grid.rows, column, grid);
-            grid.cache[cacheKey] = average;
-        }
+        const cacheKey = grid.getColumnCacheKey(column, "number-filter", "average");
+        const average = grid.cache.getOrAdd(cacheKey, () => {
+            return calculateColumnAverageValue(column, grid);
+        });
 
         return haystack < average;
     }
@@ -286,10 +262,19 @@ export function numberFilterMatches(needle: unknown, haystack: unknown, column: 
 
 // #region Functions
 
-export function calculateColumnAverageValue(rows: Record<string, unknown>[], column: GridColumnDefinition, grid: IGridState): number {
+/**
+ * Calculates the average numerical value across all rows in a grid column.
+ *
+ * @param column The column whose values should be considered for the average.
+ * @param grid The grid that provides all the rows.
+ *
+ * @returns A number that represents the average value or `0` if no rows with numeric values existed.
+ */
+export function calculateColumnAverageValue(column: ColumnDefinition, grid: IGridState): number {
     let count = 0;
     let total = 0;
-    for (const row of rows) {
+
+    for (const row of grid.rows) {
         const rowValue = column.filterValue(row, column, grid);
 
         if (typeof rowValue === "number") {
@@ -301,15 +286,30 @@ export function calculateColumnAverageValue(rows: Record<string, unknown>[], col
     return count === 0 ? 0 : total / count;
 }
 
-export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], rowCount: number, column: GridColumnDefinition, grid: IGridState): number {
+/**
+ * Calculates top Nth numeric row value for a column. If the cell values are
+ * `1, 2, 3, 4, 4, 5, 5` and `rowCount` is 3 then this will return
+ * the value `4`. Which means the final row count displayed will be 4 because
+ * there are 4 rows with values >= 4.
+ *
+ * @param column The column whose values should be considered for the average.
+ * @param grid The grid that provides all the rows.
+ *
+ * @returns A number that represents the average value or `0` if no rows with numeric values existed.
+ */
+export function calculateColumnTopNRowValue(rowCount: number, column: ColumnDefinition, grid: IGridState): number {
     const values: number[] = [];
 
-    for (const row of rows) {
+    for (const row of grid.rows) {
         const rowValue = column.filterValue(row, column, grid);
 
         if (typeof rowValue === "number") {
             values.push(rowValue);
         }
+    }
+
+    if (values.length === 0) {
+        return 0;
     }
 
     // Sort in descending order.
@@ -323,50 +323,131 @@ export function calculateColumnTopNRowValue(rows: Record<string, unknown>[], row
     }
 }
 
-function getOrAddRowCacheValue<T>(row: Record<string, unknown>, column: GridColumnDefinition, key: string, gridState: IGridState, factory: ((row: Record<string, unknown>, column: GridColumnDefinition) => T)): T {
-    return gridState.rowCache.getOrAdd<T>(row, `${column.name}-${key}`, () => factory(row, column));
+/**
+ * Gets the value from the row cache or creates the value and stores it in
+ * cache. This is a tiny helper function to simplify the process of
+ * implementing cache when constructing column definitions.
+ *
+ * @param row The row whose value will be cached.
+ * @param column The column that the value will be associated with.
+ * @param key The key that identifies the value to be cached.
+ * @param grid The grid that will be used for caching.
+ * @param factory The function that will return the value if it is not already in cache.
+ * @returns Either the value from cache or the value returned by `factory`.
+ */
+function getOrAddRowCacheValue<T>(row: Record<string, unknown>, column: ColumnDefinition, key: string, grid: IGridState, factory: (() => T)): T {
+    const finalKey = grid.getColumnCacheKey(column, "grid", key);
+
+    return grid.rowCache.getOrAdd<T>(row, finalKey, () => factory());
 }
 
-export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition[] {
-    const columns: GridColumnDefinition[] = [];
+/**
+ * Builds the column definitions for the attributes defined on the node.
+ *
+ * @param columns The array of columns that the new attribute columns will be appended to.
+ * @param node The node that defines the attribute fields.
+ */
+function buildAttributeColumns(columns: ColumnDefinition[], node: VNode): void {
+    const attributes = getVNodeProp<AttributeFieldDefinitionBag[]>(node, "attributes");
+    if (!attributes) {
+        return;
+    }
+
+    for (const attribute of attributes) {
+        if (!attribute.name) {
+            continue;
+        }
+
+        columns.push({
+            name: attribute.name,
+            title: attribute.title ?? undefined,
+            field: attribute.name,
+            uniqueValue: (r, c) => c.field ? String(r[c.field]) : "",
+            sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
+            quickFilterValue: (r, c, g) => getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => c.field ? String(r[c.field]) : undefined),
+            filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
+            format: getVNodeProp<VNode>(node, "format") ?? defaultCell,
+            props: {}
+        });
+    }
+}
+
+/**
+ * Builds a new column definition from the information provided.
+ *
+ * This really didn't need to be a function to make things cleaner but it
+ * was needed to make sure the variables don't change in the loop that now
+ * calls this method.
+ *
+ * @param name The name of the column.
+ * @param title The title of the column.
+ * @param field The name of the field that provides the default value.
+ * @param format The component that will display the cell.
+ * @param filter The filter definition for the column.
+ * @param uniqueValue The function that provides the unique value of the cell.
+ * @param sortValue The function that provides the sortable value of the cell.
+ * @param filterValue The function that provides the filter value of the cell.
+ * @param quickFilterValue The function that provides the quick filter value of the cell.
+ * @param props The additional properties that were defined on the column.
+ * @returns A new object that represents the column.
+ */
+function buildColumn(name: string, title: string | undefined, field: string | undefined, format: VNode | Component, filter: ColumnFilter | undefined, uniqueValue: UniqueValueFunction, sortValue: SortValueFunction | undefined, filterValue: FilterValueFunction, quickFilterValue: QuickFilterValueFunction, props: Record<string, unknown>): ColumnDefinition {
+    const column: ColumnDefinition = {
+        name,
+        title,
+        field,
+        format,
+        filter,
+        uniqueValue: (r, c, g) => {
+            return getOrAddRowCacheValue(r, c, "uniqueValue", g, () => uniqueValue(r, c, g));
+        },
+        sortValue: (r, c, g) => {
+            const factory = sortValue;
+            return factory !== undefined
+                ? getOrAddRowCacheValue(r, c, "sortValue", g, () => factory(r, c, g))
+                : undefined;
+        },
+        filterValue: (r, c, g) => {
+            return getOrAddRowCacheValue(r, c, "filterValue", g, () => filterValue(r, c, g));
+        },
+        quickFilterValue: (r, c, g) => {
+            return getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => quickFilterValue(r, c, g));
+        },
+        props
+    };
+
+    return column;
+}
+
+/**
+ * Builds the column definitions from the array of virtual nodes found inside
+ * of a component.
+ *
+ * @param columnNodes The virtual nodes that contain the definitions of the columns.
+ *
+ * @returns An array of {@link ColumnDefinition} objects.
+ */
+export function getColumnDefinitions(columnNodes: VNode[]): ColumnDefinition[] {
+    const columns: ColumnDefinition[] = [];
 
     for (const node of columnNodes) {
         const name = getVNodeProp<string>(node, "name");
 
+        // Check if this node is the special AttributeColumns node.
         if (!name) {
             if (getVNodeProp<boolean>(node, "__attributeColumns") !== true) {
                 continue;
             }
 
-            const attributes = getVNodeProp<AttributeFieldDefinitionBag[]>(node, "attributes");
-            if (!attributes) {
-                continue;
-            }
-
-            for (const attribute of attributes) {
-                if (!attribute.name) {
-                    continue;
-                }
-
-                columns.push({
-                    name: attribute.name,
-                    title: attribute.title ?? undefined,
-                    field: attribute.name,
-                    uniqueValue: (r, c) => c.field ? String(r[c.field]) : "",
-                    sortValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                    quickFilterValue: (r, c, g) => getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => c.field ? String(r[c.field]) : undefined),
-                    filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
-                    format: getVNodeProp<VNode>(node, "format") ?? defaultCell,
-                    props: {},
-                    cache: new GridCache()
-                });
-            }
+            buildAttributeColumns(columns, node);
 
             continue;
         }
 
         const field = getVNodeProp<string>(node, "field");
-        let sortValue = getVNodeProp<ValueFormatterFunction | string>(node, "sortValue");
+
+        // Get the function that will provide the sort value.
+        let sortValue = getVNodeProp<SortValueFunction | string>(node, "sortValue");
 
         if (!sortValue) {
             const sortField = getVNodeProp<string>(node, "sortField") || field;
@@ -381,9 +462,11 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
             };
         }
 
-        let quickFilterValue = getVNodeProp<((row: Record<string, unknown>, column: GridColumnDefinition) => string | undefined)>(node, "quickFilterValue");
+        // Get the function that will provide the quick filter value.
+        let quickFilterValue = getVNodeProp<QuickFilterValueFunction | string>(node, "quickFilterValue");
 
         if (!quickFilterValue) {
+            // One was not provided, so generate a common use one.
             quickFilterValue = (r, c): string | undefined => {
                 if (!c.field) {
                     return undefined;
@@ -410,9 +493,11 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
             };
         }
 
+        // Get the function that will provide the column filter value.
         let filterValue = getVNodeProp<FilterValueFunction | string>(node, "filterValue");
 
         if (filterValue === undefined) {
+            // One wasn't provided, so do our best to infer what it should be.
             filterValue = (r, c): unknown => {
                 if (!c.field) {
                     return undefined;
@@ -429,6 +514,7 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
             };
         }
 
+        // Get the function that will provide the unique value for a cell.
         let uniqueValue = getVNodeProp<UniqueValueFunction>(node, "uniqueValue");
 
         if (!uniqueValue) {
@@ -447,19 +533,19 @@ export function getColumnDefinitions(columnNodes: VNode[]): GridColumnDefinition
             };
         }
 
-        columns.push({
-            name,
-            title: getVNodeProp<string>(node, "title"),
+        // Build the final column definition.
+        const column = buildColumn(name,
+            getVNodeProp<string>(node, "title"),
             field,
-            format: node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell,
-            filter: getVNodeProp<GridColumnFilter>(node, "filter"),
+            node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell,
+            getVNodeProp<ColumnFilter>(node, "filter"),
             uniqueValue,
             sortValue,
             filterValue,
-            quickFilterValue: (r, c, g) => quickFilterValue !== undefined ? getOrAddRowCacheValue(r, c, "quickFilterValue", g, quickFilterValue) : undefined,
-            props: getVNodeProps(node),
-            cache: new GridCache()
-        });
+            quickFilterValue,
+            getVNodeProps(node));
+
+        columns.push(column);
     }
 
     return columns;
@@ -655,6 +741,11 @@ export class GridRowCache implements IGridRowCache {
     }
 }
 
+/**
+ * Default implementation of the grid state for internal use.
+ *
+ * @private The is an internal class that should not be used by plugins.
+ */
 export class GridState implements IGridState {
     // #region Properties
 
@@ -669,36 +760,34 @@ export class GridState implements IGridState {
     /** Determines if we are monitoring for changes to the row data. */
     private liveUpdates: boolean;
 
+    /** The key to get the unique identifier of each row. */
     private itemKey?: string;
 
+    /** The current quick filter value that will be used to filter the rows. */
     private quickFilter: string = "";
 
+    /**
+     * The currently applied per-column filters that will be used to filter
+     * the rows.
+     */
     private columnFilters: Record<string, unknown | undefined> = {};
 
+    /** The current column being used to sort the rows. */
     private columnSort?: ColumnSort;
-
-    public readonly filteredRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
-
-    public readonly sortedRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
-
-    public readonly visibleRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
-
-    public readonly columns: GridColumnDefinition[];
-
-    public visibleColumns: GridColumnDefinition[];
-
-    public cache: IGridCache = new GridCache();
-
-    public rowCache: IGridRowCache;
 
     // #endregion
 
     // #region Constructors
 
-    constructor(columns: GridColumnDefinition[], liveUpdates: boolean) {
+    /**
+     * Creates a new instance of the GridState for use with the Grid component.
+     *
+     * @param columns The columns to initialize the Grid with.
+     * @param liveUpdates If true then the grid will monitor for live updates to rows.
+     */
+    constructor(columns: ColumnDefinition[], liveUpdates: boolean) {
         this.rowCache = new GridRowCache(undefined);
         this.columns = columns;
-        this.visibleColumns = columns;
         this.liveUpdates = liveUpdates;
     }
 
@@ -716,14 +805,38 @@ export class GridState implements IGridState {
 
     // #endregion
 
-    // #region Property Accessors
+    // #region IGridState Implementation
+
+    public readonly filteredRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public readonly sortedRows: ShallowRef<Record<string, unknown>[]> = shallowRef([]);
+
+    public readonly columns: ColumnDefinition[];
+
+    public cache: IGridCache = new GridCache();
+
+    public rowCache: IGridRowCache;
 
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;
     }
 
+    public getColumnCacheKey(column: ColumnDefinition, component: string, key: string): string {
+        return `column-${column}-${component}-${key}`;
+    }
+
     // #endregion
 
+    // #region Property Accessors
+
+    // #endregion
+
+    // #region Private Functions
+
+    /**
+     * Begins tracking all rows in the grid so that we can monitor for
+     * changes and update the UI accordingly.
+     */
     private initializeReactiveTracker(): void {
         const rows = unref(this.internalRows);
 
@@ -738,6 +851,10 @@ export class GridState implements IGridState {
         }
     }
 
+    /**
+     * Detects any changes to the row data from the last time we were called.
+     * Must be called after {@link initializeReactiveTracker}.
+     */
     private detectRowChanges(): void {
         const rows = unref(this.internalRows);
         const knownKeys: string[] = [];
@@ -776,101 +893,76 @@ export class GridState implements IGridState {
         }
     }
 
-    public setItemKey(value: string | undefined): void {
-        this.itemKey = value;
-        (this.rowCache as GridRowCache).setRowItemKey(value);
-    }
-
-    public setDataRows(rows: Record<string, unknown>[]): void {
-        // Stop watching the old rows if we are currently watching for changes.
-        if (this.internalRowsWatcher) {
-            this.internalRowsWatcher();
-            this.internalRowsWatcher = undefined;
-        }
-
-        // Update out internal rows and clear all the cache.
-        this.internalRows.value = rows;
-        this.cache.clear();
-        this.rowCache.clear();
-
-        // Start watching for changes if we are reactive.
-        if (this.liveUpdates) {
-            this.initializeReactiveTracker();
-
-            this.internalRowsWatcher = watch(() => rows, () => {
-                this.detectRowChanges();
-                this.updateFilteredRows();
-            }, { deep: true });
-        }
-
-        this.updateFilteredRows();
-    }
-
-    public setFilters(quickFilter: string | undefined, columnFilters: Record<string, unknown> | undefined): void {
-        this.quickFilter = quickFilter ?? "";
-        this.columnFilters = columnFilters ?? {};
-        this.updateFilteredRows();
-    }
-
-    public setSort(columnSort: ColumnSort | undefined): void {
-        this.columnSort = columnSort;
-        this.updateSortedRows();
-    }
-
+    /**
+     * Performs filtering of the {@link rows} and determines which rows
+     * match the filters.
+     */
     private updateFilteredRows(): void {
+        if (this.columns.length === 0) {
+            this.filteredRows.value = [];
+            this.updateSortedRows();
+
+            return;
+        }
+
         const start = Date.now();
-        if (this.columns.length > 0) {
-            const columns = this.visibleColumns;
-            const quickFilterRawValue = this.quickFilter.toLowerCase();
+        const columns = this.columns;
+        const quickFilterRawValue = this.quickFilter.toLowerCase();
 
-            const result = this.rows.filter(row => {
-                const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
-                    const value = column.quickFilterValue(row, column, this);
+        const result = this.rows.filter(row => {
+            // Check if the row matches the quick filter.
+            const quickFilterMatch = !quickFilterRawValue || columns.some((column): boolean => {
+                const value = column.quickFilterValue(row, column, this);
 
-                    if (value === undefined) {
-                        return false;
-                    }
+                if (value === undefined) {
+                    return false;
+                }
 
-                    return value.toLowerCase().includes(quickFilterRawValue);
-                });
-
-                const filtersMatch = columns.every(column => {
-                    if (!column.filter) {
-                        return true;
-                    }
-
-                    const columnFilterValue = this.columnFilters[column.name];
-
-                    if (columnFilterValue === undefined) {
-                        return true;
-                    }
-
-                    const value: unknown = column.filterValue(row, column, this);
-
-                    if (value === undefined) {
-                        return false;
-                    }
-
-                    return column.filter.matches(columnFilterValue, value, column, this);
-                });
-
-                return quickFilterMatch && filtersMatch;
+                return value.toLowerCase().includes(quickFilterRawValue);
             });
 
-            this.filteredRows.value = result;
-        }
-        else {
-            this.filteredRows.value = [];
-        }
+            // Bail out early if the quick filter didn't match.
+            if (!quickFilterMatch) {
+                return false;
+            }
+
+            // Check if the row matches the column specific filters.
+            return columns.every(column => {
+                if (!column.filter) {
+                    return true;
+                }
+
+                const columnFilterValue = this.columnFilters[column.name];
+
+                if (columnFilterValue === undefined) {
+                    return true;
+                }
+
+                const value: unknown = column.filterValue(row, column, this);
+
+                if (value === undefined) {
+                    return false;
+                }
+
+                return column.filter.matches(columnFilterValue, value, column, this);
+            });
+        });
+
+        this.filteredRows.value = result;
 
         console.log(`Filtering took ${Date.now() - start}ms.`);
 
         this.updateSortedRows();
     }
 
+    /**
+     * Takes the {@link filteredRows} and sorts them according to the information
+     * tracked by the Grid and updates the {@link sortedRows} property.
+     */
     private updateSortedRows(): void {
         const columnSort = this.columnSort;
 
+        // Bail early if we don't have any sorting to perform.
         if (!columnSort) {
             this.sortedRows.value = this.filteredRows.value;
 
@@ -878,7 +970,7 @@ export class GridState implements IGridState {
         }
 
         const start = Date.now();
-        const column = this.visibleColumns.find(c => c.name === columnSort.column);
+        const column = this.columns.find(c => c.name === columnSort.column);
         const order = columnSort.isDescending ? -1 : 1;
 
         if (!column) {
@@ -889,7 +981,9 @@ export class GridState implements IGridState {
 
         // Pre-process each row to calculate the sort value. Otherwise it will
         // be calculated exponentially during sort. This provides a serious
-        // performance boost when sorting Lava columns.
+        // performance boost when sorting Lava columns. Even though we have
+        // cache we do it this way because we may not have an itemKey which
+        // would disable the cache.
         const rows = this.filteredRows.value.map(r => {
             let value: string | number | undefined;
 
@@ -928,6 +1022,75 @@ export class GridState implements IGridState {
 
         console.log(`sortedRows took ${Date.now() - start}ms.`);
     }
+
+    // #endregion
+
+    // #region Public Functions
+
+    /**
+     * Sets the item key used to uniquely identify rows.
+     *
+     * @param value The field name that contains the item key.
+     */
+    public setItemKey(value: string | undefined): void {
+        this.itemKey = value;
+        (this.rowCache as GridRowCache).setRowItemKey(value);
+    }
+
+    /**
+     * Sets the rows to be used by the Grid. This will replace all existing
+     * row data.
+     *
+     * @param rows The array of row data to use for the Grid.
+     */
+    public setDataRows(rows: Record<string, unknown>[]): void {
+        // Stop watching the old rows if we are currently watching for changes.
+        if (this.internalRowsWatcher) {
+            this.internalRowsWatcher();
+            this.internalRowsWatcher = undefined;
+        }
+
+        // Update out internal rows and clear all the cache.
+        this.internalRows.value = rows;
+        this.cache.clear();
+        this.rowCache.clear();
+
+        // Start watching for changes if we are reactive.
+        if (this.liveUpdates) {
+            this.initializeReactiveTracker();
+
+            this.internalRowsWatcher = watch(() => rows, () => {
+                this.detectRowChanges();
+                this.updateFilteredRows();
+            }, { deep: true });
+        }
+
+        this.updateFilteredRows();
+    }
+
+    /**
+     * Sets the filters to be used to filter the rows down to a limited set.
+     *
+     * @param quickFilter The value to use for quick filtering.
+     * @param columnFilters The column filters to apply to the data.
+     */
+    public setFilters(quickFilter: string | undefined, columnFilters: Record<string, unknown> | undefined): void {
+        this.quickFilter = quickFilter ?? "";
+        this.columnFilters = columnFilters ?? {};
+        this.updateFilteredRows();
+    }
+
+    /**
+     * Sets the column that will be used to sort the filtered rows.
+     *
+     * @param columnSort The column that will be used for sorting.
+     */
+    public setSort(columnSort: ColumnSort | undefined): void {
+        this.columnSort = columnSort;
+        this.updateSortedRows();
+    }
+
+    // #endregion
 }
 
 // #endregion
@@ -946,4 +1109,3 @@ const defaultCell = defineComponent({
 });
 
 // #endregion
-
