@@ -17,7 +17,7 @@
 
         <NumberColumn name="id" title="Id" field="id" sortField="id" :filter="numberValueFilter" />
 
-        <DateColumn name="expirationDateTime" title="Expires" field="expirationDateTime" sortField="expirationDateTime" />
+        <DateColumn name="expirationDateTime" title="Expires" field="expirationDateTime" :filter="dateValueFilter" sortField="expirationDateTime" />
 
         <BooleanColumn name="isUrgent" title="Urgent" field="isUrgent" sortField="isUrgent" />
 
@@ -69,7 +69,7 @@
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, dateValueFilter, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);

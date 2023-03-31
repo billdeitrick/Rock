@@ -17,8 +17,10 @@
 
 import { Component, defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
+import { DateFilterMethod } from "@Obsidian/Enums/Controls/Grid/dateFilterMethod";
 import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
+import { DayOfWeek, RockDateTime } from "@Obsidian/Utility/rockDateTime";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
 import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
@@ -258,9 +260,152 @@ export function numberFilterMatches(needle: unknown, haystack: unknown, column: 
     }
 }
 
+/**
+ * The date column filter that performs a comparison of `haystack` and
+ * the value and comparison type inside `needle` to see if it matches.
+ *
+ * @private This is used internally by Rock and should not be used directly.
+ *
+ * @param needle The filter value defined in the UI component.
+ * @param haystack The filter value from the row that must match the `needle`.
+ *
+ * @returns True if `haystack` matches the `needle` and should be included in the results.
+ */
+export function dateFilterMatches(needle: unknown, haystack: unknown): boolean {
+    if (!needle || typeof needle !== "object") {
+        return false;
+    }
+
+    // Allow undefined values and number values, but everything else is
+    // considered a non-match.
+    if (haystack !== undefined && typeof haystack !== "string") {
+        return false;
+    }
+
+    const needleFirstDate = RockDateTime.parseISO(needle["value"] ?? "")?.date.toMilliseconds() ?? 0;
+    const needleSecondDate = RockDateTime.parseISO(needle["secondValue"] ?? "")?.date.toMilliseconds() ?? 0;
+    const haystackDate = RockDateTime.parseISO(haystack ?? "")?.date.toMilliseconds() ?? 0;
+    const today = RockDateTime.now().date;
+
+    if (needle["method"] === DateFilterMethod.Equals) {
+        return haystackDate === needleFirstDate;
+    }
+    else if (needle["method"] === DateFilterMethod.DoesNotEqual) {
+        return haystackDate !== needleFirstDate;
+    }
+
+    // All the remaining comparison types require a value.
+    if (haystackDate === 0) {
+        return false;
+    }
+
+    if (needle["method"] === DateFilterMethod.Before) {
+        return haystackDate < needleFirstDate;
+    }
+    else if (needle["method"] === DateFilterMethod.After) {
+        return haystackDate > needleFirstDate;
+    }
+    else if (needle["method"] === DateFilterMethod.Between) {
+        return haystackDate >= needleFirstDate && haystackDate <= needleSecondDate;
+    }
+    // SUn = 0, Mon = 1, Tue = 2, Wed = 3
+    // Start = Tue = 2
+    else if (needle["method"] === DateFilterMethod.ThisWeek) {
+        const firstDayOfWeek = getStartOfWeek(today);
+        const lastDayOfWeek = firstDayOfWeek.addDays(6);
+
+        return haystackDate >= firstDayOfWeek.toMilliseconds()
+            && haystackDate <= lastDayOfWeek.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.LastWeek) {
+        const firstDayOfWeek = getStartOfWeek(today).addDays(-7);
+        const lastDayOfWeek = firstDayOfWeek.addDays(6);
+
+        return haystackDate >= firstDayOfWeek.toMilliseconds()
+            && haystackDate <= lastDayOfWeek.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.NextWeek) {
+        const firstDayOfWeek = getStartOfWeek(today).addDays(7);
+        const lastDayOfWeek = firstDayOfWeek.addDays(6);
+
+        return haystackDate >= firstDayOfWeek.toMilliseconds()
+            && haystackDate <= lastDayOfWeek.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.ThisMonth) {
+        const firstDayOfMonth = today.addDays(-(today.day - 1));
+        const lastDayOfMonth = firstDayOfMonth.addMonths(1).addDays(-1);
+
+        return haystackDate >= firstDayOfMonth.toMilliseconds()
+            && haystackDate <= lastDayOfMonth.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.LastMonth) {
+        const firstDayOfMonth = today.addDays(-(today.day - 1)).addMonths(-1);
+        const lastDayOfMonth = firstDayOfMonth.addMonths(1).addDays(-1);
+
+        return haystackDate >= firstDayOfMonth.toMilliseconds()
+            && haystackDate <= lastDayOfMonth.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.NextMonth) {
+        const firstDayOfMonth = today.addDays(-(today.day - 1)).addMonths(1);
+        const lastDayOfMonth = firstDayOfMonth.addMonths(1).addDays(-1);
+
+        return haystackDate >= firstDayOfMonth.toMilliseconds()
+            && haystackDate <= lastDayOfMonth.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.ThisYear) {
+        const firstDayOfYear = today.addDays(-(today.dayOfYear - 1));
+        const lastDayOfYear = firstDayOfYear.addYears(1).addDays(-1);
+
+        return haystackDate >= firstDayOfYear.toMilliseconds()
+            && haystackDate <= lastDayOfYear.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.LastYear) {
+        const firstDayOfYear = today.addDays(-(today.dayOfYear - 1)).addYears(-1);
+        const lastDayOfYear = firstDayOfYear.addYears(1).addDays(-1);
+
+        return haystackDate >= firstDayOfYear.toMilliseconds()
+            && haystackDate <= lastDayOfYear.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.NextYear) {
+        const firstDayOfYear = today.addDays(-(today.dayOfYear - 1)).addYears(1);
+        const lastDayOfYear = firstDayOfYear.addYears(1).addDays(-1);
+
+        return haystackDate >= firstDayOfYear.toMilliseconds()
+            && haystackDate <= lastDayOfYear.toMilliseconds();
+    }
+    else if (needle["method"] === DateFilterMethod.YearToDate) {
+        const firstDayOfYear = today.addDays(-(today.dayOfYear - 1));
+
+        return haystackDate >= firstDayOfYear.toMilliseconds()
+            && haystackDate <= today.toMilliseconds();
+    }
+    else {
+        return false;
+    }
+}
+
 // #endregion
 
 // #region Functions
+
+/**
+ * Gets a new date from the passed date whose date portion is the start
+ * of the week. The time value is not modified.
+ *
+ * @param date The original date to be used in the calculation.
+ *
+ * @returns A new date object whose date portion matches the start of the week.
+ */
+function getStartOfWeek(date: RockDateTime): RockDateTime {
+    const weekStartsOn = DayOfWeek.Monday;
+    let targetDate: RockDateTime = date;
+
+    while (targetDate.dayOfWeek !== weekStartsOn) {
+        targetDate = targetDate.addDays(-1);
+    }
+
+    return targetDate;
+}
 
 /**
  * Calculates the average numerical value across all rows in a grid column.
