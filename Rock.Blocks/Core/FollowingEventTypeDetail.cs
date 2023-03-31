@@ -1,4 +1,4 @@
-// <copyright>
+﻿// <copyright>
 // Copyright by the Spark Development Network
 //
 // Licensed under the Rock Community License (the "License");
@@ -24,6 +24,7 @@ using Rock.Attribute;
 using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
+using Rock.Security;
 using Rock.ViewModels.Blocks;
 using Rock.ViewModels.Blocks.Core.FollowingEventTypeDetail;
 
@@ -51,7 +52,7 @@ namespace Rock.Blocks.Core
 
         private static class PageParameterKey
         {
-            public const string FollowingEventTypeId = "FollowingEventTypeId";
+            public const string FollowingEventTypeId = "EventId";
         }
 
         private static class NavigationUrlKey

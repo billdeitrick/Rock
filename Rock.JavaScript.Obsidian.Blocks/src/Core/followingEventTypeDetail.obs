@@ -57,11 +57,11 @@
     const errorMessage = ref("");
 
     const followingEventTypeViewBag = ref(config.entity);
-    const followingEventTypeEditBag = ref<FollowingEventTypeBag>({} as FollowingEventTypeBag);
+    const followingEventTypeEditBag = ref<FollowingEventTypeBag>(config.entity as FollowingEventTypeBag);
 
     const entityTypeGuid = EntityType.FollowingEventType;
 
-    const panelMode = ref<DetailPanelMode>(DetailPanelMode.View);
+    const panelMode = ref<DetailPanelMode>(DetailPanelMode.Edit);
 
     // The properties that are being edited in the UI. This is used to
     // inform the server which incoming values have valid data in them.
@@ -70,7 +70,6 @@
         "description",
         "entityNotificationFormatLava",
         "entityType",
-        "entityTypeId",
         "followedEntityType",
         "followedEntityTypeId",
         "includeNonPublicRequests",
@@ -212,7 +211,7 @@
      * Event handler for when a value has changed that has an associated
      * C# property name. This is used to detect changes to values that
      * might cause qualified attributes to either show up or not show up.
-     * 
+     *
      * @param propertyName The name of the C# property that was changed.
      */
     function onPropertyChanged(propertyName: string): void {
