@@ -822,7 +822,7 @@ export class GridState implements IGridState {
     }
 
     public getColumnCacheKey(column: ColumnDefinition, component: string, key: string): string {
-        return `column-${column}-${component}-${key}`;
+        return `column-${column.name}-${component}-${key}`;
     }
 
     // #endregion
