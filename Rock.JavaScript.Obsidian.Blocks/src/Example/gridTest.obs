@@ -1,6 +1,11 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <Grid ref="myGrid" :data="loadGridData" keyField="guid" liveUpdates stickyHeader>
+    <Grid ref="myGrid"
+          :data="loadGridData"
+          keyField="guid"
+          liveUpdates
+          stickyHeader
+          entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13">
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
                 {{ row.name.firstName }} {{ row.name.lastName }}
@@ -48,6 +53,8 @@
 
         <EditColumn name="edit" :onClick="onEditClick" />
 
+        <SecurityColumn name="secure" itemTitle="email" />
+
         <DeleteColumn name="delete" :onClick="onDeleteClick" />
     </Grid>
 </template>
@@ -59,7 +66,7 @@
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, SecurityColumn, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);

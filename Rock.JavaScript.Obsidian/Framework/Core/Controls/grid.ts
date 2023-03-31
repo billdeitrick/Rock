@@ -24,6 +24,7 @@ import { DayOfWeek, RockDateTime } from "@Obsidian/Utility/rockDateTime";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
 import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
+import { Guid } from "@Obsidian/Types";
 
 // #region Standard Component Props
 
@@ -940,11 +941,12 @@ export class GridState implements IGridState {
      * @param liveUpdates If true then the grid will monitor for live updates to rows.
      * @param itemTerm The word or phrase that describes each row.
      */
-    constructor(columns: ColumnDefinition[], liveUpdates: boolean, itemTerm: string) {
+    constructor(columns: ColumnDefinition[], liveUpdates: boolean, itemTerm: string, entityTypeGuid: Guid | undefined) {
         this.rowCache = new GridRowCache(undefined);
         this.columns = columns;
         this.liveUpdates = liveUpdates;
         this.itemTerm = itemTerm;
+        this.entityTypeGuid = entityTypeGuid;
     }
 
     /**
@@ -974,6 +976,8 @@ export class GridState implements IGridState {
     public readonly rowCache: IGridRowCache;
 
     public readonly itemTerm: string;
+
+    public readonly entityTypeGuid?: Guid | undefined;
 
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;

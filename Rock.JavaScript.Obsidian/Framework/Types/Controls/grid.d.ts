@@ -16,6 +16,7 @@
 //
 
 import { Component, PropType, ShallowRef, VNode } from "vue";
+import { Guid } from "..";
 
 // #region Caching
 
@@ -540,6 +541,12 @@ export interface IGridState {
 
     /** The word or phrase that describes the individual row items.  */
     readonly itemTerm: string;
+
+    /**
+     * The unique identifier of the entity type that the rows represent. If the
+     * rows do not represent an entity then this will be undefined.
+     */
+    readonly entityTypeGuid?: Guid;
 
     /**
      * Gets the cache key to use for storing column specific data for a

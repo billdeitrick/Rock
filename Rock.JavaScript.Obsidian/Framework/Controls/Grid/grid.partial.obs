@@ -200,6 +200,7 @@ table.table-obsidian th.grid-error > .alert {
     import { getColumnDefinitions, GridState } from "@Obsidian/Core/Controls/grid";
     import { ColumnSort, GridAction, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
+    import { Guid } from "@Obsidian/Types";
 
     /*
      * 8/17/2022 - DSH
@@ -243,9 +244,20 @@ table.table-obsidian th.grid-error > .alert {
             default: false
         },
 
-        /** The term that identifies individual rows in the grid. */
+        /**
+         * The term that identifies individual rows in the grid. This
+         * property is not reactive.
+         */
         itemTerm: {
             type: String as PropType<string>,
+            required: false
+        },
+
+        /**
+         * The unique identifier of the entity type that the rows represent.
+         */
+        entityTypeGuid: {
+            type: String as PropType<Guid>,
             required: false
         }
     });
@@ -261,7 +273,8 @@ table.table-obsidian th.grid-error > .alert {
     const gridState: GridState = new GridState(
         getColumnDefinitions(slots["default"]?.() ?? []),
         props.liveUpdates ?? false,
-        props.itemTerm || "item");
+        props.itemTerm || "item",
+        props.entityTypeGuid);
     gridState.setItemKey(props.keyField);
 
     const gridActions = ref<GridAction[]>([]);

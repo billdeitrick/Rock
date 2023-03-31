@@ -25,6 +25,7 @@ import DeleteColumn from "./Grid/Columns/deleteColumn.partial";
 import EditColumn from "./Grid/Columns/editColumn.partial";
 import LabelColumn from "./Grid/Columns/labelColumn.partial";
 import NumberColumn from "./Grid/Columns/numberColumn.partial";
+import SecurityColumn from "./Grid/Columns/securityColumn.partial";
 
 import BooleanCell from "./Grid/Cells/booleanCell.partial.obs";
 import DateCell from "./Grid/Cells/dateCell.partial.obs";
@@ -32,6 +33,7 @@ import DeleteCell from "./Grid/Cells/deleteCell.partial.obs";
 import EditCell from "./Grid/Cells/editCell.partial.obs";
 import NumberCell from "./Grid/Cells/numberCell.partial.obs";
 import LabelCell from "./Grid/Cells/labelCell.partial.obs";
+import SecurityCell from "./Grid/Cells/securityCell.partial.obs";
 import TextCell from "./Grid/Cells/textCell.partial";
 
 import DateFilter from "./Grid/Filters/dateFilter.partial.obs";
@@ -54,7 +56,8 @@ export {
     DeleteColumn,
     EditColumn,
     LabelColumn,
-    NumberColumn
+    NumberColumn,
+    SecurityColumn
 };
 
 // Export cell components.
@@ -65,6 +68,7 @@ export {
     EditCell,
     LabelCell,
     NumberCell,
+    SecurityCell,
     TextCell
 };
 

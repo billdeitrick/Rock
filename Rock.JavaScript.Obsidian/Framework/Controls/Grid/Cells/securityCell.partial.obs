@@ -1,0 +1,55 @@
+<template>
+    <button class="btn btn-security btn-sm"
+            title="Secure"
+            :disabled="isDisabled"
+            @click.prevent="onClick">
+        <i class="fa fa-lock"></i>
+    </button>
+</template>
+
+<script lang="ts">
+    // Define jQuery and Rock for showing security modal.
+    declare function $(value: unknown): unknown;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/naming-convention
+    declare const Rock: any;
+</script>
+
+<script setup lang="ts">
+    import { standardCellProps } from "@Obsidian/Core/Controls/grid";
+    import { IGridState } from "@Obsidian/Types/Controls/grid";
+    import { computed, ref } from "vue";
+
+    const props = defineProps(standardCellProps);
+    const isDisabled = ref(false);
+
+    const itemTitle = computed((): string => {
+        const itemTitleProp = props.column.props.itemTitle as ((row: Record<string, unknown>, grid: IGridState) => string) | string;
+
+        if (!itemTitleProp) {
+            return "";
+        }
+        else if (typeof itemTitleProp === "string") {
+            const titleValue = props.row[itemTitleProp];
+
+            return typeof titleValue === "string" ? titleValue : "";
+        }
+        else {
+            return itemTitleProp(props.row, props.grid);
+        }
+    });
+
+    async function onClick(event: Event): Promise<void> {
+        const key = props.grid.getRowKey(props.row);
+
+        // Remove focus from the button.
+        if (event.target instanceof HTMLElement) {
+            event.target.blur();
+        }
+
+        if (!key || !props.grid.entityTypeGuid) {
+            return;
+        }
+
+        Rock.controls.modal.show($(event.target), `/Secure/${props.grid.entityTypeGuid}/${key}?t=Secure ${itemTitle.value}&pb=&sb=Done`);
+    }
+</script>
