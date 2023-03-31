@@ -1,6 +1,26 @@
 import { standardColumnProps } from "@Obsidian/Core/Controls/grid";
 import { defineComponent, PropType, VNode } from "vue";
-import BadgeCell from "../Cells/badgeCell.partial.obs";
+import LabelCell from "../Cells/labelCell.partial.obs";
+import { ColumnDefinition, QuickFilterValueFunction } from "@Obsidian/Types/Controls/grid";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+
+function textValue(row: Record<string, unknown>, column: ColumnDefinition): string | undefined {
+    if (!column.field) {
+        return undefined;
+    }
+
+    const value = row[column.field];
+
+    if (typeof value === "object") {
+        if (value === null || value["text"] === null || value["text"] === undefined) {
+            return "";
+        }
+
+        return `${(value as ListItemBag).text}`;
+    }
+
+    return `${value}`;
+}
 
 export default defineComponent({
     props: {
@@ -8,7 +28,12 @@ export default defineComponent({
 
         format: {
             type: Object as PropType<VNode>,
-            default: BadgeCell
+            default: LabelCell
+        },
+
+        quickFilterValue: {
+            type: Object as PropType<QuickFilterValueFunction | string>,
+            default: textValue
         },
 
         /**

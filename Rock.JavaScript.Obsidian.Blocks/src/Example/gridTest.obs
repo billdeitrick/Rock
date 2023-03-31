@@ -21,37 +21,23 @@
 
         <BooleanColumn name="isUrgent" title="Urgent" field="isUrgent" sortField="isUrgent" />
 
-    <!--
-        <BadgeColumn name="isUrgent"
-                          title="Urgent"
-                          field="isUrgent"
-                          sortField="isUrgent"
-                          :classSource="badgeClassLookup" />
-    -->
+        <LabelColumn name="isUrgent"
+                     title="Urgent"
+                     field="isUrgent"
+                     sortField="isUrgent"
+                     :classSource="badgeClassLookup" />
 
-    <!--
-        <Column name="isUrgent"
-                title="Urgent"
-                field="isUrgent"
-                sortField="isUrgent">
-            <template #body="{ row }">
-                <span v-if="row.isUrgent"
-                      class="label label-success">
-                    {{ row.isUrgent }}
-                </span>
-                <span v-else
-                      class="label label-danger">
-                    {{ row.isUrgent }}
-                </span>
-            </template>
-        </Column>
-    -->
+        <LabelColumn name="isUrgent2"
+                     title="Urgent 2"
+                     field="isUrgent"
+                     sortField="isUrgent"
+                     :colorSource="badgeColorLookup" />
 
-        <ColoredBadgeColumn name="mode"
-                            title="Mode"
-                            field="mode"
-                            :filter="pickExistingValueFilter"
-                            quickFilterValue="{{ row.mode.text }}" />
+        <LabelColumn name="mode"
+                     title="Mode"
+                     field="mode"
+                     :filter="pickExistingValueFilter"
+                     quickFilterValue="{{ row.mode.text }}" />
 
         <BooleanColumn name="isPublic"
                        title="Public"
@@ -69,7 +55,7 @@
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, ColoredBadgeColumn, Column, DateColumn, dateValueFilter, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);
@@ -94,7 +80,7 @@
 
     // eslint-disable-next-line @typescript-eslint/naming-convention,@typescript-eslint/no-unused-vars
     const badgeColorLookup = {
-        "true": "#00cc00",
+        "true": "#30cc30",
         "false": "#cc0000"
     };
 

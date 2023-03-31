@@ -972,10 +972,6 @@ export class GridState implements IGridState {
 
     // #endregion
 
-    // #region Property Accessors
-
-    // #endregion
-
     // #region Private Functions
 
     /**

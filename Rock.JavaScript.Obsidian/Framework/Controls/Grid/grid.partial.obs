@@ -9,7 +9,8 @@
             <ColumnHeaderRow :columns="visibleColumnDefinitions"
                              v-model:columnFilters="columnFilterValues"
                              v-model:columnSort="columnSortDirection"
-                             :rows="gridState.rows" />
+                             :rows="gridState.rows"
+                             :grid="gridState" />
         </thead>
 
         <tbody>

@@ -5,6 +5,7 @@
                               :filterValue="columnFilters[column.name]"
                               :sortDirection="columnSortLookup[column.name]"
                               :rows="rows"
+                              :grid="grid"
                               @update:filterValue="onUpdateFilterValue(column.name, $event)"
                               @update:sortDirection="onUpdateSortDirection(column.name, $event)" />
     </tr>
@@ -14,7 +15,7 @@
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { PropType, ref } from "vue";
     import ColumnHeaderCell from "./columnHeaderCell.partial.obs";
-    import { ColumnSort, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
@@ -34,7 +35,12 @@
 
         rows: {
             type: Array as PropType<Record<string, unknown>[]>,
-            default: []
+            required: true
+        },
+
+        grid: {
+            type: Object as PropType<IGridState>,
+            required: true
         }
     });
 

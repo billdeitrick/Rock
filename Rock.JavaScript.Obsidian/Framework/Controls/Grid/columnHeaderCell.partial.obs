@@ -16,7 +16,7 @@
 
         <div v-if="isFilterVisible" ref="filterElement" class="grid-filter-popup">
             <div class="grid-filter-popup-content">
-                <component :is="column.filter!.component" v-model="internalFilterValue" :column="column" :rows="rows" />
+                <component :is="column.filter!.component" v-model="internalFilterValue" :column="column" :rows="rows" :grid="grid" />
             </div>
 
             <div class="actions">
@@ -30,7 +30,7 @@
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { computed, nextTick, PropType, ref, watch } from "vue";
-    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         filterValue: {
@@ -51,7 +51,12 @@
 
         rows: {
             type: Array as PropType<Record<string, unknown>[]>,
-            default: []
+            required: true
+        },
+
+        grid: {
+            type: Object as PropType<IGridState>,
+            required: true
         }
     });
 

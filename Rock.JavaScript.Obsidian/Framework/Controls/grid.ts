@@ -18,18 +18,16 @@
 import Grid from "./Grid/grid.partial.obs";
 
 import AttributeColumns from "./Grid/Columns/attributeColumns.partial";
-import BadgeColumn from "./Grid/Columns/badgeColumn.partial";
 import BooleanColumn from "./Grid/Columns/booleanColumn.partial";
-import ColoredBadgeColumn from "./Grid/Columns/coloredBadgeColumn.partial";
 import Column from "./Grid/Columns/column.partial";
 import DateColumn from "./Grid/Columns/dateColumn.partial";
+import LabelColumn from "./Grid/Columns/labelColumn.partial";
 import NumberColumn from "./Grid/Columns/numberColumn.partial";
 
-import BadgeCell from "./Grid/Cells/badgeCell.partial.obs";
 import BooleanCell from "./Grid/Cells/booleanCell.partial.obs";
-import ColoredBadgeCell from "./Grid/Cells/coloredBadgeCell.partial.obs";
 import DateCell from "./Grid/Cells/dateCell.partial.obs";
 import NumberCell from "./Grid/Cells/numberCell.partial.obs";
+import LabelCell from "./Grid/Cells/labelCell.partial.obs";
 import TextCell from "./Grid/Cells/textCell.partial";
 
 import DateFilter from "./Grid/Filters/dateFilter.partial.obs";
@@ -46,20 +44,18 @@ export default Grid;
 // Export column components.
 export {
     AttributeColumns,
-    BadgeColumn,
     BooleanColumn,
-    ColoredBadgeColumn,
     Column,
     DateColumn,
+    LabelColumn,
     NumberColumn
 };
 
 // Export cell components.
 export {
-    BadgeCell,
     BooleanCell,
-    ColoredBadgeCell,
     DateCell,
+    LabelCell,
     NumberCell,
     TextCell
 };
