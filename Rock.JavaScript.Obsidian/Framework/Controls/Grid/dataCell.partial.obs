@@ -1,12 +1,15 @@
 <template>
-    <td>
-        <component :is="props.column.format" :row="props.row" :column="props.column" />
+    <td :class="additionalItemClass">
+        <component :is="props.column.format"
+                   :row="props.row"
+                   :column="props.column"
+                   :grid="props.grid" />
     </td>
 </template>
 
 <script setup lang="ts">
-    import { PropType } from "vue";
-    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { PropType, computed } from "vue";
+    import { ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         column: {
@@ -17,6 +20,15 @@
         row: {
             type: Object as PropType<Record<string, unknown>>,
             required: true
+        },
+
+        grid: {
+            type: Object as PropType<IGridState>,
+            required: true
         }
+    });
+
+    const additionalItemClass = computed((): string | undefined => {
+        return props.column.itemClass;
     });
 </script>

@@ -331,6 +331,22 @@ type StandardColumnProps = {
     },
 
     /**
+     * Additional CSS class to apply to the header cell.
+     */
+    headerClass: {
+        type: PropType<string>,
+        required: false
+    },
+
+    /**
+     * Additional CSS class to apply to the data item cell.
+     */
+    itemClass: {
+        type: PropType<string>,
+        required: false
+    }
+
+    /**
      * Provides a custom component that will be used to format and display
      * the cell. This is rarely needed as you can usually accomplish the same
      * with a template that defines the body content.
@@ -456,6 +472,12 @@ export type ColumnDefinition = {
     /** Gets the filter to use to perform column filtering. */
     filter?: ColumnFilter;
 
+    /** The additional CSS class to apply to the header cell. */
+    headerClass?: string;
+
+    /** The additional CSS class to apply to the data item cell. */
+    itemClass?: string;
+
     /** All properties and attributes that were defined on the column. */
     props: Record<string, unknown>;
 };
@@ -516,6 +538,9 @@ export interface IGridState {
     /** The current set of rows that have been filtered and sorted. */
     readonly sortedRows: ShallowRef<Record<string, unknown>[]>;
 
+    /** The word or phrase that describes the individual row items.  */
+    readonly itemTerm: string;
+
     /**
      * Gets the cache key to use for storing column specific data for a
      * component.
@@ -527,4 +552,13 @@ export interface IGridState {
      * @returns A string should be used as the cache key.
      */
     getColumnCacheKey(column: ColumnDefinition, component: string, key: string): string;
+
+    /**
+     * Gets the key of the specified row in the grid.
+     *
+     * @param row The row whose key should be returned.
+     *
+     * @returns The unique key of the row or `undefined` if it could not be determined.
+     */
+    getRowKey(row: Record<string, unknown>): string | undefined;
 }

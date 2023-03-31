@@ -51,7 +51,6 @@
             };
         }
         else if (colorSource && text.value in colorSource) {
-            console.log("Color Source", text.value, calculateColorBrightness(colorSource[text.value]));
             return {
                 "backgroundColor": colorSource[text.value],
                 "color": (calculateColorBrightness(colorSource[text.value]) ?? 0) > 0.5 ? "black" : "white"

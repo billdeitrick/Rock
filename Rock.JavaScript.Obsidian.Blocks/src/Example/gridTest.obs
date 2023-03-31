@@ -45,6 +45,10 @@
                        sortField="isPublic" />
 
         <AttributeColumns :attributes="attributeFields" />
+
+        <EditColumn name="edit" :onClick="onEditClick" />
+
+        <DeleteColumn name="delete" :onClick="onDeleteClick" />
     </Grid>
 </template>
 
@@ -55,7 +59,7 @@
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);
@@ -110,5 +114,23 @@
         const dt = RockDateTime.parseISO(value);
 
         return dt?.toASPString("g") ?? "";
+    }
+
+    async function onEditClick(key: string): Promise<void> {
+        return new Promise<void>(resolve => {
+            console.log(`Edit '${key}'.`);
+            setTimeout(() => {
+                resolve();
+            }, 1000);
+        });
+    }
+
+    async function onDeleteClick(key: string): Promise<void> {
+        return new Promise<void>(resolve => {
+            console.log(`Delete '${key}'.`);
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
     }
 </script>

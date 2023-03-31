@@ -1,0 +1,46 @@
+<template>
+    <button class="btn btn-default btn-sm"
+            title="Edit"
+            :disabled="isDisabled"
+            @click.prevent="onClick">
+        <i class="fa fa-pencil"></i>
+    </button>
+</template>
+
+<script setup lang="ts">
+    import { standardCellProps } from "@Obsidian/Core/Controls/grid";
+    import { isPromise } from "@Obsidian/Utility/promiseUtils";
+    import { ref } from "vue";
+
+    const props = defineProps(standardCellProps);
+    const isDisabled = ref(false);
+
+    async function onClick(event: Event): Promise<void> {
+        const key = props.grid.getRowKey(props.row);
+
+        // Remove focus from the button.
+        if (event.target instanceof HTMLElement) {
+            event.target.blur();
+        }
+
+        if (!key) {
+            return;
+        }
+
+        if (typeof props.column.props.onClick !== "function") {
+            return;
+        }
+
+        isDisabled.value = true;
+        try {
+            const result = props.column.props.onClick(key);
+
+            if (isPromise(result)) {
+                await result;
+            }
+        }
+        finally {
+            isDisabled.value = false;
+        }
+    }
+</script>

@@ -28,7 +28,8 @@
 
             <DataRows v-else
                       :columns="visibleColumnDefinitions"
-                      :rows="visibleRows" />
+                      :rows="visibleRows"
+                      :grid="gridState" />
         </tbody>
 
         <tfoot>
@@ -240,6 +241,12 @@ table.table-obsidian th.grid-error > .alert {
         stickyHeader: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+
+        /** The term that identifies individual rows in the grid. */
+        itemTerm: {
+            type: String as PropType<string>,
+            required: false
         }
     });
 
@@ -253,7 +260,8 @@ table.table-obsidian th.grid-error > .alert {
 
     const gridState: GridState = new GridState(
         getColumnDefinitions(slots["default"]?.() ?? []),
-        props.liveUpdates ?? false);
+        props.liveUpdates ?? false,
+        props.itemTerm || "item");
     gridState.setItemKey(props.keyField);
 
     const gridActions = ref<GridAction[]>([]);
@@ -286,7 +294,7 @@ table.table-obsidian th.grid-error > .alert {
     }
 
     function updatePagerMessage(): void {
-        pagerMessage.value = `${asFormattedString(gridState.filteredRows.value.length)} ${pluralConditional(gridState.filteredRows.value.length, "Group", "Groups")}`;
+        pagerMessage.value = `${asFormattedString(gridState.filteredRows.value.length)} ${pluralConditional(gridState.filteredRows.value.length, `${gridState.itemTerm}`, `${gridState.itemTerm}s`)}`;
     }
 
     async function updateGridData(): Promise<void> {

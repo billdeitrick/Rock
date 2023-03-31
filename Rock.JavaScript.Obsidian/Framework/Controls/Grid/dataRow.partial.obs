@@ -1,22 +1,30 @@
 <template>
     <tr>
-        <DataCell v-for="column in props.columns" :column="column" :row="props.data" />
+        <DataCell v-for="column in props.columns"
+                  :column="column"
+                  :row="props.data"
+                  :grid="props.grid" />
     </tr>
 </template>
 
 <script setup lang="ts">
     import { PropType } from "vue";
     import DataCell from "./dataCell.partial.obs";
-    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
             type: Array as PropType<ColumnDefinition[]>,
-            default: []
+            required: true
         },
 
         data: {
             type: Object as PropType<Record<string, unknown>>,
+            required: true
+        },
+
+        grid: {
+            type: Object as PropType<IGridState>,
             required: true
         }
     });

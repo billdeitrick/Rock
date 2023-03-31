@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { Component, defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { DateFilterMethod } from "@Obsidian/Enums/Controls/Grid/dateFilterMethod";
 import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps } from "@Obsidian/Types/Controls/grid";
@@ -73,6 +73,16 @@ export const standardColumnProps: StandardColumnProps = {
 
     uniqueValue: {
         type: Object as PropType<UniqueValueFunction>,
+        required: false
+    },
+
+    headerClass: {
+        type: String as PropType<string>,
+        required: false
+    },
+
+    itemClass: {
+        type: String as PropType<string>,
         required: false
     },
 
@@ -520,45 +530,143 @@ function buildAttributeColumns(columns: ColumnDefinition[], node: VNode): void {
 /**
  * Builds a new column definition from the information provided.
  *
- * This really didn't need to be a function to make things cleaner but it
- * was needed to make sure the variables don't change in the loop that now
- * calls this method.
- *
  * @param name The name of the column.
- * @param title The title of the column.
- * @param field The name of the field that provides the default value.
- * @param format The component that will display the cell.
- * @param filter The filter definition for the column.
- * @param uniqueValue The function that provides the unique value of the cell.
- * @param sortValue The function that provides the sortable value of the cell.
- * @param filterValue The function that provides the filter value of the cell.
- * @param quickFilterValue The function that provides the quick filter value of the cell.
- * @param props The additional properties that were defined on the column.
+ * @param node The node that contains all the details about the column.
+ *
  * @returns A new object that represents the column.
  */
-function buildColumn(name: string, title: string | undefined, field: string | undefined, format: VNode | Component, filter: ColumnFilter | undefined, uniqueValue: UniqueValueFunction, sortValue: SortValueFunction | undefined, filterValue: FilterValueFunction, quickFilterValue: QuickFilterValueFunction, props: Record<string, unknown>): ColumnDefinition {
+function buildColumn(name: string, node: VNode): ColumnDefinition {
+    const field = getVNodeProp<string>(node, "field");
+    const title = getVNodeProp<string>(node, "title");
+    const format = node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell;
+    const filter = getVNodeProp<ColumnFilter>(node, "filter");
+    const headerClass = getVNodeProp<string>(node, "headerClass");
+    const itemClass = getVNodeProp<string>(node, "itemClass");
+
+    // Get the function that will provide the sort value.
+    let sortValue = getVNodeProp<SortValueFunction | string>(node, "sortValue");
+
+    if (!sortValue) {
+        const sortField = getVNodeProp<string>(node, "sortField") || field;
+
+        sortValue = sortField ? (r) => String(r[sortField]) : undefined;
+    }
+    else if (typeof sortValue === "string") {
+        const template = sortValue;
+
+        sortValue = (row): string | undefined => {
+            return resolveMergeFields(template, { row });
+        };
+    }
+
+    // Get the function that will provide the quick filter value.
+    let quickFilterValue = getVNodeProp<QuickFilterValueFunction | string>(node, "quickFilterValue");
+
+    if (!quickFilterValue) {
+        // One was not provided, so generate a common use one.
+        quickFilterValue = (r, c): string | undefined => {
+            if (!c.field) {
+                return undefined;
+            }
+
+            const v = r[c.field];
+
+            if (typeof v === "string") {
+                return v;
+            }
+            else if (typeof v === "number") {
+                return v.toString();
+            }
+            else {
+                return undefined;
+            }
+        };
+    }
+    else if (typeof quickFilterValue === "string") {
+        const template = quickFilterValue;
+
+        quickFilterValue = (row): string | undefined => {
+            return resolveMergeFields(template, { row });
+        };
+    }
+
+    // Get the function that will provide the column filter value.
+    let filterValue = getVNodeProp<FilterValueFunction | string>(node, "filterValue");
+
+    if (filterValue === undefined) {
+        // One wasn't provided, so do our best to infer what it should be.
+        filterValue = (r, c): unknown => {
+            if (!c.field) {
+                return undefined;
+            }
+
+            return r[c.field];
+        };
+    }
+    else if (typeof filterValue === "string") {
+        const template = filterValue;
+
+        filterValue = (row): unknown => {
+            return resolveMergeFields(template, { row });
+        };
+    }
+
+    // Get the function that will provide the unique value for a cell.
+    let uniqueValue = getVNodeProp<UniqueValueFunction>(node, "uniqueValue");
+
+    if (!uniqueValue) {
+        uniqueValue = (r, c) => {
+            if (!c.field || r[c.field] === undefined) {
+                return undefined;
+            }
+
+            const v = r[c.field];
+
+            if (typeof v === "string" || typeof v === "number") {
+                return v;
+            }
+
+            return JSON.stringify(v);
+        };
+    }
+
+    // Convert all the value functions into cached ones.
+    const uniqueValueFactory = uniqueValue;
+    uniqueValue = (r, c, g) => {
+        return getOrAddRowCacheValue(r, c, "uniqueValue", g, () => uniqueValueFactory(r, c, g));
+    };
+
+    const sortValueFactory = sortValue;
+    sortValue = (r, c, g) => {
+        return sortValueFactory !== undefined
+            ? getOrAddRowCacheValue(r, c, "sortValue", g, () => sortValueFactory(r, c, g))
+            : undefined;
+    };
+
+    const filterValueFactory = filterValue;
+    filterValue = (r, c, g) => {
+        return getOrAddRowCacheValue(r, c, "filterValue", g, () => filterValueFactory(r, c, g));
+    };
+
+    const quickFilterValueFactory = quickFilterValue;
+    quickFilterValue = (r, c, g) => {
+        return getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => quickFilterValueFactory(r, c, g));
+    };
+
+    // Build the final column definition.
     const column: ColumnDefinition = {
         name,
         title,
         field,
         format,
         filter,
-        uniqueValue: (r, c, g) => {
-            return getOrAddRowCacheValue(r, c, "uniqueValue", g, () => uniqueValue(r, c, g));
-        },
-        sortValue: (r, c, g) => {
-            const factory = sortValue;
-            return factory !== undefined
-                ? getOrAddRowCacheValue(r, c, "sortValue", g, () => factory(r, c, g))
-                : undefined;
-        },
-        filterValue: (r, c, g) => {
-            return getOrAddRowCacheValue(r, c, "filterValue", g, () => filterValue(r, c, g));
-        },
-        quickFilterValue: (r, c, g) => {
-            return getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => quickFilterValue(r, c, g));
-        },
-        props
+        uniqueValue,
+        sortValue,
+        filterValue,
+        quickFilterValue,
+        headerClass,
+        itemClass,
+        props: getVNodeProps(node)
     };
 
     return column;
@@ -589,107 +697,8 @@ export function getColumnDefinitions(columnNodes: VNode[]): ColumnDefinition[] {
             continue;
         }
 
-        const field = getVNodeProp<string>(node, "field");
-
-        // Get the function that will provide the sort value.
-        let sortValue = getVNodeProp<SortValueFunction | string>(node, "sortValue");
-
-        if (!sortValue) {
-            const sortField = getVNodeProp<string>(node, "sortField") || field;
-
-            sortValue = sortField ? (r) => String(r[sortField]) : undefined;
-        }
-        else if (typeof sortValue === "string") {
-            const template = sortValue;
-
-            sortValue = (row): string | undefined => {
-                return resolveMergeFields(template, { row });
-            };
-        }
-
-        // Get the function that will provide the quick filter value.
-        let quickFilterValue = getVNodeProp<QuickFilterValueFunction | string>(node, "quickFilterValue");
-
-        if (!quickFilterValue) {
-            // One was not provided, so generate a common use one.
-            quickFilterValue = (r, c): string | undefined => {
-                if (!c.field) {
-                    return undefined;
-                }
-
-                const v = r[c.field];
-
-                if (typeof v === "string") {
-                    return v;
-                }
-                else if (typeof v === "number") {
-                    return v.toString();
-                }
-                else {
-                    return undefined;
-                }
-            };
-        }
-        else if (typeof quickFilterValue === "string") {
-            const template = quickFilterValue;
-
-            quickFilterValue = (row): string | undefined => {
-                return resolveMergeFields(template, { row });
-            };
-        }
-
-        // Get the function that will provide the column filter value.
-        let filterValue = getVNodeProp<FilterValueFunction | string>(node, "filterValue");
-
-        if (filterValue === undefined) {
-            // One wasn't provided, so do our best to infer what it should be.
-            filterValue = (r, c): unknown => {
-                if (!c.field) {
-                    return undefined;
-                }
-
-                return r[c.field];
-            };
-        }
-        else if (typeof filterValue === "string") {
-            const template = filterValue;
-
-            filterValue = (row): unknown => {
-                return resolveMergeFields(template, { row });
-            };
-        }
-
-        // Get the function that will provide the unique value for a cell.
-        let uniqueValue = getVNodeProp<UniqueValueFunction>(node, "uniqueValue");
-
-        if (!uniqueValue) {
-            uniqueValue = (r, c) => {
-                if (!c.field || r[c.field] === undefined) {
-                    return undefined;
-                }
-
-                const v = r[c.field];
-
-                if (typeof v === "string" || typeof v === "number") {
-                    return v;
-                }
-
-                return JSON.stringify(v);
-            };
-        }
-
         // Build the final column definition.
-        const column = buildColumn(name,
-            getVNodeProp<string>(node, "title"),
-            field,
-            node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell,
-            getVNodeProp<ColumnFilter>(node, "filter"),
-            uniqueValue,
-            sortValue,
-            filterValue,
-            quickFilterValue,
-            getVNodeProps(node));
-
+        const column = buildColumn(name, node);
         columns.push(column);
     }
 
@@ -929,11 +938,13 @@ export class GridState implements IGridState {
      *
      * @param columns The columns to initialize the Grid with.
      * @param liveUpdates If true then the grid will monitor for live updates to rows.
+     * @param itemTerm The word or phrase that describes each row.
      */
-    constructor(columns: ColumnDefinition[], liveUpdates: boolean) {
+    constructor(columns: ColumnDefinition[], liveUpdates: boolean, itemTerm: string) {
         this.rowCache = new GridRowCache(undefined);
         this.columns = columns;
         this.liveUpdates = liveUpdates;
+        this.itemTerm = itemTerm;
     }
 
     /**
@@ -958,9 +969,11 @@ export class GridState implements IGridState {
 
     public readonly columns: ColumnDefinition[];
 
-    public cache: IGridCache = new GridCache();
+    public readonly cache: IGridCache = new GridCache();
 
-    public rowCache: IGridRowCache;
+    public readonly rowCache: IGridRowCache;
+
+    public readonly itemTerm: string;
 
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;
@@ -968,6 +981,10 @@ export class GridState implements IGridState {
 
     public getColumnCacheKey(column: ColumnDefinition, component: string, key: string): string {
         return `column-${column.name}-${component}-${key}`;
+    }
+
+    public getRowKey(row: Record<string, unknown>): string | undefined {
+        return getRowKey(row, this.itemKey);
     }
 
     // #endregion

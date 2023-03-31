@@ -21,11 +21,15 @@ import AttributeColumns from "./Grid/Columns/attributeColumns.partial";
 import BooleanColumn from "./Grid/Columns/booleanColumn.partial";
 import Column from "./Grid/Columns/column.partial";
 import DateColumn from "./Grid/Columns/dateColumn.partial";
+import DeleteColumn from "./Grid/Columns/deleteColumn.partial";
+import EditColumn from "./Grid/Columns/editColumn.partial";
 import LabelColumn from "./Grid/Columns/labelColumn.partial";
 import NumberColumn from "./Grid/Columns/numberColumn.partial";
 
 import BooleanCell from "./Grid/Cells/booleanCell.partial.obs";
 import DateCell from "./Grid/Cells/dateCell.partial.obs";
+import DeleteCell from "./Grid/Cells/deleteCell.partial.obs";
+import EditCell from "./Grid/Cells/editCell.partial.obs";
 import NumberCell from "./Grid/Cells/numberCell.partial.obs";
 import LabelCell from "./Grid/Cells/labelCell.partial.obs";
 import TextCell from "./Grid/Cells/textCell.partial";
@@ -47,6 +51,8 @@ export {
     BooleanColumn,
     Column,
     DateColumn,
+    DeleteColumn,
+    EditColumn,
     LabelColumn,
     NumberColumn
 };
@@ -55,6 +61,8 @@ export {
 export {
     BooleanCell,
     DateCell,
+    DeleteCell,
+    EditCell,
     LabelCell,
     NumberCell,
     TextCell

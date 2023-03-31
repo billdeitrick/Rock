@@ -1,6 +1,6 @@
 <template>
-    <th ref="columnHeaderElement" class="grid-column-header">
-        <span class="grid-column-title clickable" @click.prevent="onSortClick">{{ column.title ?? column.name }}</span>
+    <th ref="columnHeaderElement" class="grid-column-header" :class="additionalHeaderClass">
+        <span class="grid-column-title clickable" @click.prevent="onSortClick">{{ column.title }}</span>
 
         <span v-if="isSortAscending" class="grid-sort-direction"><i class="fa fa-sort-alpha-up"></i></span>
         <span v-else-if="isSortDescending" class="grid-sort-direction"><i class="fa fa-sort-alpha-down"></i></span>
@@ -83,6 +83,7 @@
 
     const isSortAscending = computed((): boolean => sortDirection.value > 0);
     const isSortDescending = computed((): boolean => sortDirection.value < 0);
+    const additionalHeaderClass = computed((): string | undefined => props.column.headerClass);
 
     const onMouseDownEvent = (ev: MouseEvent): void => {
         if (ev.target && ev.target instanceof HTMLElement) {

@@ -1,21 +1,29 @@
 <template>
-    <DataRow v-for="row in props.rows" :columns="props.columns" :data="row" />
+    <DataRow v-for="row in props.rows"
+             :columns="props.columns"
+             :data="row"
+             :grid="props.grid" />
 </template>
 
 <script setup lang="ts">
     import { PropType } from "vue";
     import DataRow from "./dataRow.partial.obs";
-    import { ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
 
     const props = defineProps({
         columns: {
             type: Array as PropType<ColumnDefinition[]>,
-            default: []
+            required: true
         },
 
         rows: {
             type: Array as PropType<Record<string, unknown>[]>,
-            default: []
+            required: true
+        },
+
+        grid: {
+            type: Object as PropType<IGridState>,
+            required: true
         }
     });
 </script>
