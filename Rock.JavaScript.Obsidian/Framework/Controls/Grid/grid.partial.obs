@@ -45,6 +45,10 @@
 </template>
 
 <style>
+table.table-obsidian {
+    border-collapse: initial;
+}
+
 table.table-obsidian.table-sticky > thead {
     position: sticky;
     top: var(--top-header-height);
@@ -52,6 +56,12 @@ table.table-obsidian.table-sticky > thead {
 
 table.table-obsidian th.grid-column-header {
     position: relative;
+}
+
+table.table-obsidian th.grid-column-header,
+table.table-obsidian th.grid-filter {
+    background-color: #f9fafb;
+    border-bottom: 1px solid #d3dfe1;
 }
 
 table.table-obsidian th.grid-column-header .btn-grid-column-filter {
@@ -166,13 +176,18 @@ table.table-obsidian th.grid-filter {
     font-weight: initial;
 }
 
-table.table-obsidian th.grid-filter .grid-quick-filter {
+table.table-obsidian th.grid-filter .grid-title {
     flex: 1 0;
+    align-self: center;
+    font-size: 18px;
+}
+table.table-obsidian th.grid-filter .grid-quick-filter {
+    display: flex;
     max-width: 480px;
+    flex: 1 0;
 }
 
 table.table-obsidian th.grid-filter .grid-actions {
-    flex: 1 0;
     display: flex;
     justify-content: end;
     background-color: initial;
@@ -289,8 +304,8 @@ table.table-obsidian th.grid-error > .alert {
     const visibleRows = shallowRef<Record<string, unknown>[]>([]);
     const pageCount = ref(0);
     const pagerMessage = ref("");
-    const visibleColumnDefinitions = ref<ColumnDefinition[]>([]);
     const columns: ColumnDefinition[] = getColumnDefinitions(slots["default"]?.() ?? []);
+    const visibleColumnDefinitions = ref<ColumnDefinition[]>(columns);
 
     const visibleColumnCount = computed((): number => {
         return visibleColumnDefinitions.value.length;
@@ -328,7 +343,7 @@ table.table-obsidian th.grid-error > .alert {
             }
         }
 
-        visibleColumnDefinitions.value = columns;
+        //visibleColumnDefinitions.value = columns;
 
         loadingData.value = false;
     }

@@ -2,8 +2,17 @@
     <tr>
         <th class="grid-filter" :colspan="visibleColumnCount">
             <div class="d-flex">
-                <div class="grid-quick-filter">
-                    <TextBox v-model="filterValue" placeholder="Filter" />
+                <div class="grid-title">
+                    Group Members
+                </div>
+
+                <div class="grid-quick-filter grid-actions">
+                    <button class="btn btn-grid-action" title="Search" @click.stop.prevent="onSearchClick">
+                        <i class="fa fa-search"></i>
+                    </button>
+                    <div :style="searchBoxStyle">
+                        <TextBox v-model="filterValue" placeholder="Filter" />
+                    </div>
                 </div>
 
                 <ActionGroup :gridActions="gridActions" />
@@ -15,7 +24,7 @@
 <script setup lang="ts">
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import TextBox from "@Obsidian/Controls/textBox";
-    import { PropType } from "vue";
+    import { PropType, computed, ref } from "vue";
     import ActionGroup from "./actionGroup.partial.obs";
     import { GridAction } from "@Obsidian/Types/Controls/grid";
 
@@ -40,5 +49,19 @@
         (event: "update:filterValue", value: string): void
     }>();
 
+    const isSearchVisible = ref(false);
     const filterValue = useVModelPassthrough(props, "filterValue", emit);
+
+    const searchBoxStyle = computed(() => {
+        return {
+            width: `${isSearchVisible.value ? 100 : 0}%`,
+            overflow: "hidden",
+            transition: "width 0.3s ease"
+        };
+    });
+
+    function onSearchClick(): void {
+        console.log("click");
+        isSearchVisible.value = !isSearchVisible.value;
+    }
 </script>
