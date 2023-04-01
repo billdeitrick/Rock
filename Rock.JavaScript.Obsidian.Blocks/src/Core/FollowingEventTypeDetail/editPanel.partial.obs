@@ -31,6 +31,12 @@
                     label="Send Weekend Notices on Friday"
                     help="Should any notices that would normally be sent on a weekend be sent on preceding Friday instead?" />
             </div>
+
+            <div class="col-md-6">
+                <CheckBox v-if="entityType?.value?.toUpperCase() == EntityType.PersonPrayerRequest"
+                    v-model="includeNonPublicRequests"
+                    label="Include Non-Public Requests" />
+            </div>
         </div>
 
         <div class="row">
@@ -55,6 +61,7 @@
     import CodeEditor from "@Obsidian/Controls/codeEditor";
     import { FollowingEventTypeBag } from "@Obsidian/ViewModels/Blocks/Core/FollowingEventTypeDetail/followingEventTypeBag";
     import { FollowingEventTypeDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/FollowingEventTypeDetail/followingEventTypeDetailOptionsBag";
+    import { EntityType } from "@Obsidian/SystemGuids/entityType";
 
     const props = defineProps({
         modelValue: {
@@ -83,13 +90,14 @@
     const isNoticeRequired = propertyRef(props.modelValue.isNoticeRequired, "IsNoticeRequired");
     const sendOnFriday = propertyRef(!props.modelValue.sendOnWeekends, "SendOnWeekends");
     const entityType = propertyRef(props.modelValue.entityType, "EntityTypeId");
+    const includeNonPublicRequests = propertyRef(props.modelValue?.includeNonPublicRequests, "IncludeNonPublicRequests");
     const entityNotificationFormatLava = propertyRef(props.modelValue?.entityNotificationFormatLava ?? "", "EntityNotificationFormatLava");
 
     const containerType = ref("Rock.Follow.EventContainer");
 
     // The properties that are being edited. This should only contain
     // objects returned by propertyRef().
-    const propRefs = [description, isActive, name, isNoticeRequired, sendOnFriday, entityType, entityNotificationFormatLava];
+    const propRefs = [description, isActive, name, isNoticeRequired, sendOnFriday, entityType, entityNotificationFormatLava, includeNonPublicRequests];
 
     // #endregion
 
@@ -117,6 +125,7 @@
         updateRefValue(sendOnWeekends, props.modelValue.sendOnWeekends);
         updateRefValue(entityType, props.modelValue.entityType);
         updateRefValue(entityNotificationFormatLava, props.modelValue?.entityNotificationFormatLava ?? "");
+        updateRefValue(includeNonPublicRequests, props.modelValue?.includeNonPublicRequests);
     });
 
     // Determines which values we want to track changes on (defined in the
@@ -131,7 +140,8 @@
             isNoticeRequired: isNoticeRequired.value,
             sendOnWeekends: !sendOnFriday.value,
             entityType: entityType.value,
-            entityNotificationFormatLava: entityNotificationFormatLava.value
+            entityNotificationFormatLava: entityNotificationFormatLava.value,
+            includeNonPublicRequests: includeNonPublicRequests.value
         };
 
         emit("update:modelValue", newValue);
