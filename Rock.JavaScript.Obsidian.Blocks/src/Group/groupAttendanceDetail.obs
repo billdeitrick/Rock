@@ -150,7 +150,7 @@
                                                 v-model="rosterFilter"
                                                 :attendances="attendances"
                                                 :isFilterByFirstNameInitial="false"
-                                                :isMultiselect="true" />
+                                                :isMultiselect="false" />
 
                                 <AttendanceRoster
                                                   class="form-group"
