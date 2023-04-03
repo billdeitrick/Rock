@@ -169,9 +169,6 @@
 
             <template #footerActions>
                 <RockButton v-if="!isBackButtonHidden" @click="onBackClicked()">Back</RockButton>
-                <RockButton btnType="primary"
-                    v-if="!attendanceOccurrenceGuid && ((!config.isLocationRequired && !config.isScheduleRequired) || ((config.isScheduleRequired && scheduleGuid) && !config.isLocationRequired) || ((config.isLocationRequired && locationGuid) && !config.isScheduleRequired))"
-                    @click="getOrCreateAttendanceOccurrence">Take Attendance</RockButton>
             </template>
             <template #footerSecondaryActions>
                 <RockButton v-if="config.isRosterDownloadShown" btnType="default" btnSize="sm" @click="onPrintAttendanceRosterClicked()"><i class="fa fa-file-download"></i> Roster</RockButton>
@@ -623,13 +620,7 @@
     /**
      * Gets or creates the AttendanceOccurrence based on the currently selected date, location, and schedule.
      */
-    async function getOrCreateAttendanceOccurrence(): Promise<void> {
-        const bag: GroupAttendanceDetailGetOrCreateRequestBag = {
-            attendanceOccurrenceDate: attendanceForDateString.value,
-            locationGuid: locationGuid.value,
-            scheduleGuid: scheduleGuid.value,
-        };
-
+    async function getOrCreateAttendanceOccurrence(bag: GroupAttendanceDetailGetOrCreateRequestBag): Promise<void> {
         // Clear the error before calling get/create.
         errorMessage.value = "";
 
@@ -647,23 +638,16 @@
      * Updates the DidAttend value of a single Attendance.
      */
     async function markAttendance(bag: GroupAttendanceDetailMarkAttendanceRequestBag): Promise<void> {
-        // Create a new occurrence if it hasn't been saved yet.
         if (!attendanceOccurrenceGuid.value) {
-            const request: GroupAttendanceDetailGetOrCreateRequestBag = {
+            // Create a new occurrence if it hasn't been saved yet.
+            await getOrCreateAttendanceOccurrence({
                 attendanceOccurrenceDate: attendanceForDateString.value,
                 locationGuid: locationGuid.value,
                 scheduleGuid: scheduleGuid.value,
+
+                // This will mark/unmark the attendance that triggered this get/create invocation.
                 updatedAttendances: attendances.value.filter(attendance => attendance.personGuid === bag.personGuid),
-            };
-
-            const response = await invokeBlockAction<GroupAttendanceDetailInitializationBox>("CreateOccurrence", { bag: request });
-
-            if (response?.data) {
-                config.value = response.data;
-            }
-            else if (config) {
-                config.value.errorMessage = response?.errorMessage || "An unexpected error occurred.";
-            }
+            });
         }
         else {
             await invokeBlockAction("MarkAttendance", { bag });
@@ -849,7 +833,11 @@
         }
 
         if (attendanceForDate.value && locationGuid.value && scheduleGuid.value) {
-            await getOrCreateAttendanceOccurrence();
+            await getOrCreateAttendanceOccurrence({
+                attendanceOccurrenceDate: attendanceForDateString.value,
+                locationGuid: locationGuid.value,
+                scheduleGuid: scheduleGuid.value
+            });
         }
     });
 
