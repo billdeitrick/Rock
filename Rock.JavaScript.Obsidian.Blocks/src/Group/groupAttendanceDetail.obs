@@ -122,6 +122,8 @@
                             <div v-show="!didNotOccur">
                                 <div class="row">
                                     <div class="col-xs-12 col-sm-6">
+                                        <DidAttendFilterPicker v-model="didAttendFilter" :attendances="attendances" />
+
                                         <SearchFilter v-model="searchFilter" />
                                     </div>
                                     <div class="col-xs-12 col-sm-6 d-flex justify-content-end">
@@ -145,14 +147,13 @@
                                     </div>
                                 </TransitionVerticalCollapse>
 
-                                <RosterFilterPicker
-                                                    v-model="rosterFilter"
-                                                    :attendances="attendances"
-                                                    :isFilterByFirstNameInitial="false"
-                                                    :isMultiselect="true">
-                                </RosterFilterPicker>
-                                
-                                
+                                <InitialsFilter
+                                                v-model="rosterFilter"
+                                                :attendances="attendances"
+                                                :isFilterByFirstNameInitial="false"
+                                                :isMultiselect="true" />
+
+
                                 <AttendanceRoster
                                                     class="form-group"
                                                     :attendances="attendances"
@@ -161,7 +162,7 @@
                                                     :groupWhenFilteredAttendanceCountExceeds="50"
                                                     :sortBy="attendanceSortByDelegate"
                                                     @attendanceChanged="onAttendanceChanged($event)" />
-                                                        
+
                             </div>
                         </TransitionVerticalCollapse>
                     </div>
@@ -202,7 +203,8 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from "vue";
-    import RosterFilterPicker from "./GroupAttendanceDetail/attendanceFilter.partial.obs";
+    import DidAttendFilterPicker from "./GroupAttendanceDetail/didAttendFilter.partial.obs";
+    import InitialsFilter from "./GroupAttendanceDetail/initialsFilter.partial.obs";
     import AttendanceRoster from "./GroupAttendanceDetail/attendanceRoster.partial.obs";
     import CampusFilter from "./GroupAttendanceDetail/campusFilter.partial.obs";
     import { sortByFirstName, sortByLastName, createEveryFilter as every, createSortBy, createSwitch, IAttendanceFilter, NoFilter, DidAttendFilter, createModalOptions } from "./GroupAttendanceDetail/utils.partial";
@@ -280,6 +282,7 @@
     const searchFilter = ref<IAttendanceFilter>(NoFilter);
     const campusFilter = ref<IAttendanceFilter>(NoFilter);
     const rosterFilter = ref<IAttendanceFilter>(NoFilter);
+    const didAttendFilter = ref<IAttendanceFilter>(NoFilter);
     const attendanceOccurrenceGuid = ref<string | null | undefined>(config.value.attendanceOccurrenceGuid);
     const attendanceForDate = ref<RockDateTime>((config.value.attendanceOccurrenceDate ? RockDateTime.parseISO(config.value.attendanceOccurrenceDate) : null) ?? RockDateTime.now());
     const attendanceOccurrenceTypeGuid = ref<Guid | undefined>(config.value.selectedAttendanceOccurrenceTypeValue ?? undefined);
@@ -313,7 +316,7 @@
     const attendances = computed<GroupAttendanceDetailAttendanceBag[]>(() => config.value?.attendances ?? []);
     const attendanceSortByDelegate = ref<AttendanceSortByDelegate>(createSortBy(sortByLastName, sortByFirstName));
     const attendanceFilterByDelegate = computed<AttendanceFilterByDelegate | null>(() => {
-        const filtersToCheck = [campusFilter.value, searchFilter.value, rosterFilter.value];
+        const filtersToCheck = [campusFilter.value, searchFilter.value, rosterFilter.value, didAttendFilter.value];
         const filters = filtersToCheck.filter(filterToCheck => !filterToCheck.isFilter(NoFilter));
 
         if (filters.length === 0) {
