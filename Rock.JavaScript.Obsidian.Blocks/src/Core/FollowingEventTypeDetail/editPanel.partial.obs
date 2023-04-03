@@ -36,6 +36,8 @@
                 <CheckBox v-if="entityType?.value?.toUpperCase() == EntityType.PersonPrayerRequest"
                     v-model="includeNonPublicRequests"
                     label="Include Non-Public Requests" />
+
+                <AttributeValuesContainer v-model="attributeValues" :showCategoryLabel="false" :attributes="attributes" isEditMode />
             </div>
         </div>
 
@@ -45,8 +47,6 @@
                     help="How the entity should be formatted in the following event notification email when this event occurs for the entity. The entity is available to Lava as an 'Entity' object." />
             </div>
         </div>
-
-        <!--<AttributeValuesContainer v-model="attributeValues" :attributes="attributes" isEditMode :numberOfColumns="2" />-->
     </fieldset>
 </template>
 
@@ -82,8 +82,24 @@
 
     // #region Values
 
-    const attributes = ref(props.modelValue.attributes ?? {});
-    const attributeValues = ref(props.modelValue.attributeValues ?? {});
+    const attributes = computed(() => {
+        if(!props.modelValue.attributes) {
+            return {};
+        }
+        const attributes = props.modelValue.attributes;
+        delete attributes["Active"];
+        delete attributes["Order"];
+        return attributes;
+    });
+    const attributeValues = computed(() => {
+        if(!props.modelValue.attributeValues) {
+            return {};
+        }
+        const attributeValues = props.modelValue.attributeValues;
+        delete attributeValues["Active"];
+        delete attributeValues["Order"];
+        return attributeValues;
+    });
     const description = propertyRef(props.modelValue.description ?? "", "Description");
     const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
     const name = propertyRef(props.modelValue.name ?? "", "Name");

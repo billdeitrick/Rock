@@ -129,7 +129,8 @@ namespace Rock.Blocks.Core
             }
 
             var isViewable = entity.IsAuthorized( Authorization.VIEW, RequestContext.CurrentPerson );
-            box.IsEditable = entity.IsAuthorized( Authorization.EDIT, RequestContext.CurrentPerson );
+            box.IsEditable = BlockCache.IsAuthorized( Authorization.EDIT, RequestContext.CurrentPerson )
+                && entity.IsAuthorized( Authorization.EDIT, RequestContext.CurrentPerson );
 
             entity.LoadAttributes( rockContext );
 
