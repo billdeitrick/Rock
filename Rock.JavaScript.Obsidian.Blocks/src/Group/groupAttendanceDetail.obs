@@ -645,7 +645,7 @@
                 locationGuid: locationGuid.value,
                 scheduleGuid: scheduleGuid.value,
 
-                // This will mark/unmark the attendance that triggered this get/create invocation.
+                // This will ensure the expected attendance is updated on the existing or newly created occurrence.
                 updatedAttendances: attendances.value.filter(attendance => attendance.personGuid === bag.personGuid),
             });
         }
@@ -679,7 +679,20 @@
      * Updates the type of the current AttendanceOccurrence.
      */
     async function updateAttendanceOccurrenceType(bag: GroupAttendanceDetailUpdateAttendanceOccurrenceTypeRequestBag): Promise<void> {
-        await invokeBlockAction("UpdateAttendanceOccurrenceType", { bag });
+        if (!attendanceOccurrenceGuid.value) {
+            // Create a new occurrence if it hasn't been saved yet.
+            await getOrCreateAttendanceOccurrence({
+                attendanceOccurrenceDate: attendanceForDateString.value,
+                locationGuid: locationGuid.value,
+                scheduleGuid: scheduleGuid.value,
+
+                // This will ensure the updated attendance occurrence type is set on the existing or newly created occurrence.
+                updatedAttendanceOccurrenceTypeGuid: bag.attendanceOccurrenceTypeGuid,
+            });
+        }
+        else {
+            await invokeBlockAction("UpdateAttendanceOccurrenceType", { bag });
+        }
     }
 
     /**

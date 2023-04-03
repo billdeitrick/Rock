@@ -862,17 +862,14 @@ namespace Rock.Blocks.Group
                     return ActionBadRequest( occurrenceData.ErrorMessage );
                 }
 
-                if ( occurrenceData.IsNewOccurrence )
+                var result = clientService.Save( occurrenceData, bag );
+
+                if ( !result )
                 {
-                    var result = clientService.Save( occurrenceData, bag );
-
-                    if ( !result )
-                    {
-                        return ActionBadRequest( occurrenceData.ErrorMessage );
-                    }
-
-                    rockContext.SaveChanges();
+                    return ActionBadRequest( occurrenceData.ErrorMessage );
                 }
+
+                rockContext.SaveChanges();
 
                 var box = GetInitializationBox( rockContext, occurrenceData );
 
@@ -2112,7 +2109,7 @@ namespace Rock.Blocks.Group
                     }
                     // If the occurrence is based on a schedule and there are no attendees,
                     // then add new attendees with did not meet flags set.
-                    else
+                    else if ( bag.UpdatedAttendances?.Any() == true )
                     {
                         foreach ( var attendee in bag.UpdatedAttendances.Where( a => a.PersonAliasId.HasValue ) )
                         {
@@ -2132,7 +2129,7 @@ namespace Rock.Blocks.Group
                         }
                     }
                 }
-                else
+                else if ( bag.UpdatedAttendances?.Any() == true )
                 {
                     // Validate the AttendanceOccurrence before updating the Attendance records.
                     if ( !occurrenceData.AttendanceOccurrence.IsValid )
