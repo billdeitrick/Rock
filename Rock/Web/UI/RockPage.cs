@@ -4244,7 +4244,75 @@ Sys.Application.add_load(function () {
 
         #endregion
 
-        #region User Preferences
+        #region Person Preferences
+
+        /// <summary>
+        /// Gets the global person preferences. These are unique to the person
+        /// but global across the entire system. Global preferences should be
+        /// used with extreme caution and care.
+        /// </summary>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetGlobalPersonPreferences()
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        /// <summary>
+        /// Gets the person preferences scoped to the specified entity.
+        /// </summary>
+        /// <param name="scopedEntity">The entity to use when scoping the preferences for a particular use.</param>
+        /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
+        public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
+        {
+            if ( CurrentPerson != null )
+            {
+                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
+            }
+            else if ( CurrentVisitor != null )
+            {
+                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
+            }
+            else
+            {
+                return new PersonPreferenceCollection();
+            }
+        }
+
+        #endregion
+
+        #region User Preferences (Obsolete)
 
         /// <summary>
         /// Returns a user preference for the current user and given key.
@@ -4255,13 +4323,7 @@ Sys.Application.add_load(function () {
         [RockObsolete( "1.16" )]
         public string GetUserPreference( string key )
         {
-            var values = SessionUserPreferences();
-            if ( values.ContainsKey( key ) )
-            {
-                return values[key];
-            }
-
-            return string.Empty;
+            return GetGlobalPersonPreferences().GetValue( key );
         }
 
         /// <summary>
@@ -4277,11 +4339,11 @@ Sys.Application.add_load(function () {
         public Dictionary<string, string> GetUserPreferences( string keyPrefix )
         {
             var selectedValues = new Dictionary<string, string>();
+            var preferences = GetGlobalPersonPreferences();
 
-            var values = SessionUserPreferences();
-            foreach ( var key in values.Where( v => v.Key.StartsWith( keyPrefix ) ) )
+            foreach ( var key in preferences.GetKeys().Where( k => k.StartsWith( keyPrefix ) ) )
             {
-                selectedValues.Add( key.Key, key.Value );
+                selectedValues.AddOrIgnore( key, preferences.GetValue( key ) );
             }
 
             return selectedValues;
@@ -4298,19 +4360,13 @@ Sys.Application.add_load(function () {
         [RockObsolete( "1.16" )]
         public void SetUserPreference( string key, string value, bool saveValue = true )
         {
-            var sessionValues = SessionUserPreferences();
-            if ( sessionValues.ContainsKey( key ) )
-            {
-                sessionValues[key] = value;
-            }
-            else
-            {
-                sessionValues.Add( key, value );
-            }
+            var preferences = GetGlobalPersonPreferences();
 
-            if ( saveValue && CurrentPerson != null )
+            preferences.SetValue( key, value );
+
+            if ( saveValue )
             {
-                PersonService.SaveUserPreference( CurrentPerson, key, value );
+                preferences.Save();
             }
         }
 
@@ -4322,16 +4378,7 @@ Sys.Application.add_load(function () {
         [RockObsolete( "1.16" )]
         public void SaveUserPreferences( string keyPrefix )
         {
-            if ( CurrentPerson != null )
-            {
-                var values = new Dictionary<string, string>();
-                SessionUserPreferences()
-                    .Where( p => p.Key.StartsWith( keyPrefix ) )
-                    .ToList()
-                    .ForEach( kv => values.Add( kv.Key, kv.Value ) );
-
-                PersonService.SaveUserPreferences( CurrentPerson, values );
-            }
+            GetGlobalPersonPreferences().Save();
         }
 
         /// <summary>
@@ -4342,16 +4389,7 @@ Sys.Application.add_load(function () {
         [RockObsolete( "1.16" )]
         public void DeleteUserPreference( string key )
         {
-            var sessionValues = SessionUserPreferences();
-            if ( sessionValues.ContainsKey( key ) )
-            {
-                sessionValues.Remove( key );
-            }
-
-            if ( CurrentPerson != null )
-            {
-                PersonService.DeleteUserPreference( CurrentPerson, key );
-            }
+            GetGlobalPersonPreferences().SetValue( key, string.Empty );
         }
 
         /// <summary>
@@ -4365,21 +4403,12 @@ Sys.Application.add_load(function () {
         [RockObsolete( "1.16" )]
         public Dictionary<string, string> SessionUserPreferences()
         {
-            string sessionKey = string.Format( "{0}_{1}",
-                Person.USER_VALUE_ENTITY, CurrentPerson != null ? CurrentPerson.Id : 0 );
+            var preferences = GetGlobalPersonPreferences();
+            var userPreferences = new Dictionary<string, string>();
 
-            var userPreferences = Session[sessionKey] as Dictionary<string, string>;
-            if ( userPreferences == null )
+            foreach ( var key in preferences.GetKeys() )
             {
-                if ( CurrentPerson != null )
-                {
-                    userPreferences = PersonService.GetUserPreferences( CurrentPerson );
-                }
-                else
-                {
-                    userPreferences = new Dictionary<string, string>();
-                }
-                Session[sessionKey] = userPreferences;
+                userPreferences.AddOrIgnore( key, preferences.GetValue( key ) );
             }
 
             return userPreferences;

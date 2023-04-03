@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 using Rock.Data;
+using Rock.Web.Cache;
 
 namespace Rock.Model
 {
@@ -75,6 +76,21 @@ namespace Rock.Model
             }
 
             return GetPreferencePrefix( entity.GetType(), entity.Id );
+        }
+
+        /// <summary>
+        /// Gets the preference prefix to use when scoped to <paramref name="entity"/>.
+        /// </summary>
+        /// <param name="entity">The entity that the preferences should be scoped to.</param>
+        /// <returns>A string that should be prefixed to all preference keys.</returns>
+        public static string GetPreferencePrefix( IEntityCache entity )
+        {
+            if ( entity == null )
+            {
+                throw new ArgumentNullException( nameof( entity ) );
+            }
+
+            return GetPreferencePrefix( EntityTypeCache.Get( entity.CachedEntityTypeId ).GetEntityType(), entity.Id );
         }
 
         /// <summary>

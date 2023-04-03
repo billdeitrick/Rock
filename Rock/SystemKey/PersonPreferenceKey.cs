@@ -17,11 +17,9 @@
 namespace Rock.SystemKey
 {
     /// <summary>
-    /// System file types.  
+    /// Global person preference keys. 
     /// </summary>
-    [RockObsolete( "1.16" )]
-    [System.Obsolete( "Use the PersonPreferenceKey class instead." )]
-    public class UserPreference
+    public class PersonPreferenceKey
     {
         /// <summary>
         /// The source phone type the user would like to originate calls to

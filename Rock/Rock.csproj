@@ -1641,6 +1641,7 @@
     <Compile Include="SystemGuid\SignatureDocumentTemplate.cs" />
     <Compile Include="SystemGuid\StreakType.cs" />
     <Compile Include="SystemKey\CreditCardTypeAttributeKey.cs" />
+    <Compile Include="SystemKey\PersonPreferenceKey.cs" />
     <Compile Include="Tasks\AddCommunicationRecipients.cs" />
     <Compile Include="Tasks\AddContentCollectionSource.cs" />
     <Compile Include="Tasks\AddNewMetaphones.cs" />

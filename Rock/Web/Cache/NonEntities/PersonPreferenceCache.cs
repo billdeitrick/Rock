@@ -177,14 +177,26 @@ namespace Rock.Web.Cache
         #region Public Static Methods
 
         /// <summary>
+        /// <para>
         /// Gets the person preference collection that will provide access
         /// to global preferences. These are unique to the individual but
         /// not attached to any specific entity.
+        /// </para>
+        /// <para>
+        /// If you pass in the Anonymous Visitor person record then an empty
+        /// preference collection will be returned. Instead use the
+        /// GetVisitorPreferenceCollection methods.
+        /// </para>
         /// </summary>
         /// <param name="person">The person object. The <see cref="Person.Aliases"/> property should be pre-fetched.</param>
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person )
         {
+            if ( person == null || person.Guid == new Guid( Rock.SystemGuid.Person.ANONYMOUS_VISITOR ) )
+            {
+                return new PersonPreferenceCollection();
+            }
+
             var preferences = GetPersonPreferences( person.Id, null, null );
             var prefix = PersonPreferenceService.GetGlobalPreferencePrefix();
 
@@ -192,14 +204,26 @@ namespace Rock.Web.Cache
         }
 
         /// <summary>
+        /// <para>
         /// Gets the person preference collection that will provide access
         /// to preferences attached to a specific entity.
+        /// </para>
+        /// <para>
+        /// If you pass in the Anonymous Visitor person record then an empty
+        /// preference collection will be returned. Instead use the
+        /// GetVisitorPreferenceCollection methods.
+        /// </para>
         /// </summary>
         /// <param name="person">The person object. The <see cref="Person.Aliases"/> property should be pre-fetched.</param>
         /// <param name="entity">The entity that the preferences will be scoped to.</param>
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person, IEntity entity )
         {
+            if ( person == null || person.Guid == new Guid( Rock.SystemGuid.Person.ANONYMOUS_VISITOR ) )
+            {
+                return new PersonPreferenceCollection();
+            }
+
             if ( entity == null )
             {
                 throw new ArgumentNullException( nameof( entity ) );
@@ -213,14 +237,26 @@ namespace Rock.Web.Cache
         }
 
         /// <summary>
+        /// <para>
         /// Gets the person preference collection that will provide access
         /// to preferences attached to a specific entity.
+        /// </para>
+        /// <para>
+        /// If you pass in the Anonymous Visitor person record then an empty
+        /// preference collection will be returned. Instead use the
+        /// GetVisitorPreferenceCollection methods.
+        /// </para>
         /// </summary>
         /// <param name="person">The person object. The <see cref="Person.Aliases"/> property should be pre-fetched.</param>
         /// <param name="entity">The entity that the preferences will be scoped to.</param>
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person, IEntityCache entity )
         {
+            if ( person == null || person.Guid == new Guid( Rock.SystemGuid.Person.ANONYMOUS_VISITOR ) )
+            {
+                return new PersonPreferenceCollection();
+            }
+
             if ( entity == null )
             {
                 throw new ArgumentNullException( nameof( entity ) );
@@ -234,8 +270,15 @@ namespace Rock.Web.Cache
         }
 
         /// <summary>
+        /// <para>
         /// Gets the person preference collection that will provide access
         /// to preferences attached to a specific entity.
+        /// </para>
+        /// <para>
+        /// If you pass in the Anonymous Visitor person record then an empty
+        /// preference collection will be returned. Instead use the
+        /// GetVisitorPreferenceCollection methods.
+        /// </para>
         /// </summary>
         /// <param name="person">The person object. The <see cref="Person.Aliases"/> property should be pre-fetched.</param>
         /// <param name="entityTypeCache">The cache that describes the type of entity.</param>
@@ -243,6 +286,11 @@ namespace Rock.Web.Cache
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that will provide access to the preferences.</returns>
         public static PersonPreferenceCollection GetPersonPreferenceCollection( Person person, EntityTypeCache entityTypeCache, int entityId )
         {
+            if ( person == null || person.Guid == new Guid( Rock.SystemGuid.Person.ANONYMOUS_VISITOR ) )
+            {
+                return new PersonPreferenceCollection();
+            }
+
             if ( entityTypeCache == null )
             {
                 throw new ArgumentNullException( nameof( entityTypeCache ) );

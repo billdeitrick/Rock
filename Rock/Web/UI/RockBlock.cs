@@ -1183,18 +1183,7 @@ namespace Rock.Web.UI
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetGlobalPersonPreferences()
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RockPage.GetGlobalPersonPreferences();
         }
 
         /// <summary>
@@ -1204,18 +1193,7 @@ namespace Rock.Web.UI
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RockPage.GetScopedPersonPreferences( scopedEntity );
         }
 
         /// <summary>
@@ -1225,18 +1203,7 @@ namespace Rock.Web.UI
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RockPage.GetScopedPersonPreferences( scopedEntity );
         }
 
         /// <summary>
@@ -1245,7 +1212,7 @@ namespace Rock.Web.UI
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetBlockPersonPreferences()
         {
-            return GetScopedPersonPreferences( BlockCache );
+            return RockPage.GetScopedPersonPreferences( BlockCache );
         }
 
         /// <summary>
@@ -1254,7 +1221,7 @@ namespace Rock.Web.UI
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetBlockTypePersonPreferences()
         {
-            return GetScopedPersonPreferences( BlockCache.BlockType );
+            return RockPage.GetScopedPersonPreferences( BlockCache.BlockType );
         }
 
         #endregion

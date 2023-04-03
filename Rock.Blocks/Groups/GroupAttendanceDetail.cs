@@ -289,10 +289,9 @@ namespace Rock.Blocks.Groups
         /// <summary>
         /// Keys for user preferences.
         /// </summary>
-        private static class UserPreferenceKeys
+        private static class PersonPreferenceKeys
         {
-            public const string AreGroupAttendanceAttendeesSortedByFirstName = "Attendance_List_Sorting_Toggle";
-            public const string Campus = "Campus";
+            public const string Campus = "campus";
         }
 
         /// <summary>
@@ -509,25 +508,6 @@ namespace Rock.Blocks.Groups
 
         #endregion
 
-        #region User Preferences
-
-        /// <summary>
-        /// The Campus ID filter.
-        /// </summary>
-        private int? CampusIdBlockUserPreference
-        {
-            get
-            {
-                return GetCurrentUserPreferenceForBlock( UserPreferenceKeys.Campus ).AsIntegerOrNull();
-            }
-            set
-            {
-                SetCurrentUserPreferenceForBlock( UserPreferenceKeys.Campus, value.ToString() );
-            }
-        }
-
-        #endregion
-
         #endregion
 
         #region IRockObsidianBlockType Implementation
@@ -540,8 +520,10 @@ namespace Rock.Blocks.Groups
         {
             using ( var rockContext = new RockContext() )
             {
+                var preferences = GetBlockPersonPreferences();
+                var preferenceCampusId = preferences.GetValue( PersonPreferenceKeys.Campus ).AsIntegerOrNull();
                 var occurrenceDataClientService = GetOccurrenceDataClientService( rockContext );
-                var searchParameters = occurrenceDataClientService.GetAttendanceOccurrenceSearchParameters( campusIdOverride: this.CampusIdBlockUserPreference );
+                var searchParameters = occurrenceDataClientService.GetAttendanceOccurrenceSearchParameters( campusIdOverride: preferenceCampusId );
                 var occurrenceData = occurrenceDataClientService.GetOccurrenceData( searchParameters, asNoTracking: false );
                 var box = new GroupAttendanceDetailInitializationBox();
 
@@ -1320,26 +1302,6 @@ namespace Rock.Blocks.Groups
         }
 
         /// <summary>
-        /// Gets a user preference for the current user.
-        /// </summary>
-        /// <param name="key">The user preference key.</param>
-        /// <returns>The user preference.</returns>
-        private string GetCurrentUserPreference( string key )
-        {
-            return PersonService.GetUserPreference( this.GetCurrentPerson(), key );
-        }
-
-        /// <summary>
-        /// Gets a user preference for the current user and block instance.
-        /// </summary>
-        /// <param name="key">The user preference key that will be converted to a block user preference key.</param>
-        /// <returns>The user preference.</returns>
-        private string GetCurrentUserPreferenceForBlock( string key )
-        {
-            return GetCurrentUserPreference( GetUserPreferenceKeyForBlock( key ) );
-        }
-
-        /// <summary>
         /// Gets the client service for reading the occurrence data.
         /// </summary>
         private OccurrenceDataClientService GetOccurrenceDataClientService( RockContext rockContext )
@@ -1351,36 +1313,6 @@ namespace Rock.Blocks.Groups
                 new AttendanceOccurrenceService( rockContext ),
                 new LocationService( rockContext ),
                 new ScheduleService( rockContext ) );
-        }
-
-        /// <summary>
-        /// Gets the user preference key for this block instance.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>The block user preference key.</returns>
-        private string GetUserPreferenceKeyForBlock( string key )
-        {
-            return $"{PersonService.GetBlockUserPreferenceKeyPrefix( this.BlockId )}{key}";
-        }
-
-        /// <summary>
-        /// Sets a user preference for the current user.
-        /// </summary>
-        /// <param name="key">The user preference key.</param>
-        /// <param name="value">The user preference value.</param>
-        private void SetCurrentUserPreference( string key, string value )
-        {
-            PersonService.SaveUserPreference( this.GetCurrentPerson(), key, value );
-        }
-
-        /// <summary>
-        /// Sets a user preference for the current user and block instance.
-        /// </summary>
-        /// <param name="key">The user preference key that will be converted to a block user preference key.</param>
-        /// <param name="value">The user preference value.</param>
-        private void SetCurrentUserPreferenceForBlock( string key, string value )
-        {
-            SetCurrentUserPreference( GetUserPreferenceKeyForBlock( key ), value );
         }
 
         /// <summary>
@@ -1872,11 +1804,9 @@ namespace Rock.Blocks.Groups
                         occurrenceDataSearchParameters.CampusId = campusIdOverride;
 
                         // Update the user preference.
-                        var campusIdUserPreference = _block.CampusIdBlockUserPreference;
-                        if ( campusIdUserPreference != campusIdOverride )
-                        {
-                            _block.CampusIdBlockUserPreference = campusIdOverride;
-                        }
+                        var preferences = _block.GetBlockPersonPreferences();
+                        preferences.SetValue( PersonPreferenceKeys.Campus, campusIdOverride?.ToString() ?? string.Empty );
+                        preferences.Save();
                     }
                 }
 
