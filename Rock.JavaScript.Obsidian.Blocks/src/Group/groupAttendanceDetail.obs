@@ -733,7 +733,20 @@
             notes: notes.value
         };
 
-        await invokeBlockAction<void>("UpdateNotes", { bag });
+        if (!attendanceOccurrenceGuid.value) {
+            // Create a new occurrence if it hasn't been saved yet.
+            await getOrCreateAttendanceOccurrence({
+                attendanceOccurrenceDate: attendanceForDateString.value,
+                locationGuid: locationGuid.value,
+                scheduleGuid: scheduleGuid.value,
+
+                // This will ensure the updated notes are set on the existing or newly created occurrence.
+                updatedNotes: bag.notes,
+            });
+        }
+        else {
+            await invokeBlockAction<void>("UpdateNotes", { bag });
+        }
     }
 
     /**
