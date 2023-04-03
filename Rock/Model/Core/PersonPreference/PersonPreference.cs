@@ -51,7 +51,6 @@ namespace Rock.Model
         [Index( "IX_PersonAliasIdKey", 0, IsUnique = true )]
         public int PersonAliasId { get; set; }
 
-        // <entity-type-slug>-<entity-id>-{key}
         /// <summary>
         /// <para>
         /// Gets or sets the unique key that identifies this preference. This
