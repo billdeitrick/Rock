@@ -712,7 +712,20 @@
         try {
             isSavingDidNotOccur.value = true;
 
-            await invokeBlockAction<void>("UpdateDidNotOccur", { bag });
+            if (!attendanceOccurrenceGuid.value) {
+                // Create a new occurrence if it hasn't been saved yet.
+                await getOrCreateAttendanceOccurrence({
+                    attendanceOccurrenceDate: attendanceForDateString.value,
+                    locationGuid: locationGuid.value,
+                    scheduleGuid: scheduleGuid.value,
+
+                    // This will ensure the updated did not occur flag is set on the existing or newly created occurrence.
+                    updatedDidNotOccur: bag.didNotOccur,
+                });
+            }
+            else {
+                await invokeBlockAction<void>("UpdateDidNotOccur", { bag });
+            }
         }
         finally {
             isSavingDidNotOccur.value = false;
