@@ -32,21 +32,21 @@ export type GroupAttendanceDetailGetOrCreateRequestBag = {
     /** Gets or sets the attendance occurrence unique identifier. */
     attendanceOccurrenceGuid?: Guid | null;
 
-    /** Gets or sets the attendance type unique identifier. */
-    attendanceTypeGuid?: Guid | null;
-
-    /** Gets or sets the attendees. */
-    attendees?: GroupAttendanceDetailAttendanceBag[] | null;
-
-    /** Gets or sets a value indicating whether the attendance occurrence occurred. */
-    didNotOccur: boolean;
-
     /** Gets or sets the location unique identifier. */
     locationGuid?: Guid | null;
 
-    /** Gets or sets the notes. */
-    notes?: string | null;
-
     /** Gets or sets the schedule unique identifier. */
     scheduleGuid?: Guid | null;
+
+    /** If set, the attendance occurrence type will be updated for the existing or newly created occurrence. */
+    updatedAttendanceOccurrenceTypeGuid?: Guid | null;
+
+    /** If set, the attendances will be updated for each item in the list. */
+    updatedAttendances?: GroupAttendanceDetailAttendanceBag[] | null;
+
+    /** If set, the "did not occur" flag will be updated for the existing or newly created occurrence. */
+    updatedDidNotOccur?: boolean | null;
+
+    /** If set (not null), the notes will be updated for the existing or newly created occurrence. */
+    updatedNotes?: string | null;
 };

@@ -46,23 +46,23 @@ namespace Rock.ViewModels.Blocks.Group.GroupAttendanceDetail
         public Guid? ScheduleGuid { get; set; }
 
         /// <summary>
-        /// Gets or sets the notes.
+        /// If set, the attendance occurrence type will be updated for the existing or newly created occurrence.
         /// </summary>
-        public string Notes { get; set; }
+        public Guid? UpdatedAttendanceOccurrenceTypeGuid { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the attendance occurrence occurred.
+        /// If set, the "did not occur" flag will be updated for the existing or newly created occurrence.
         /// </summary>
-        public bool DidNotOccur { get; set; }
+        public bool? UpdatedDidNotOccur { get; set; }
 
         /// <summary>
-        /// Gets or sets the attendance type unique identifier.
+        /// If set (not null), the notes will be updated for the existing or newly created occurrence.
         /// </summary>
-        public Guid? AttendanceTypeGuid { get; set; }
+        public string UpdatedNotes { get; set; }
 
         /// <summary>
-        /// Gets or sets the attendees.
+        /// If set, the attendances will be updated for each item in the list.
         /// </summary>
-        public List<GroupAttendanceDetailAttendanceBag> Attendees { get; set; }
+        public List<GroupAttendanceDetailAttendanceBag> UpdatedAttendances { get; set; }
     }
 }

@@ -83,7 +83,7 @@
                     </div>
 
                     <TransitionVerticalCollapse speed="fast">
-                        <div v-show="attendanceOccurrenceGuid" class="mt-5">
+                        <div v-show="true" class="mt-5">
                             <div class="d-flex align-items-end">
                                 <InlineCheckBox
                                                 v-if="isDidNotMeetShown"
@@ -117,7 +117,7 @@
                 <NotificationBox v-if="!isPrintingRoster && printRosterWarning" alertType="warning">{{ printRosterWarning }}</NotificationBox>
 
                 <TransitionVerticalCollapse speed="fast">
-                    <div v-show="attendanceOccurrenceGuid">
+                    <div v-show="true">
                         <TransitionVerticalCollapse speed="fast">
                             <div v-show="!didNotOccur">
                                 <div class="row">
@@ -625,14 +625,9 @@
      */
     async function getOrCreateAttendanceOccurrence(): Promise<void> {
         const bag: GroupAttendanceDetailGetOrCreateRequestBag = {
-            didNotOccur: didNotOccur.value,
             attendanceOccurrenceDate: attendanceForDateString.value,
-            attendanceTypeGuid: attendanceOccurrenceTypeGuid.value,
-            attendees: attendances.value,
             locationGuid: locationGuid.value,
-            notes: notes.value,
             scheduleGuid: scheduleGuid.value,
-            attendanceOccurrenceGuid: attendanceOccurrenceGuid.value
         };
 
         // Clear the error before calling get/create.
@@ -652,7 +647,27 @@
      * Updates the DidAttend value of a single Attendance.
      */
     async function markAttendance(bag: GroupAttendanceDetailMarkAttendanceRequestBag): Promise<void> {
-        await invokeBlockAction("MarkAttendance", { bag });
+        // Create a new occurrence if it hasn't been saved yet.
+        if (!attendanceOccurrenceGuid.value) {
+            const request: GroupAttendanceDetailGetOrCreateRequestBag = {
+                attendanceOccurrenceDate: attendanceForDateString.value,
+                locationGuid: locationGuid.value,
+                scheduleGuid: scheduleGuid.value,
+                updatedAttendances: attendances.value.filter(attendance => attendance.personGuid === bag.personGuid),
+            };
+
+            const response = await invokeBlockAction<GroupAttendanceDetailInitializationBox>("CreateOccurrence", { bag: request });
+
+            if (response?.data) {
+                config.value = response.data;
+            }
+            else if (config) {
+                config.value.errorMessage = response?.errorMessage || "An unexpected error occurred.";
+            }
+        }
+        else {
+            await invokeBlockAction("MarkAttendance", { bag });
+        }
     }
 
     /**
@@ -852,8 +867,9 @@
             removeCurrentUrlQueryParams("OccurrenceId");
         }
 
+        autoSaveOn();
+
         if (attendanceOccurrenceGuid.value) {
-            autoSaveOn();
             await startRealTime();
         }
     });
@@ -866,11 +882,13 @@
     // autoUpdateDidNotOccurSwitch.disable();
     // autoUpdateNotesSwitch.disable();
 
+    // Turn on auto-save right away.
+    autoSaveOn();
+
     if (config.value.attendanceOccurrenceGuid) {
-        // Turn on auto-save right away if the initialization box returned an existing AttendanceOccurrence.
-        autoSaveOn();
         startRealTime();
     }
 
     onConfigurationValuesChanged(useReloadBlock());
+
 </script>
