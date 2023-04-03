@@ -121,15 +121,14 @@
                         <TransitionVerticalCollapse speed="fast">
                             <div v-show="!didNotOccur">
                                 <div class="row">
-                                    <div class="col-xs-12 col-sm-6">
-                                        <DidAttendFilterPicker v-model="didAttendFilter" :attendances="attendances" />
-
+                                    <div class="col-xs-12 col-sm-8">
+                                        <DidAttendFilter v-model="didAttendFilter" :attendances="attendances" />
                                         <SearchFilter v-model="searchFilter" />
                                     </div>
-                                    <div class="col-xs-12 col-sm-6 d-flex justify-content-end">
+                                    <div class="col-xs-12 col-sm-4 d-flex justify-content-end">
                                         <div class="form-group">
                                             <RockButton v-if="!config.isNotesSectionHidden"
-                                                        CssClass="btn btn-default btn-sm"
+                                                        btnSize="sm"
                                                         :btnType="isNotesShown ? 'primary' : 'default'"
                                                         @click="onShowNotesClicked()"><i class="fa fa-pencil-alt"></i> Add Note</RockButton>
                                         </div>
@@ -153,15 +152,14 @@
                                                 :isFilterByFirstNameInitial="false"
                                                 :isMultiselect="true" />
 
-
                                 <AttendanceRoster
-                                                    class="form-group"
-                                                    :attendances="attendances"
-                                                    :filterBy="attendanceFilterByDelegate"
-                                                    :groupBy="attendanceGroupByDelegate"
-                                                    :groupWhenFilteredAttendanceCountExceeds="50"
-                                                    :sortBy="attendanceSortByDelegate"
-                                                    @attendanceChanged="onAttendanceChanged($event)" />
+                                                  class="form-group"
+                                                  :attendances="attendances"
+                                                  :filterBy="attendanceFilterByDelegate"
+                                                  :groupBy="attendanceGroupByDelegate"
+                                                  :groupWhenFilteredAttendanceCountExceeds="50"
+                                                  :sortBy="attendanceSortByDelegate"
+                                                  @attendanceChanged="onAttendanceChanged($event)" />
 
                             </div>
                         </TransitionVerticalCollapse>
@@ -176,7 +174,7 @@
                     @click="getOrCreateAttendanceOccurrence">Take Attendance</RockButton>
             </template>
             <template #footerSecondaryActions>
-                <RockButton CssClass="btn btn-default btn-sm" @click="onPrintAttendanceRosterClicked()"><i class="fa fa-file-download"></i> Roster</RockButton>
+                <RockButton v-if="config.isRosterDownloadShown" btnType="default" btnSize="sm" @click="onPrintAttendanceRosterClicked()"><i class="fa fa-file-download"></i> Roster</RockButton>
             </template>
         </Panel>
     </div>
@@ -203,11 +201,11 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from "vue";
-    import DidAttendFilterPicker from "./GroupAttendanceDetail/didAttendFilter.partial.obs";
+    import DidAttendFilter from "./GroupAttendanceDetail/didAttendFilter.partial.obs";
     import InitialsFilter from "./GroupAttendanceDetail/initialsFilter.partial.obs";
     import AttendanceRoster from "./GroupAttendanceDetail/attendanceRoster.partial.obs";
     import CampusFilter from "./GroupAttendanceDetail/campusFilter.partial.obs";
-    import { sortByFirstName, sortByLastName, createEveryFilter as every, createSortBy, createSwitch, IAttendanceFilter, NoFilter, DidAttendFilter, createModalOptions } from "./GroupAttendanceDetail/utils.partial";
+    import { sortByFirstName, sortByLastName, createEveryFilter as every, createSortBy, createSwitch, IAttendanceFilter, NoFilter, DidAttendFilter as DidAttend, createModalOptions } from "./GroupAttendanceDetail/utils.partial";
     import GroupLocationPicker from "./GroupAttendanceDetail/groupLocationPicker.partial.obs";
     import GroupLocationScheduleDatePicker from "./GroupAttendanceDetail/groupLocationScheduleDatePicker.partial.obs";
     import GroupLocationSchedulePicker from "./GroupAttendanceDetail/groupLocationSchedulePicker.partial.obs";
@@ -436,7 +434,7 @@
 
         // If there are attendances marked as DidAttend and the individual is checking "We Did Not Meet",
         // then confirm with the individual before saving.
-        if (newDidNotOccur && attendances.value.some(DidAttendFilter.filter)) {
+        if (newDidNotOccur && attendances.value.some(DidAttend.filter)) {
             modalOptions.value = createModalOptions({
                 saveText: "Yes",
                 cancelText: "No",

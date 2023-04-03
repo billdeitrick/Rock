@@ -1339,6 +1339,7 @@ namespace Rock.Blocks.Group
                 IsCampusFilteringAllowed = this.IsCampusFilteringAllowed,
                 IsDidNotMeetDisabled = this.IsDidNotMeetDisabled,
                 IsLocationRequired = occurrenceData.Group.GroupType.GroupAttendanceRequiresLocation,
+                IsRosterDownloadShown = !this.AttendanceRosterTemplateGuid.IsEmpty(),
                 IsScheduleRequired = occurrenceData.Group.GroupType.GroupAttendanceRequiresSchedule,
 
                 // Enforce this on the client if possible. Either way, it should be enforced on the server.

@@ -1,6 +1,6 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
-    <div class="form-group">
+    <div class="form-group search-filter">
         <TextBox v-model="searchText" placeholder="Search" />
     </div>
 </template>

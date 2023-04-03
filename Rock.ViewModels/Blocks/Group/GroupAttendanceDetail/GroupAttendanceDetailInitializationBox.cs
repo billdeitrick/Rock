@@ -318,5 +318,10 @@ namespace Rock.ViewModels.Blocks.Group.GroupAttendanceDetail
         /// Gets or sets a value indicating whether schedule is required.
         /// </summary>
         public bool IsScheduleRequired { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether roster download is shown.
+        /// </summary>
+        public bool IsRosterDownloadShown { get; set; }
     }
 }

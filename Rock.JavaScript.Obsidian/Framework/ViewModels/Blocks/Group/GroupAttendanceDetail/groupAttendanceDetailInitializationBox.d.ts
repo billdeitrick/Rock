@@ -117,6 +117,9 @@ export type GroupAttendanceDetailInitializationBox = {
     /** Gets or sets a value indicating whether this instance is notes section hidden. */
     isNotesSectionHidden: boolean;
 
+    /** Gets or sets a value indicating whether roster download is shown. */
+    isRosterDownloadShown: boolean;
+
     /** Gets or sets a value indicating whether schedule is required. */
     isScheduleRequired: boolean;
 
