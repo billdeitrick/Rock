@@ -1347,6 +1347,18 @@ Rock.settings.initialize({{
 
                         if ( !ClientScript.IsStartupScriptRegistered( "rock-obsidian-init" ) )
                         {
+                            var currentPersonJson = "null";
+                            var isAnonymousVisitor = false;
+
+                            if ( CurrentPerson != null && CurrentPerson.Guid != new Guid( SystemGuid.Person.GIVER_ANONYMOUS ) )
+                            {
+                                currentPersonJson = CurrentPerson.ToViewModel( CurrentPerson ).ToCamelCaseJson( false, false );
+                            }
+                            else if ( CurrentPerson != null )
+                            {
+                                isAnonymousVisitor = true;
+                            }
+
                             var script = $@"
 Obsidian.onReady(() => {{
     System.import('@Obsidian/Templates/rockPage.js').then(module => {{
@@ -1355,7 +1367,8 @@ Obsidian.onReady(() => {{
             pageId: {_pageCache.Id},
             pageGuid: '{_pageCache.Guid}',
             pageParameters: {PageParameters().ToJson()},
-            currentPerson: {( CurrentPerson == null ? "null" : CurrentPerson.ToViewModel( CurrentPerson ).ToCamelCaseJson( false, false ) )},
+            currentPerson: {currentPersonJson},
+            isAnonymousVisitor: {(isAnonymousVisitor ? "true" : "false")},
             contextEntities: {GetContextViewModels().ToCamelCaseJson( false, false )},
             loginUrlWithReturnUrl: '{GetLoginUrlWithReturnUrl()}'
         }});

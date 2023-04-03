@@ -22,12 +22,12 @@ namespace Rock.Utility
         #region Fields
 
         /// <summary>
-        /// The person identifier
+        /// The person identifier.
         /// </summary>
         private readonly int? _personId;
 
         /// <summary>
-        /// The person alias identifier
+        /// The person alias identifier.
         /// </summary>
         private readonly int? _personAliasId;
 
@@ -49,7 +49,7 @@ namespace Rock.Utility
 
         /// <summary>
         /// The preferences and values we know about. Dictionary key is the
-        /// prefixed preference key.
+        /// un-prefixed preference key.
         /// </summary>
         private readonly ConcurrentDictionary<string, PreferenceValue> _preferences;
 
@@ -210,7 +210,7 @@ namespace Rock.Utility
         /// <summary>
         /// Determines whether the specified key exists in the collection.
         /// </summary>
-        /// <param name="key">The key.</param>
+        /// <param name="key">The key whose existence is to be checked.</param>
         /// <returns><c>true</c> if the specified key exists; otherwise, <c>false</c>.</returns>
         public bool ContainsKey( string key )
         {
@@ -251,9 +251,10 @@ namespace Rock.Utility
 
         /// <summary>
         /// Gets a new <see cref="PersonPreferenceCollection"/> with only the
-        /// preferences that start with the given prefix.
+        /// preferences that start with the given prefix. The new collection
+        /// can then be accessed without including the prefix.
         /// </summary>
-        /// <param name="prefix">The prefix.</param>
+        /// <param name="prefix">The prefix to filter preferences down by.</param>
         /// <returns>A new instance of <see cref="PersonPreferenceCollection"/>.</returns>
         public PersonPreferenceCollection WithPrefix( string prefix )
         {

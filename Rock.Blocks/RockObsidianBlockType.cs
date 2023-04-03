@@ -20,6 +20,7 @@ using System.Linq;
 
 using Rock.Attribute;
 using Rock.Security;
+using Rock.Utility;
 using Rock.ViewModels.Cms;
 using Rock.Web.Cache;
 
@@ -151,6 +152,7 @@ Obsidian.onReady(() => {{
         private ObsidianBlockConfigBag GetConfigBag( string rootElementId )
         {
             List<BlockCustomActionBag> configActions = null;
+            PersonPreferenceCollection preferences = null;
 
             if ( this is IHasCustomActions customActionsBlock )
             {
@@ -160,13 +162,30 @@ Obsidian.onReady(() => {{
                 configActions = customActionsBlock.GetCustomActions( canEdit, canAdministrate );
             }
 
+            if ( RequestContext.CurrentVisitorId.HasValue )
+            {
+                preferences = PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, BlockCache );
+            }
+            else if ( RequestContext.CurrentPerson != null )
+            {
+                preferences = PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, BlockCache );
+            }
+
+            var blockPreferences = new ObsidianBlockPreferencesBag
+            {
+                EntityTypeKey = EntityTypeCache.Get<Rock.Model.Block>().IdKey,
+                EntityKey = BlockCache.IdKey,
+                Values = preferences?.GetAllValueBags().ToList() ?? new List<ViewModels.Core.PersonPreferenceValueBag>()
+            };
+
             return new ObsidianBlockConfigBag
             {
                 BlockFileUrl = BlockFileUrl,
                 RootElementId = rootElementId,
                 BlockGuid = BlockCache.Guid,
                 ConfigurationValues = GetBlockInitialization( RockClientType.Web ),
-                CustomConfigurationActions = configActions
+                CustomConfigurationActions = configActions,
+                Preferences = blockPreferences
             };
 
         }

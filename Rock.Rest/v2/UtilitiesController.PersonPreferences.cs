@@ -182,7 +182,7 @@ namespace Rock.Rest.v2
             {
                 entityType = EntityTypeCache.Get( guid );
             }
-            else if ( IdHasher.Instance.TryGetId( entityKey, out id ) )
+            else if ( IdHasher.Instance.TryGetId( entityTypeKey, out id ) )
             {
                 entityType = EntityTypeCache.Get( id );
             }
@@ -239,7 +239,7 @@ namespace Rock.Rest.v2
             {
                 entityType = EntityTypeCache.Get( guid );
             }
-            else if ( IdHasher.Instance.TryGetId( entityKey, out id ) )
+            else if ( IdHasher.Instance.TryGetId( entityTypeKey, out id ) )
             {
                 entityType = EntityTypeCache.Get( id );
             }
