@@ -38,5 +38,10 @@ namespace Rock.ViewModels.Blocks.Group.GroupAttendanceDetail
         /// The number of previous days to show.
         /// </summary>
         public int? NumberOfPreviousDaysToShow { get; set; }
+
+        /// <summary>
+        /// The occurrence date.
+        /// </summary>
+        public DateTimeOffset? OccurrenceDate { get; set; }
     }
 }

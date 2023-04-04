@@ -33,4 +33,7 @@ export type GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag = {
 
     /** The number of previous days to show. */
     numberOfPreviousDaysToShow?: number | null;
+
+    /** The occurrence date. */
+    occurrenceDate?: string | null;
 };

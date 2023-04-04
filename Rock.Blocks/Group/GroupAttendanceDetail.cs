@@ -29,6 +29,7 @@ using Rock.Model;
 using Rock.RealTime;
 using Rock.RealTime.Topics;
 using Rock.Security;
+using Rock.Utility.Enums;
 using Rock.ViewModels.Blocks.Group.GroupAttendanceDetail;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
@@ -1133,74 +1134,16 @@ namespace Rock.Blocks.Group
         [BlockAction( "GetGroupLocationSchedules" )]
         public BlockActionResult GetGroupLocationSchedules( GroupAttendanceDetailGetGroupLocationSchedulesRequestBag bag )
         {
-            if ( !bag.GroupGuid.HasValue )
-            {
-                return ActionNotFound();
-            }
-
             using ( var rockContext = new RockContext() )
             {
-                var groupLocationsQuery = new GroupLocationService( rockContext )
-                    .Queryable()
-                    .AsNoTracking()
-                    .Include( gl => gl.Location )
-                    .Include( gl => gl.Schedules )
-                    .Where( gl => gl.Group.Guid == bag.GroupGuid.Value )
-                    .Where( gl => gl.Schedules.Any() );
-
-                if ( bag.LocationGuid.HasValue )
-                {
-                    groupLocationsQuery = groupLocationsQuery.Where( gl => gl.Location.Guid == bag.LocationGuid.Value );
-                }
-
-                var groupLocationSchedulesQuery = groupLocationsQuery                    
-                    .SelectMany( gl => gl.Schedules )
-                    .OrderBy( s => s.Name )
-                    .Distinct();
-
-                var schedules = new Dictionary<Guid, string>();
-
-                if ( bag.Date.HasValue )
-                {
-                    // Only include schedules that apply to a specific date.
-                    var groupLocationSchedules = groupLocationSchedulesQuery.ToList();
-                    foreach ( var schedule in groupLocationSchedules )
-                    {
-                        var startTimes = schedule.GetScheduledStartTimes( bag.Date.Value.Date, bag.Date.Value.Date.AddDays( 1 ) );
-                        if ( startTimes.Any() )
-                        {
-                            schedules.AddOrIgnore( schedule.Guid, schedule.Name );
-                        }
-                    }
-                }
-                else
-                {
-                    var groupLocationSchedules = groupLocationSchedulesQuery
-                        .Select( s => new ScheduleDto
-                        {
-                            ScheduleGuid = s.Guid,
-                            ScheduleName = s.Name
-                        } )
-                        .ToList();
-
-                    foreach ( var groupLocationSchedule in groupLocationSchedules )
-                    {
-                        schedules.AddOrIgnore( groupLocationSchedule.ScheduleGuid, groupLocationSchedule.ScheduleName );
-                    }
-                }
+                var schedules = GetGroupLocationSchedules( rockContext, bag.GroupGuid, bag.LocationGuid, bag.Date );
 
                 if ( !schedules.Any() )
                 {
                     return ActionNotFound();
                 }
 
-                var list = schedules.Select( kvp => new ListItemBag
-                {
-                    Value = kvp.Key.ToString(),
-                    Text = kvp.Value
-                } );
-
-                return ActionOk( list );
+                return ActionOk( schedules );
             }
         }
 
@@ -1333,7 +1276,12 @@ namespace Rock.Blocks.Group
             DateTime startDate;
             DateTime endDate;
 
-            if ( bag.NumberOfPreviousDaysToShow.HasValue )
+            if ( bag.OccurrenceDate.HasValue )
+            {
+                startDate = bag.OccurrenceDate.Value.Date;
+                endDate = startDate.AddDays( 1 );
+            }
+            else if ( bag.NumberOfPreviousDaysToShow.HasValue )
             {
                 // Get schedules between N days ago and now.
                 startDate = now.AddDays( -bag.NumberOfPreviousDaysToShow.Value );
@@ -1367,6 +1315,81 @@ namespace Rock.Blocks.Group
         }
 
         /// <summary>
+        /// Gets the group location schedules that can be displayed in the group location schedule picker.
+        /// </summary>
+        /// <param name="bag">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="ListItemBag"/> objects that represent the group location schedules.</returns>
+        private List<ListItemBag> GetGroupLocationSchedules( RockContext rockContext, Guid? groupGuid, Guid? locationGuid, DateTimeOffset? date )
+        {
+            if ( !groupGuid.HasValue )
+            {
+                return new List<ListItemBag>();
+            }
+
+            var groupLocationsQuery = new GroupLocationService( rockContext )
+                .Queryable()
+                .AsNoTracking()
+                .Include( gl => gl.Location )
+                .Include( gl => gl.Schedules )
+                .Where( gl => gl.Group.Guid == groupGuid.Value )
+                .Where( gl => gl.Schedules.Any() );
+
+            if ( locationGuid.HasValue )
+            {
+                groupLocationsQuery = groupLocationsQuery.Where( gl => gl.Location.Guid == locationGuid.Value );
+            }
+
+            var groupLocationSchedulesQuery = groupLocationsQuery
+                .SelectMany( gl => gl.Schedules )
+                .OrderBy( s => s.Name )
+                .Distinct();
+
+            var schedules = new Dictionary<Guid, string>();
+
+            if ( date.HasValue )
+            {
+                // Only include schedules that apply to a specific date.
+                var groupLocationSchedules = groupLocationSchedulesQuery.ToList();
+                foreach ( var schedule in groupLocationSchedules )
+                {
+                    var startTimes = schedule.GetScheduledStartTimes( date.Value.Date, date.Value.Date.AddDays( 1 ) );
+                    if ( startTimes.Any() )
+                    {
+                        schedules.AddOrIgnore( schedule.Guid, schedule.Name );
+                    }
+                }
+            }
+            else
+            {
+                var groupLocationSchedules = groupLocationSchedulesQuery
+                    .Select( s => new ScheduleDto
+                    {
+                        ScheduleGuid = s.Guid,
+                        ScheduleName = s.Name
+                    } )
+                    .ToList();
+
+                foreach ( var groupLocationSchedule in groupLocationSchedules )
+                {
+                    schedules.AddOrIgnore( groupLocationSchedule.ScheduleGuid, groupLocationSchedule.ScheduleName );
+                }
+            }
+
+            if ( !schedules.Any() )
+            {
+                return new List<ListItemBag>();
+            }
+
+            return schedules
+                .Select( kvp => new ListItemBag
+                {
+                    Value = kvp.Key.ToString(),
+                    Text = kvp.Value
+                } )
+                .ToList();
+        }
+
+        /// <summary>
         /// Gets an initialization box.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
@@ -1394,6 +1417,7 @@ namespace Rock.Blocks.Group
                 GroupName = occurrenceData.Group.Name,
                 IsBackButtonHidden = this.IsBackButtonHidden,
                 IsCampusFilteringAllowed = this.IsCampusFilteringAllowed,
+                IsDateIncludedInPickFromSchedule = this.DateSelectionMode != DateSelectionModeSpecifier.PickFromSchedule,
                 IsDidNotMeetDisabled = this.IsDidNotMeetDisabled,
                 IsLocationRequired = occurrenceData.Group.GroupType.GroupAttendanceRequiresLocation,
                 IsRosterDownloadShown = !this.AttendanceRosterTemplateGuid.IsEmpty(),
@@ -1411,13 +1435,22 @@ namespace Rock.Blocks.Group
 
             var groupGuid = group.Guid;
             var groupLocations = new Lazy<List<ListItemBag>>( () => GetGroupLocations( new RockContext(), groupGuid ) );
-
-            // If an existing occurrence was found,
-            // then do not allow modifying the date, location, or schedule.
-            SetOccurrenceDateOptions( rockContext, occurrenceData, box );
+            var groupLocationSchedules = new Lazy<List<ListItemBag>>( () => GetGroupLocationSchedules( new RockContext(), groupGuid, occurrence.Location?.Guid, occurrence.OccurrenceDate ) );
+            var groupLocationScheduleDates = new Lazy<List<ListItemBag>>( () => GetGroupLocationScheduleDateBags(
+                new RockContext(),
+                new GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag
+                {
+                    GroupGuid = groupGuid,
+                    LocationGuid = occurrence.Location?.Guid,
+                    NumberOfPreviousDaysToShow = this.NumberOfPreviousDaysToShow,
+                    OccurrenceDate = this.DateSelectionMode != DateSelectionModeSpecifier.PickFromSchedule ? occurrence.OccurrenceDate : ( DateTimeOffset? )null
+                } ) );
 
             if ( occurrenceData.IsSpecificOccurrence )
-            {    
+            {
+                box.AttendanceOccurrenceDate = occurrenceData.AttendanceOccurrence.OccurrenceDate.Date;
+                box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
+
                 if ( occurrence.Location != null )
                 {
                     box.LocationGuid = occurrence.Location.Guid;
@@ -1440,21 +1473,88 @@ namespace Rock.Blocks.Group
                     box.ScheduleSelectionMode = GroupAttendanceDetailScheduleSelectionMode.None;
                 }
             }
-            // The individual is not looking at a specific occurrence, so let them choose a location and schedule.
+            // The individual is not looking at a specific occurrence, so let them choose a date, location, and schedule.
             else
             {
-                box.LocationSelectionMode = GroupAttendanceDetailLocationSelectionMode.GroupLocationPicker;
+                box.AttendanceOccurrenceDate = occurrenceData.AttendanceOccurrence.OccurrenceDate.Date;
+                switch ( this.DateSelectionMode )
+                {
+                    case DateSelectionModeSpecifier.DatePicker:
+                        // If there are no date query parameters then show a date picker.
+                        box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.DatePicker;
+                        break;
+                    case DateSelectionModeSpecifier.CurrentDate:
+                        if ( occurrenceData.AttendanceOccurrence.Location != null && groupLocationScheduleDates.Value.Any() )
+                        {
+                            // There is a location, and schedules for the group, location, and current date,
+                            // so show a scheduled date picker.
+                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker;
+                        }
+                        else
+                        {
+                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
+                        }
+                        break;
+                    case DateSelectionModeSpecifier.PickFromSchedule:
+                        if ( occurrence.Location != null && groupLocationScheduleDates.Value.Any() )
+                        {
+                            // There is a location, and schedules for the group, location, and current date,
+                            // so show a scheduled date picker.
+                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker;
+                        }
+                        else if ( groupLocations.Value.Any() )
+                        {
+                            // If are locations to choose from, then hide the date picker.
+                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.None;
+                        }
+                        else
+                        {
+                            // If there are no locations to choose from, then display the date picker.
+                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.DatePicker;
+                        } 
+                        break;
+                }
+
+                if ( groupLocations.Value.Any() )
+                {
+                    box.LocationSelectionMode = GroupAttendanceDetailLocationSelectionMode.GroupLocationPicker;
+                }
+                else
+                {
+                    box.LocationSelectionMode = GroupAttendanceDetailLocationSelectionMode.None;
+                }
+
                 if ( occurrence.Location != null )
                 {
                     box.LocationGuid = occurrence.Location.Guid;
                     box.LocationLabel = new LocationService( rockContext ).GetPath( occurrence.Location.Id );
+
+                    // If the occurrence has a location and there are no locations to choose from, then fallback to a readonly location.
+                    if ( !groupLocations.Value.Any() )
+                    {
+                        box.LocationSelectionMode = GroupAttendanceDetailLocationSelectionMode.Readonly;
+                    }
                 }
 
-                box.ScheduleSelectionMode = GroupAttendanceDetailScheduleSelectionMode.GroupLocationSchedulePicker;
+                if ( groupLocationSchedules.Value.Any() )
+                {
+                    box.ScheduleSelectionMode = GroupAttendanceDetailScheduleSelectionMode.GroupLocationSchedulePicker;
+                }
+                else
+                {
+                    box.ScheduleSelectionMode = GroupAttendanceDetailScheduleSelectionMode.None;
+                }
+
                 if ( occurrence.Schedule != null )
                 {
                     box.ScheduleGuid = occurrence.Schedule.Guid;
                     box.ScheduleLabel = occurrence.Schedule.ToString();
+
+                    // If the occurrence has a schedule and there are no schedules to choose from, then fallback to a readonly schedule.
+                    if ( !groupLocationSchedules.Value.Any() )
+                    {
+                        box.ScheduleSelectionMode = GroupAttendanceDetailScheduleSelectionMode.Readonly;
+                    }
                 }
             }
 
@@ -1792,88 +1892,6 @@ namespace Rock.Blocks.Group
                 CampusGuid = attendanceData.PrimaryCampusGuid,
                 ItemTemplate = itemTemplate
             };
-        }
-
-        /// <summary>
-        /// Sets the initialization options for the Attendance For date.
-        /// </summary>
-        /// <param name="occurrenceData">The occurrence data.</param>
-        /// <param name="box">The initialization box.</param>
-        private void SetOccurrenceDateOptions( RockContext rockContext, OccurrenceData occurrenceData, GroupAttendanceDetailInitializationBox box )
-        {
-            // Set occurrence date options.
-            box.AttendanceOccurrenceDate = occurrenceData.AttendanceOccurrence.OccurrenceDate.Date;
-
-            // The occurrence will only be new if an occurrence doesn't exist when the page loads
-            // for the provided date, location, and schedule page parameters.
-            if ( occurrenceData.IsSpecificOccurrence )
-            {
-                box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
-                //if ( occurrenceData.AttendanceOccurrence.Location != null )
-                //{
-                //    var schedules = GetGroupLocationScheduleDateBags( rockContext, new GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag
-                //    {
-                //        GroupGuid = occurrenceData.Group.Guid,
-                //        LocationGuid = occurrenceData.AttendanceOccurrence.Location.Guid,
-                //        Date = occurrenceData.AttendanceOccurrence.OccurrenceDate
-                //    } );
-
-                //    if ( schedules.Any() )
-                //    {
-                //        // There is a date query parameter and a location, and schedules for the group, location, and date,
-                //        // so show a scheduled date picker.
-                //        box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker;
-                //    }
-                //    else
-                //    {
-                //        // There is a date query parameter so show a readonly date to prevent the person from changing it.
-                //        box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
-                //    }
-                //}
-                //else
-                //{
-                //    // There is a date query parameter so show a readonly date to prevent the person from changing it.
-                //    box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
-                //}
-            }
-            else
-            { 
-                switch ( this.DateSelectionMode )
-                {
-                    case DateSelectionModeSpecifier.DatePicker:
-                        // If there are no date query parameters then show a date picker.
-                        box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.DatePicker;
-                        break;
-                    case DateSelectionModeSpecifier.CurrentDate:
-                        if ( occurrenceData.AttendanceOccurrence.Location != null )
-                        {
-                            var schedules = GetGroupLocationScheduleDateBags( rockContext, new GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag
-                            {
-                                GroupGuid = occurrenceData.Group.Guid,
-                                LocationGuid = occurrenceData.AttendanceOccurrence.Location.Guid
-                            } );
-
-                            if ( schedules.Any() )
-                            {
-                                // There is a location, and schedules for the group, location, and current date,
-                                // so show a scheduled date picker.
-                                box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker;
-                            }
-                            else
-                            {
-                                box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
-                            }
-                        }
-                        else
-                        {
-                            box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.Readonly;
-                        }
-                        break;
-                    case DateSelectionModeSpecifier.PickFromSchedule:
-                        box.AttendanceOccurrenceDateSelectionMode = GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker;
-                        break;
-                }
-            }
         }
 
         /// <summary>

@@ -90,6 +90,9 @@ export type GroupAttendanceDetailInitializationBox = {
     /** Gets a value indicating whether there is a configuration error. */
     isConfigError: boolean;
 
+    /** Gets or sets a value indicating if date is included in the pick from schedule picker. */
+    isDateIncludedInPickFromSchedule: boolean;
+
     /** Gets or sets a value indicating whether this instance is did not meet checked. */
     isDidNotMeetChecked: boolean;
 

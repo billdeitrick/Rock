@@ -61,7 +61,7 @@
                             <template v-if="locationGuid || !config.isLocationRequired">
                                 <GroupLocationScheduleDatePicker v-if="config.attendanceOccurrenceDateSelectionMode === GroupAttendanceDetailDateSelectionMode.ScheduledDatePicker"
                                                                  @update:modelValue="onGroupLocationScheduleDatePickerChanged"
-                                                                 :date="RockDateTime.parseISO(config.attendanceOccurrenceDate || '')"
+                                                                 :date="config.isDateIncludedInPickFromSchedule ? RockDateTime.parseISO(config.attendanceOccurrenceDate || '') : null"
                                                                  :disabled="!isAutoSaveOn"
                                                                  :groupGuid="config.groupGuid"
                                                                  label="Attendance For"
@@ -70,7 +70,7 @@
                                                                  :showBlankItem="true" />
 
                                 <GroupLocationSchedulePicker v-else-if="config.scheduleSelectionMode === GroupAttendanceDetailScheduleSelectionMode.GroupLocationSchedulePicker && locationGuid"
-                                                             @update:modelValue="onGroupLocationSchedulePickerChanged"
+                                                             @update:modelVa-lue="onGroupLocationSchedulePickerChanged"
                                                              :disabled="!isAutoSaveOn"
                                                              :groupGuid="config.groupGuid"
                                                              label="Schedule"
