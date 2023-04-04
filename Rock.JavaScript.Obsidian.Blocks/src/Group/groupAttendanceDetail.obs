@@ -520,6 +520,9 @@
         attendanceOccurrenceTypeGuid.value = config.value.selectedAttendanceOccurrenceTypeValue ?? undefined;
         didNotOccur.value = config.value.isDidNotMeetChecked;
         notes.value = config.value.notes ?? "";
+
+        // Start watching real-time events whenever the config (occurrence) changes.
+        startRealTime();
     }
 
     /**
