@@ -23,14 +23,17 @@
 
 import { Guid } from "@Obsidian/Types";
 
-/** A bag that contains the get group location schedule dates request information. */
-export type GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag = {
-    /** GUID of the group the schedules are part of. */
-    groupGuid?: Guid | null;
+/** A bag that contains the print roster request information. */
+export type GroupAttendanceDetailPrintRosterRequestBag = {
+    /** Gets or sets the attendance occurrence date (time ignored). */
+    attendanceOccurrenceDate?: string | null;
 
-    /** GUID of the location the schedules are part of. */
+    /** Gets or sets the attendance occurrence unique identifier. */
+    attendanceOccurrenceGuid?: Guid | null;
+
+    /** Gets or sets the location unique identifier. */
     locationGuid?: Guid | null;
 
-    /** The number of previous days to show. */
-    numberOfPreviousDaysToShow?: number | null;
+    /** Gets or sets the schedule unique identifier. */
+    scheduleGuid?: Guid | null;
 };

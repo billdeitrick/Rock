@@ -89,8 +89,7 @@
         const bag: GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag = {
             groupGuid: props.groupGuid,
             locationGuid: props.locationGuid,
-            numberOfPreviousDaysToShow: props.numberOfPreviousDaysToShow,
-            date: props.date?.toISOString()
+            numberOfPreviousDaysToShow: props.numberOfPreviousDaysToShow
         };
 
         if (!props.shouldLoadItemsWhetherValuesAreSet

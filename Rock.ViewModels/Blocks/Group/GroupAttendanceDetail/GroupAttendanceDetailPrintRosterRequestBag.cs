@@ -16,27 +16,33 @@
 //
 
 using System;
+using System.Collections.Generic;
 
 namespace Rock.ViewModels.Blocks.Group.GroupAttendanceDetail
 {
     /// <summary>
-    /// A bag that contains the get group location schedule dates request information.
+    /// A bag that contains the print roster request information.
     /// </summary>
-    public class GroupAttendanceDetailGetGroupLocationScheduleDatesRequestBag
+    public class GroupAttendanceDetailPrintRosterRequestBag
     {
         /// <summary>
-        /// GUID of the group the schedules are part of.
+        /// Gets or sets the attendance occurrence date (time ignored).
         /// </summary>
-        public Guid? GroupGuid { get; set; }
+        public DateTimeOffset? AttendanceOccurrenceDate { get; set; }
 
         /// <summary>
-        /// GUID of the location the schedules are part of.
+        /// Gets or sets the attendance occurrence unique identifier.
+        /// </summary>
+        public Guid? AttendanceOccurrenceGuid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the location unique identifier.
         /// </summary>
         public Guid? LocationGuid { get; set; }
 
         /// <summary>
-        /// The number of previous days to show.
+        /// Gets or sets the schedule unique identifier.
         /// </summary>
-        public int? NumberOfPreviousDaysToShow { get; set; }
+        public Guid? ScheduleGuid { get; set; }
     }
 }
