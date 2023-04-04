@@ -95,7 +95,6 @@ namespace Rock.Jobs
             CopyPreferences( "CountsType", string.Empty, CopyCountsTypePreferences );
             CopyPreferences( "CampusFilter", string.Empty, CopyCampusFilterPreferences );
             CopyPreferences( "IncludeNoCampus", string.Empty, CopyIncludeNoCampusPreferences );
-
             CopyPreferences( "PrayerCardView_SelectedCampus", string.Empty, CopyPrayerCardViewSelectedCampusPreferences );
             CopyPreferences( "PersonProgramStepList.IsCardView", string.Empty, CopyPersonProgramStepListIsCardViewPreferences );
             CopyPreferences( "StreakMapEditorDateRange", string.Empty, CopyStreakMapEditorDateRangePreferences );
@@ -116,7 +115,7 @@ namespace Rock.Jobs
                 throw new Exception( "One or more person preferences failed to migrate completely, see exception log for details." );
             }
 
-            //DeleteJob();
+            DeleteJob();
         }
 
         #region Preference Type Processors
