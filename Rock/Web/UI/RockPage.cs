@@ -285,6 +285,15 @@ namespace Rock.Web.UI
         public int[] PersonalizationRequestFilterIds { get; private set; }
 
         /// <summary>
+        /// Gets or sets the request context. This contains all the details
+        /// about the network request.
+        /// </summary>
+        /// <value>
+        /// The request context.
+        /// </value>
+        public RockRequestContext RequestContext { get; private set; }
+
+        /// <summary>
         /// Publicly gets and privately sets the currently logged in user.
         /// </summary>
         /// <value>
@@ -725,6 +734,15 @@ namespace Rock.Web.UI
         /// <param name="e"></param>
         protected override void OnInit( EventArgs e )
         {
+            var stopwatchInitEvents = Stopwatch.StartNew();
+
+            RequestContext = new RockRequestContext( Request );
+
+            if ( _pageCache != null )
+            {
+                RequestContext.PrepareRequestForPage( _pageCache );
+            }
+
             _showDebugTimings = this.PageParameter( "ShowDebugTimings" ).AsBoolean();
 
             if ( _showDebugTimings )
@@ -733,8 +751,6 @@ namespace Rock.Web.UI
                 _previousTiming = _tsDuration.TotalMilliseconds;
                 _pageNeedsObsidian = true;
             }
-
-            var stopwatchInitEvents = Stopwatch.StartNew();
 
             bool canAdministratePage = false;
             bool canEditPage = false;
@@ -1236,8 +1252,7 @@ Rock.settings.initialize({{
 
                                         if ( blockEntity is IRockBlockType rockBlockEntity )
                                         {
-                                            rockBlockEntity.RequestContext = new RockRequestContext( Request );
-                                            rockBlockEntity.RequestContext.PrepareRequestForPage( _pageCache );
+                                            rockBlockEntity.RequestContext = RequestContext;
 
                                             var wrapper = new RockBlockTypeWrapper
                                             {
@@ -4267,18 +4282,7 @@ Sys.Application.add_load(function () {
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetGlobalPersonPreferences()
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetGlobalPersonPreferences();
         }
 
         /// <summary>
@@ -4288,18 +4292,7 @@ Sys.Application.add_load(function () {
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
         }
 
         /// <summary>
@@ -4309,18 +4302,7 @@ Sys.Application.add_load(function () {
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
         {
-            if ( CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( CurrentPerson, scopedEntity );
-            }
-            else if ( CurrentVisitor != null )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( CurrentVisitor.Id, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
         }
 
         #endregion

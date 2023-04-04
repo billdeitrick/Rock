@@ -152,7 +152,6 @@ Obsidian.onReady(() => {{
         private ObsidianBlockConfigBag GetConfigBag( string rootElementId )
         {
             List<BlockCustomActionBag> configActions = null;
-            PersonPreferenceCollection preferences = null;
 
             if ( this is IHasCustomActions customActionsBlock )
             {
@@ -162,20 +161,11 @@ Obsidian.onReady(() => {{
                 configActions = customActionsBlock.GetCustomActions( canEdit, canAdministrate );
             }
 
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                preferences = PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, BlockCache );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                preferences = PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, BlockCache );
-            }
-
             var blockPreferences = new ObsidianBlockPreferencesBag
             {
                 EntityTypeKey = EntityTypeCache.Get<Rock.Model.Block>().IdKey,
                 EntityKey = BlockCache.IdKey,
-                Values = preferences?.GetAllValueBags().ToList() ?? new List<ViewModels.Core.PersonPreferenceValueBag>()
+                Values = GetBlockPersonPreferences().GetAllValueBags().ToList()
             };
 
             return new ObsidianBlockConfigBag

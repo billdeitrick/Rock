@@ -375,31 +375,24 @@ namespace Rock.Rest.v2
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/>.</returns>
         private PersonPreferenceCollection GetPersonOrVisitorPreferences( EntityTypeCache entityTypeCache, int? entityId )
         {
-            if ( RockRequestContext.CurrentVisitorId.HasValue )
+            if ( entityTypeCache == null || !entityId.HasValue )
             {
-                if ( entityTypeCache != null && entityId.HasValue )
+                return RockRequestContext.GetGlobalPersonPreferences();
+            }
+            else
+            {
+                if ( RockRequestContext.CurrentVisitorId.HasValue )
                 {
                     return PersonPreferenceCache.GetVisitorPreferenceCollection( RockRequestContext.CurrentVisitorId.Value, entityTypeCache, entityId.Value );
                 }
-                else
-                {
-                    return PersonPreferenceCache.GetVisitorPreferenceCollection( RockRequestContext.CurrentVisitorId.Value );
-                }
-            }
-            else if ( RockRequestContext.CurrentPerson != null )
-            {
-                if ( entityTypeCache != null && entityId.HasValue )
+                else if ( RockRequestContext.CurrentPerson != null )
                 {
                     return PersonPreferenceCache.GetPersonPreferenceCollection( RockRequestContext.CurrentPerson, entityTypeCache, entityId.Value );
                 }
                 else
                 {
-                    return PersonPreferenceCache.GetPersonPreferenceCollection( RockRequestContext.CurrentPerson );
+                    return new PersonPreferenceCollection();
                 }
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
             }
         }
 

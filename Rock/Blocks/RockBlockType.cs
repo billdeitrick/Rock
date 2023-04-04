@@ -154,18 +154,7 @@ namespace Rock.Blocks
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetGlobalPersonPreferences()
         {
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetGlobalPersonPreferences();
         }
 
         /// <summary>
@@ -175,18 +164,7 @@ namespace Rock.Blocks
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntity scopedEntity )
         {
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, scopedEntity );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
         }
 
         /// <summary>
@@ -196,18 +174,7 @@ namespace Rock.Blocks
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetScopedPersonPreferences( IEntityCache scopedEntity )
         {
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, scopedEntity );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, scopedEntity );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( scopedEntity );
         }
 
         /// <summary>
@@ -216,18 +183,7 @@ namespace Rock.Blocks
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetBlockPersonPreferences()
         {
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, BlockCache );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, BlockCache );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( BlockCache );
         }
 
         /// <summary>
@@ -236,18 +192,7 @@ namespace Rock.Blocks
         /// <returns>An instance of <see cref="PersonPreferenceCollection"/> that provides access to the preferences. This will never return <c>null</c>.</returns>
         public PersonPreferenceCollection GetBlockTypePersonPreferences()
         {
-            if ( RequestContext.CurrentVisitorId.HasValue )
-            {
-                return PersonPreferenceCache.GetVisitorPreferenceCollection( RequestContext.CurrentVisitorId.Value, BlockCache.BlockType );
-            }
-            else if ( RequestContext.CurrentPerson != null )
-            {
-                return PersonPreferenceCache.GetPersonPreferenceCollection( RequestContext.CurrentPerson, BlockCache.BlockType );
-            }
-            else
-            {
-                return new PersonPreferenceCollection();
-            }
+            return RequestContext.GetScopedPersonPreferences( BlockCache.BlockType );
         }
 
         #endregion
