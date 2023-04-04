@@ -136,12 +136,12 @@
                         <TransitionVerticalCollapse speed="fast">
                             <div v-show="!didNotOccur">
                                 <div class="row">
-                                    <div class="col-xs-12 col-sm-8">
+                                    <div class="col-xs-12 col-sm-8 d-sm-flex">
                                         <DidAttendFilter v-model="didAttendFilter" :attendances="attendances" />
-                                        <SearchFilter v-model="searchFilter" />
+                                        <SearchFilter v-model="searchFilter" class="flex-grow-1 mt-2 mt-sm-0 ml-sm-2 mb-sm-0" />
                                     </div>
                                     <div class="col-xs-12 col-sm-4 d-flex justify-content-end">
-                                        <div class="form-group">
+                                        <div class="form-group mb-sm-0">
                                             <RockButton v-if="!config.isNotesSectionHidden"
                                                         btnSize="sm"
                                                         :btnType="isNotesShown ? 'primary' : 'default'"
@@ -152,7 +152,7 @@
                                 </div>
 
                                 <TransitionVerticalCollapse speed="fast" v-if="!config.isNotesSectionHidden">
-                                    <div v-show="isNotesShown">
+                                    <div v-show="isNotesShown" class="mt-2">
                                         <TextBox
                                                  v-model="notes"
                                                 :disabled="!isAutoSaveOn"
