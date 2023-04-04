@@ -53,7 +53,7 @@
      */
     function createNameContainsFilter(text: string): IAttendanceFilter {
         return createFilter((attendance: GroupAttendanceDetailAttendanceBag) => {
-            return !!attendance.fullName && attendance.fullName.toLocaleLowerCase().indexOf(text.toLocaleLowerCase()) >= 0;
+            return `${attendance.nickName} ${attendance.lastName}`.toLocaleLowerCase().indexOf(text.toLocaleLowerCase()) >= 0;
         });
     }
 
@@ -62,7 +62,7 @@
      */
     function createNameMatchesRegexFilter(regex: RegExp): IAttendanceFilter {
         return createFilter((attendance: GroupAttendanceDetailAttendanceBag) => {
-            return !!attendance.fullName && regex.test(attendance.fullName);
+            return regex.test(`${attendance.nickName} ${attendance.lastName}`);
         });
     }
 

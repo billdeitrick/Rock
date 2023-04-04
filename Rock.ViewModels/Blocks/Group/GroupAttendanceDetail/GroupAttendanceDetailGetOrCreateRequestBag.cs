@@ -63,6 +63,11 @@ namespace Rock.ViewModels.Blocks.Group.GroupAttendanceDetail
         /// <summary>
         /// If set, the attendances will be updated for each item in the list.
         /// </summary>
-        public List<GroupAttendanceDetailAttendanceBag> UpdatedAttendances { get; set; }
+        public List<GroupAttendanceDetailMarkAttendanceRequestBag> UpdatedAttendances { get; set; }
+
+        /// <summary>
+        /// If set, the person will be added to the existing or newly created occurrence (and potentially as a group member depending on block settings).
+        /// </summary>
+        public Guid? AddedPersonAliasGuid { get; set; }
     }
 }

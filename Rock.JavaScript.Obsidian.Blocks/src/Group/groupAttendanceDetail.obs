@@ -355,11 +355,24 @@
             personAliasGuid: personAliasGuid
         };
 
-        var result = await invokeBlockAction<GroupAttendanceDetailAddPersonResponseBag>("AddPerson", { bag });
+        if (!attendanceOccurrenceGuid.value) {
+            // Create a new occurrence if it hasn't been saved yet.
+            await getOrCreateAttendanceOccurrence({
+                attendanceOccurrenceDate: attendanceForDateString.value,
+                locationGuid: locationGuid.value,
+                scheduleGuid: scheduleGuid.value,
 
-        if (result?.data?.attendance) {
-            // Add the attendance to the array so it can be seen in the attendances list.
-            addToAttendancesArray(result?.data?.attendance);
+                // This will ensure the expected attendance is updated on the existing or newly created occurrence.
+                addedPersonAliasGuid: bag.personAliasGuid,
+            });
+        }
+        else {
+            var result = await invokeBlockAction<GroupAttendanceDetailAddPersonResponseBag>("AddPerson", { bag });
+
+            if (result?.data?.attendance) {
+                // Add the attendance to the array so it can be seen in the attendances list.
+                addToAttendancesArray(result?.data?.attendance);
+            }
         }
 
         // Clear person picker.
@@ -383,7 +396,7 @@
     async function onAttendanceChanged(attendance: GroupAttendanceDetailAttendanceBag): Promise<void> {
         await autoMarkAttendance({
             attendanceOccurrenceGuid: attendanceOccurrenceGuid.value,
-            personGuid: attendance.personGuid,
+            personAliasId: attendance.personAliasId,
             didAttend: attendance.didAttend
         });
     }
@@ -618,6 +631,24 @@
     }
 
     /**
+     * Gets the AttendanceOccurrence based on the currently selected date, location, and schedule.
+     * Note that the returned occurrence may not have been saved yet.
+     */
+    async function getAttendanceOccurrence(bag: GroupAttendanceDetailGetOrCreateRequestBag): Promise<void> {
+        // Clear the error before calling get/create.
+        errorMessage.value = "";
+
+        const response = await invokeBlockAction<GroupAttendanceDetailInitializationBox>("Get", { bag });
+
+        if (response?.data) {
+            config.value = response.data;
+        }
+        else if (config) {
+            config.value.errorMessage = response?.errorMessage || "An unexpected error occurred.";
+        }
+    }
+
+    /**
      * Gets or creates the AttendanceOccurrence based on the currently selected date, location, and schedule.
      */
     async function getOrCreateAttendanceOccurrence(bag: GroupAttendanceDetailGetOrCreateRequestBag): Promise<void> {
@@ -646,7 +677,7 @@
                 scheduleGuid: scheduleGuid.value,
 
                 // This will ensure the expected attendance is updated on the existing or newly created occurrence.
-                updatedAttendances: attendances.value.filter(attendance => attendance.personGuid === bag.personGuid),
+                updatedAttendances: attendances.value.filter(attendance => attendance.personAliasId === bag.personAliasId),
             });
         }
         else {
@@ -871,13 +902,11 @@
             return;
         }
 
-        if (attendanceForDate.value && locationGuid.value && scheduleGuid.value) {
-            await getOrCreateAttendanceOccurrence({
-                attendanceOccurrenceDate: attendanceForDateString.value,
-                locationGuid: locationGuid.value,
-                scheduleGuid: scheduleGuid.value
-            });
-        }
+        await getAttendanceOccurrence({
+            attendanceOccurrenceDate: attendanceForDateString.value,
+            locationGuid: locationGuid.value,
+            scheduleGuid: scheduleGuid.value
+        });
     });
 
     /**

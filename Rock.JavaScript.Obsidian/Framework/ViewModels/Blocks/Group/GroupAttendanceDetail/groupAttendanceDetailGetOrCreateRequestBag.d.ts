@@ -22,10 +22,13 @@
 //
 
 import { Guid } from "@Obsidian/Types";
-import { GroupAttendanceDetailAttendanceBag } from "@Obsidian/ViewModels/Blocks/Group/GroupAttendanceDetail/groupAttendanceDetailAttendanceBag";
+import { GroupAttendanceDetailMarkAttendanceRequestBag } from "@Obsidian/ViewModels/Blocks/Group/GroupAttendanceDetail/groupAttendanceDetailMarkAttendanceRequestBag";
 
 /** A bag that contains the get or create request information. */
 export type GroupAttendanceDetailGetOrCreateRequestBag = {
+    /** If set, the person will be added to the existing or newly created occurrence (and potentially as a group member depending on block settings). */
+    addedPersonAliasGuid?: Guid | null;
+
     /** Gets or sets the attendance occurrence date (time ignored). */
     attendanceOccurrenceDate?: string | null;
 
@@ -42,7 +45,7 @@ export type GroupAttendanceDetailGetOrCreateRequestBag = {
     updatedAttendanceOccurrenceTypeGuid?: Guid | null;
 
     /** If set, the attendances will be updated for each item in the list. */
-    updatedAttendances?: GroupAttendanceDetailAttendanceBag[] | null;
+    updatedAttendances?: GroupAttendanceDetailMarkAttendanceRequestBag[] | null;
 
     /** If set, the "did not occur" flag will be updated for the existing or newly created occurrence. */
     updatedDidNotOccur?: boolean | null;
