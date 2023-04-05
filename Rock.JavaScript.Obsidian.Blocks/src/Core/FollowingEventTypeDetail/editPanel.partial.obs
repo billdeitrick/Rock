@@ -82,24 +82,8 @@
 
     // #region Values
 
-    const attributes = computed(() => {
-        if(!props.modelValue.attributes) {
-            return {};
-        }
-        const attributes = props.modelValue.attributes;
-        delete attributes["Active"];
-        delete attributes["Order"];
-        return attributes;
-    });
-    const attributeValues = computed(() => {
-        if(!props.modelValue.attributeValues) {
-            return {};
-        }
-        const attributeValues = props.modelValue.attributeValues;
-        delete attributeValues["Active"];
-        delete attributeValues["Order"];
-        return attributeValues;
-    });
+    const attributes = ref(props.modelValue.attributes ?? {});
+    const attributeValues = ref(props.modelValue.attributeValues ?? {});
     const description = propertyRef(props.modelValue.description ?? "", "Description");
     const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
     const name = propertyRef(props.modelValue.name ?? "", "Name");

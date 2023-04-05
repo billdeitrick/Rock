@@ -228,6 +228,11 @@ namespace Rock.Blocks.Core
 
             bag.LoadAttributesAndValuesForPublicEdit( entity, RequestContext.CurrentPerson );
 
+            bag.AttributeValues.Remove( "Active" );
+            bag.AttributeValues.Remove( "Order" );
+            bag.Attributes.Remove( "Active" );
+            bag.Attributes.Remove( "Order" );
+
             return bag;
         }
 
