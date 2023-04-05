@@ -25,6 +25,7 @@ using System.Web.UI.WebControls;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
+using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
 
@@ -34,7 +35,7 @@ namespace Rock.Field.Types
     /// Field Type to select a single (or null) group role filtered by a selected group type
     /// Stored as GroupTypeRole.Guid
     /// </summary>
-    [RockPlatformSupport( Utility.RockPlatform.WebForms )]
+    [RockPlatformSupport( Utility.RockPlatform.WebForms, Utility.RockPlatform.Obsidian )]
     [Rock.SystemGuid.FieldTypeGuid( Rock.SystemGuid.FieldType.GROUP_ROLE )]
     public class GroupRoleFieldType : FieldType, IEntityFieldType, IEntityReferenceFieldType
     {
@@ -70,6 +71,47 @@ namespace Rock.Field.Types
         #endregion
 
         #region Edit Control
+
+        /// <inheritdoc/>
+        public override string GetPublicValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            return GetTextValue( privateValue, privateConfigurationValues );
+        }
+
+        /// <inheritdoc/>
+        public override string GetPrivateEditValue( string publicValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            var groupRoleValue = publicValue.FromJsonOrNull<ListItemBag>();
+
+            if ( groupRoleValue != null )
+            {
+                return groupRoleValue.Value;
+            }
+
+            return string.Empty;
+        }
+
+        /// <inheritdoc/>
+        public override string GetPublicEditValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            if ( Guid.TryParse( privateValue, out Guid guid ) )
+            {
+                using ( var rockContext = new RockContext() )
+                {
+                    var groupRole = new GroupTypeRoleService( rockContext ).GetNoTracking( guid );
+                    if ( groupRole != null )
+                    {
+                        return new ListItemBag()
+                        {
+                            Value = groupRole.Guid.ToString(),
+                            Text = groupRole.Name,
+                        }.ToCamelCaseJson( false, true );
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
 
         #endregion
 
