@@ -5,6 +5,7 @@
           keyField="guid"
           liveUpdates
           stickyHeader
+          tooltipField="attr_TextValue1"
           entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13">
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">

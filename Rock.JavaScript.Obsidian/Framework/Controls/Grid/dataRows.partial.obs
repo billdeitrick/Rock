@@ -2,7 +2,8 @@
     <DataRow v-for="row in props.rows"
              :columns="props.columns"
              :data="row"
-             :grid="props.grid" />
+             :grid="props.grid"
+             :tooltipField="props.tooltipField" />
 </template>
 
 <script setup lang="ts">
@@ -24,6 +25,11 @@
         grid: {
             type: Object as PropType<IGridState>,
             required: true
+        },
+
+        tooltipField: {
+            type: String as PropType<string>,
+            required: false
         }
     });
 </script>

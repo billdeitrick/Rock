@@ -29,7 +29,8 @@
             <DataRows v-else
                       :columns="visibleColumnDefinitions"
                       :rows="visibleRows"
-                      :grid="gridState" />
+                      :grid="gridState"
+                      :tooltipField="tooltipField" />
         </tbody>
 
         <tfoot>
@@ -244,6 +245,15 @@ table.table-obsidian th.grid-error > .alert {
         },
 
         /**
+         * Identifies the key that will be used to provide the tooltip text
+         * for each row in the Grid. This property is not reactive.
+         */
+        tooltipField: {
+            type: String as PropType<string>,
+            required: false
+        },
+
+        /**
          * Determines if the grid will monitor for changes in the data of
          * existing rows, new rows and removed rows. Should not be used for
          * grids with more than 1,000 rows. This property is not reactive.
@@ -342,8 +352,6 @@ table.table-obsidian th.grid-error > .alert {
                 gridErrorMessage.value = error instanceof Error ? error.message : new String(error).toString();
             }
         }
-
-        //visibleColumnDefinitions.value = columns;
 
         loadingData.value = false;
     }
