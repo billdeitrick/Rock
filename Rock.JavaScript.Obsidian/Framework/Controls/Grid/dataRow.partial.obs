@@ -1,5 +1,5 @@
 <template>
-    <tr ref="rowElement" :data-title="tooltipText" :data-delay="tooltipDelay">
+    <tr ref="rowElement" :title="tooltipText">
         <DataCell v-for="column in props.columns"
                   :column="column"
                   :row="props.data"
@@ -8,10 +8,9 @@
 </template>
 
 <script setup lang="ts">
-    import { PropType, computed, onMounted, ref } from "vue";
+    import { PropType, computed, ref } from "vue";
     import DataCell from "./dataCell.partial.obs";
     import { ColumnDefinition, IGridState } from "@Obsidian/Types/Controls/grid";
-    import { tooltip } from "@Obsidian/Utility/tooltip";
 
     const props = defineProps({
         columns: {
@@ -36,7 +35,6 @@
     });
 
     const rowElement = ref<HTMLElement | null>(null);
-    const tooltipDelay = `{ "show": 500, "hide": 0 }`;
 
     const tooltipText = computed((): string | undefined => {
         if (!props.tooltipField) {
@@ -56,12 +54,6 @@
         }
         else {
             return undefined;
-        }
-    });
-
-    onMounted(() => {
-        if (rowElement.value && props.tooltipField) {
-            tooltip(rowElement.value);
         }
     });
 </script>
