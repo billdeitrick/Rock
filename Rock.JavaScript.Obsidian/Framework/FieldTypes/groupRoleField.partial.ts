@@ -18,11 +18,6 @@ import { Component } from "vue";
 import { defineAsyncComponent } from "@Obsidian/Utility/component";
 import { FieldTypeBase } from "./fieldType";
 
-export type GroupRoleFieldValue = {
-    groupGuid?: string;
-    role?: string;
-};
-
 // The edit component can be quite large, so load it only as needed.
 const editComponent = defineAsyncComponent(async () => {
     return (await import("./groupRoleFieldComponents")).EditComponent;
