@@ -6,6 +6,11 @@ export default defineComponent({
     props: {
         ...standardColumnProps,
 
+        name: {
+            type: String as PropType<string>,
+            default: "__edit"
+        },
+
         format: {
             type: Object as PropType<VNode>,
             default: EditCell

@@ -53,11 +53,11 @@
 
         <AttributeColumns :attributes="attributeFields" />
 
-        <EditColumn name="edit" :onClick="onEditClick" />
+        <EditColumn :onClick="onEditClick" />
 
-        <SecurityColumn name="secure" itemTitle="email" />
+        <SecurityColumn itemTitle="email" />
 
-        <DeleteColumn name="delete" :onClick="onDeleteClick" />
+        <DeleteColumn :onClick="onDeleteClick" />
     </Grid>
 </template>
 

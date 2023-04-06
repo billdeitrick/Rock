@@ -7,6 +7,11 @@ export default defineComponent({
     props: {
         ...standardColumnProps,
 
+        name: {
+            type: String as PropType<string>,
+            default: "__security"
+        },
+
         format: {
             type: Object as PropType<VNode>,
             default: SecurityCell
