@@ -15,10 +15,10 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { defineComponent, PropType, reactive, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { DateFilterMethod } from "@Obsidian/Enums/Controls/Grid/dateFilterMethod";
-import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps } from "@Obsidian/Types/Controls/grid";
+import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps, StandardHeaderCellProps } from "@Obsidian/Types/Controls/grid";
 import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
 import { DayOfWeek, RockDateTime } from "@Obsidian/Utility/rockDateTime";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
@@ -90,6 +90,24 @@ export const standardColumnProps: StandardColumnProps = {
     format: {
         type: Object as PropType<VNode>,
         required: false
+    },
+
+    headerTemplate: {
+        type: Object as PropType<VNode>,
+        required: false
+    }
+};
+
+/** The standard properties available on header cells. */
+export const standardHeaderCellProps: StandardHeaderCellProps = {
+    column: {
+        type: Object as PropType<ColumnDefinition>,
+        required: true
+    },
+
+    grid: {
+        type: Object as PropType<IGridState>,
+        required: true
     }
 };
 
@@ -540,6 +558,7 @@ function buildColumn(name: string, node: VNode): ColumnDefinition {
     const field = getVNodeProp<string>(node, "field");
     const title = getVNodeProp<string>(node, "title");
     const format = node.children?.["body"] ?? getVNodeProp<VNode>(node, "format") ?? defaultCell;
+    const headerTemplate = node.children?.["header"] ?? getVNodeProp<VNode>(node, "headerTemplate");
     const filter = getVNodeProp<ColumnFilter>(node, "filter");
     const headerClass = getVNodeProp<string>(node, "headerClass");
     const itemClass = getVNodeProp<string>(node, "itemClass");
@@ -660,6 +679,7 @@ function buildColumn(name: string, node: VNode): ColumnDefinition {
         title,
         field,
         format,
+        headerTemplate,
         filter,
         uniqueValue,
         sortValue,
@@ -978,6 +998,8 @@ export class GridState implements IGridState {
     public readonly itemTerm: string;
 
     public readonly entityTypeGuid?: Guid | undefined;
+
+    public readonly selectedKeys: string[] = reactive([]);
 
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;

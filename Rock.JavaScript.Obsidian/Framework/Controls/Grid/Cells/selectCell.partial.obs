@@ -1,0 +1,42 @@
+<template>
+    <div class="checkbox">
+        <label title="">
+            <input type="checkbox" :checked="isChecked" @change="onValueChange">
+            <span class="label-text">&nbsp;</span>
+        </label>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { standardCellProps } from "@Obsidian/Core/Controls/grid";
+    import { computed } from "vue";
+
+    const props = defineProps(standardCellProps);
+
+    const rowKey = computed((): string | undefined => {
+        return props.grid.getRowKey(props.row);
+    });
+
+    const isChecked = computed((): boolean => {
+        if (rowKey.value === undefined) {
+            return false;
+        }
+
+        return props.grid.selectedKeys.includes(rowKey.value);
+    });
+
+    function onValueChange(): void {
+        if (rowKey.value === undefined) {
+            return;
+        }
+
+        const index = props.grid.selectedKeys.indexOf(rowKey.value);
+
+        if (index !== -1) {
+            props.grid.selectedKeys.splice(index, 1);
+        }
+        else {
+            props.grid.selectedKeys.push(rowKey.value);
+        }
+    }
+</script>

@@ -355,6 +355,31 @@ type StandardColumnProps = {
     format: {
         type: PropType<VNode>,
         required: false
+    },
+
+    /**
+     * Provides a custom component that will be used to render the header
+     * cell. This is rarely needed as you can usually accomplish the same
+     * with a template that defines the header content.
+     */
+    headerTemplate: {
+        type: PropType<VNode>,
+        required: false
+    }
+};
+
+/** The standard properties available on header cells. */
+export type StandardHeaderCellProps = {
+    /** The column definition that this cell is being displayed in. */
+    column: {
+        type: PropType<ColumnDefinition>,
+        required: true
+    },
+
+    /** The grid this cell is being displayed inside of. */
+    grid: {
+        type: PropType<IGridState>,
+        required: true
     }
 };
 
@@ -445,6 +470,12 @@ export type ColumnDefinition = {
 
     /** The name of the field in the row object. */
     field?: string;
+
+    /**
+     * Defines the content that will be used in the header cell. This will
+     * override any title value provided.
+     */
+    headerTemplate?: VNode | Component;
 
     /**
      * Formats the value for display in the cell. Should return HTML safe
@@ -547,6 +578,12 @@ export interface IGridState {
      * rows do not represent an entity then this will be undefined.
      */
     readonly entityTypeGuid?: Guid;
+
+    /**
+     * The currently selected row keys. This is a reactive array so it can
+     * be watched for changes.
+     */
+    readonly selectedKeys: string[];
 
     /**
      * Gets the cache key to use for storing column specific data for a

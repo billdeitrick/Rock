@@ -356,8 +356,10 @@ table.table-obsidian th.grid-error > .alert {
         loadingData.value = false;
     }
 
-    function onActionClick(): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, 2000));
+    async function onActionClick(): Promise<void> {
+        console.log(gridState.selectedKeys);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        gridState.selectedKeys.splice(0, gridState.selectedKeys.length);
     }
 
     watch([quickFilterValue, columnFilterValues], () => {
