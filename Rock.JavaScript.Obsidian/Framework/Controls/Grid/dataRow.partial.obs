@@ -61,9 +61,7 @@
 
     onMounted(() => {
         if (rowElement.value && props.tooltipField) {
-            tooltip(rowElement.value, {
-
-            });
+            tooltip(rowElement.value);
         }
     });
 </script>
