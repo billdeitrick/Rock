@@ -1082,28 +1082,54 @@ namespace Rock.Jobs
         /// </summary>
         private int CleanCachedFileDirectory()
         {
-            string cacheDirectoryPath = GetAttributeValue( AttributeKey.BaseCacheDirectory );
-            int? cacheExpirationDays = GetAttributeValue( AttributeKey.DaysKeepCachedFiles ).AsIntegerOrNull();
+            // Create a set of arguments from the Quartz Job context.
+            var args = new RockCleanupActionArgs
+            {
+                HostName = this.Scheduler.SchedulerName,
+                ImageCachePath = GetAttributeValue( AttributeKey.BaseCacheDirectory ),
+                AvatarCachePath = "~/App_Data/Avatars/Cache",
+                CacheDurationDays = GetAttributeValue( AttributeKey.DaysKeepCachedFiles ).AsIntegerOrNull()
+            };
+
+            return CleanCachedFileDirectories( args );
+        }
+
+        internal int CleanCachedFileDirectories( RockCleanupActionArgs args )
+        {
+            // If caching is disabled, return immediately.
+            if ( !args.CacheDurationDays.HasValue )
+            {
+                return 0;
+            }
 
             int resultCount = 0;
-            if ( cacheExpirationDays.HasValue )
-            {
-                DateTime cacheExpirationDate = RockDateTime.Now.Add( new TimeSpan( cacheExpirationDays.Value * -1, 0, 0, 0 ) );
+            var cacheExpirationDate = RockDateTime.Now.Add( new TimeSpan( args.CacheDurationDays.Value * -1, 0, 0, 0 ) );
 
-                // if job is being run by the IIS scheduler and path is not null
-                if ( this.Scheduler.SchedulerName == "RockSchedulerIIS" && !string.IsNullOrEmpty( cacheDirectoryPath ) )
+            // Map the cache directories for the host environment.
+            var cacheDirectoryPath = args.ImageCachePath;
+            var avatarCachePath = args.AvatarCachePath;
+            if ( args.HostName == "RockSchedulerIIS" )
+            {
+                // If the job is being run by the IIS scheduler and path is not null, get the physical path of the cache directory.
+                if ( !string.IsNullOrEmpty( cacheDirectoryPath ) )
                 {
-                    // get the physical path of the cache directory
                     cacheDirectoryPath = System.Web.Hosting.HostingEnvironment.MapPath( cacheDirectoryPath );
                 }
 
-                // if directory is not blank and cache expiration date not in the future
-                if ( !string.IsNullOrEmpty( cacheDirectoryPath ) && cacheExpirationDate <= RockDateTime.Now )
+                if ( !string.IsNullOrEmpty( cacheDirectoryPath ) )
                 {
-                    // Clean cache directory
-                    resultCount += CleanCacheDirectory( cacheDirectoryPath, cacheExpirationDate );
+                    avatarCachePath = System.Web.Hosting.HostingEnvironment.MapPath( avatarCachePath );
                 }
             }
+
+            // Clean up cached image files.
+            resultCount += CleanCacheDirectory( cacheDirectoryPath,
+                cacheExpirationDate );
+
+            // Clean up cached avatar files.
+            resultCount += CleanCacheDirectory( avatarCachePath,
+                cacheExpirationDate,
+                compareFileDateModified: true );
 
             return resultCount;
         }
@@ -1111,7 +1137,6 @@ namespace Rock.Jobs
         /// <summary>
         /// Purges the audit log.
         /// </summary>
-        
         private int PurgeAuditLog()
         {
             // purge audit log
@@ -1588,9 +1613,19 @@ namespace Rock.Jobs
         /// </summary>
         /// <param name="directoryPath">The directory path.</param>
         /// <param name="expirationDate">The file expiration date. Files older than this date will be deleted</param>
-        private int CleanCacheDirectory( string directoryPath, DateTime expirationDate )
+        /// <param name="compareFileDateModified">
+        /// A flag indicating if the expiry date should be compared to the modified date of the file.
+        /// If <c>false</c>, the created date of the file is used.
+        /// </param>
+        private int CleanCacheDirectory( string directoryPath, DateTime expirationDate, bool compareFileDateModified = false )
         {
             int resultCount = 0;
+
+            // If the expiration date is in the future, ignore it.
+            if ( expirationDate > RockDateTime.Now )
+            {
+                return 0;
+            }
 
             // verify that the directory exists
             if ( !Directory.Exists( directoryPath ) )
@@ -1602,9 +1637,19 @@ namespace Rock.Jobs
             // loop through each file in the directory
             foreach ( string filePath in Directory.GetFiles( directoryPath ) )
             {
-                // if the file creation date is older than the expiration date
-                DateTime adjustedFileDateTime = RockDateTime.ConvertLocalDateTimeToRockDateTime( File.GetCreationTime( filePath ) );
-                if ( adjustedFileDateTime < expirationDate )
+                DateTime fileActivityDate;
+                if ( compareFileDateModified )
+                {
+                    // Use the Last Write Time as the indicator of file activity.
+                    fileActivityDate = RockDateTime.ConvertLocalDateTimeToRockDateTime( File.GetLastWriteTime( filePath ) );
+                }
+                else
+                {
+                    // Use the Created Time as the indicator of file activity.
+                    fileActivityDate = RockDateTime.ConvertLocalDateTimeToRockDateTime( File.GetCreationTime( filePath ) );
+                }
+
+                if ( fileActivityDate < expirationDate )
                 {
                     // delete the file
                     resultCount++;
@@ -2981,5 +3026,35 @@ END
 
             public Exception Exception { get; set; }
         }
+
+        /// <summary>
+        /// Arguments for the Rock Cleanup job.
+        /// </summary>
+        /// <remarks>
+        /// This class should be extended to include all of the execution parameters of the Rock Cleanup job.
+        /// </remarks>
+        internal class RockCleanupActionArgs
+        {
+            /// <summary>
+            /// The path to the image cache.
+            /// </summary>
+            public string ImageCachePath;
+
+            /// <summary>
+            /// The path to the avatar cache.
+            /// </summary>
+            public string AvatarCachePath = "~/App_Data/Avatars/Cache";
+
+            /// <summary>
+            /// The name of the host environment.
+            /// </summary>
+            public string HostName = "RockSchedulerIIS";
+
+            /// <summary>
+            /// The maximum number of days for which a file will be cached.
+            /// </summary>
+            public int? CacheDurationDays;
+        }
+
     }
 }

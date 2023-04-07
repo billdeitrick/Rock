@@ -15,6 +15,7 @@
 // </copyright>
 
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Rock.Data;
@@ -375,6 +376,83 @@ namespace Rock.Tests.Integration.Core.Jobs
             // Event 2.1 should be set to null because the Event is inactive.
             var event21 = eventOccurrenceService.Get( testEventOccurrence21Guid );
             Assert.IsNull( event21.NextStartDateTime );
+        }
+
+        #endregion
+
+        #region Cleanup Task: ClearCache
+
+        [TestMethod]
+        public void RockCleanup_ClearCache_ShouldRemoveExpiredFiles()
+        {
+            // Create some test files in the cache.
+            var avatarCachePath = Path.GetTempPath() + "/RockAvatarCacheTest";
+            var imageCachePath = Path.GetTempPath() + "/RockImageCacheTest";
+
+            var baseDate = RockDateTime.Now;
+
+            CreateTestFile( avatarCachePath + $"/avatar_current_1.txt", lastModifiedTime: baseDate );
+            CreateTestFile( avatarCachePath + $"/avatar_current_2.txt", lastModifiedTime: baseDate.AddDays( -6 ) );
+            CreateTestFile( avatarCachePath + $"/avatar_old.txt", lastModifiedTime: baseDate.AddDays( -7 ) );
+            CreateTestFile( avatarCachePath + $"/avatar_future.txt", lastModifiedTime: baseDate.AddDays( 1 ) );
+
+            CreateTestFile( imageCachePath + $"/image_current_1.txt", createdTime: baseDate );
+            CreateTestFile( imageCachePath + $"/image_current_2.txt", createdTime: baseDate.AddDays( -6 ) );
+            CreateTestFile( imageCachePath + $"/image_old.txt", createdTime: baseDate.AddDays( -7 ) );
+            CreateTestFile( imageCachePath + $"/image_future.txt", createdTime: baseDate.AddDays( 1 ) );
+
+            var job = new Rock.Jobs.RockCleanup();
+            var args = new Rock.Jobs.RockCleanup.RockCleanupActionArgs
+            {
+                AvatarCachePath = avatarCachePath,
+                ImageCachePath = imageCachePath,
+                CacheDurationDays = 7,
+                HostName = "test-host"
+            };
+
+            _ = job.CleanCachedFileDirectories( args );
+
+            AssertExpectedCacheFiles( avatarCachePath );
+            AssertExpectedCacheFiles( imageCachePath );
+        }
+
+        private void AssertExpectedCacheFiles( string cacheDirectory )
+        {
+            var remainingFiles = Directory.EnumerateFiles( cacheDirectory ).ToList();
+
+            var oldFiles = remainingFiles.Where( f => f.Contains( "_old" ) ).ToList();
+            Assert.IsTrue( oldFiles.Count == 0, "Unexpected files found. Old files not removed from cache." );
+
+            var currentFiles = remainingFiles.Where( f => f.Contains( "_current" ) ).ToList();
+            Assert.IsTrue( currentFiles.Count == 2, "Expected files not found. Current files removed from cache." );
+
+            var futureFiles = remainingFiles.Where( f => f.Contains( "_future" ) ).ToList();
+            Assert.IsTrue( futureFiles.Count == 1, "Expected files not found. Future files removed from cache." );
+        }
+
+        private FileInfo CreateTestFile( string filePath, DateTime? createdTime = null, DateTime? lastModifiedTime = null )
+        {
+            var directory = Path.GetDirectoryName( filePath );
+            Directory.CreateDirectory( directory );
+
+            var fileInfo = new FileInfo( filePath );
+
+            using ( var sw = fileInfo.CreateText() )
+            {
+                sw.WriteLine( Guid.NewGuid().ToString() );
+            }
+
+            if ( createdTime != null )
+            {
+                fileInfo.CreationTime = createdTime.Value;
+            }
+
+            if ( lastModifiedTime != null )
+            {
+                fileInfo.LastWriteTime = lastModifiedTime.Value;
+            }
+
+            return fileInfo;
         }
 
         #endregion
