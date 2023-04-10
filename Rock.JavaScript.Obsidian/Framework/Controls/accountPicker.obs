@@ -98,6 +98,10 @@
 
     const formFieldProps = useStandardRockFormFieldProps(props);
 
+    const items = null;
+    const provider = function () { /* */ };
+    const onUpdateItems = () => { /* */ };
+
     // #endregion
 
     // #region Event Handlers
@@ -148,5 +152,5 @@
         emit("update:modelValue", pickerValue.value);
     });
 
-                                                                    // #endregion
+        // #endregion
 </script>

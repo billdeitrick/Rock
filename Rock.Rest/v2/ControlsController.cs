@@ -56,6 +56,96 @@ namespace Rock.Rest.v2
     public class ControlsController : ApiControllerBase
     {
 
+        #region Account Picker
+
+        /// <summary>
+        /// Gets the accounts that can be displayed in the account picker.
+        /// </summary>
+        /// <param name="options">The options that describe which items to load.</param>
+        /// <returns>A List of <see cref="TreeItemBag"/> objects that represent the accounts.</returns>
+        [HttpPost]
+        [System.Web.Http.Route( "AccountPickerGetChildren" )]
+        [Authenticate]
+        [Rock.SystemGuid.RestActionGuid( "5052e4a9-8cc3-4937-a2d3-9cfec07ed070" )]
+        public IHttpActionResult AccountPickerGetChildren( [FromBody] AccountPickerGetChildrenOptionsBag options )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var financialAccountService = new FinancialAccountService( rockContext );
+
+                IQueryable<FinancialAccount> qry;
+
+                if ( options.ParentGuid == Guid.Empty )
+                {
+                    qry = financialAccountService.Queryable().AsNoTracking()
+                        .Where( f => f.ParentAccountId.HasValue == false );
+                }
+                else
+                {
+                    qry = financialAccountService.Queryable().AsNoTracking()
+                        .Where( f => f.ParentAccount != null && f.ParentAccount.Guid == options.ParentGuid);
+                }
+
+                if ( !options.IncludeInactive )
+                {
+                    qry = qry
+                        .Where( f => f.IsActive == true );
+                }
+
+                var accountList = qry
+                    .OrderBy( f => f.Order )
+                    .ThenBy( f => f.Name )
+                    .ToList();
+
+                var accountTreeViewItems = accountList
+                    .Select( a => new AccountTreeViewItem
+                    {
+                        Id = a.Id.ToString(),
+                        Name = HttpUtility.HtmlEncode( options.DisplayPublicName ? a.PublicName : a.Name ),
+                        GlCode = a.GlCode,
+                        IsActive = a.IsActive,
+                        ParentId = a.ParentAccountId.GetValueOrDefault( 0 ).ToString(),
+                    } ).ToList();
+
+                accountTreeViewItems = financialAccountService.GetTreeviewPaths( accountTreeViewItems, accountList );
+
+                var resultIds = accountList.Select( f => f.Id ).ToList();
+
+                var childQry = financialAccountService.Queryable().AsNoTracking()
+                    .Where( f => f.ParentAccountId.HasValue && resultIds.Contains( f.ParentAccountId.Value ) );
+
+                if ( !options.IncludeInactive )
+                {
+                    childQry = childQry.Where( f => f.IsActive == true );
+                }
+
+                var childrenList = childQry.Select( f => f.ParentAccountId.Value )
+                    .ToList();
+
+                foreach ( var accountTreeViewItem in accountTreeViewItems )
+                {
+                    int accountId = int.Parse( accountTreeViewItem.Id );
+                    int childrenCount = ( childrenList?.Count( v => v == accountId ) ).GetValueOrDefault( 0 );
+
+                    accountTreeViewItem.HasChildren = childrenCount > 0;
+
+                    if ( accountTreeViewItem.HasChildren )
+                    {
+                        accountTreeViewItem.CountInfo = childrenCount;
+
+                        accountTreeViewItem.ParentId = id.ToString();
+                    }
+
+                    accountTreeViewItem.IconCssClass = "fa fa-file-o";
+                    accountTreeViewItem.TotalCount = totalCount;
+                }
+
+                return Ok(accountTreeViewItems.AsQueryable());
+            }
+        }
+
+        #endregion
+
         #region Achievement Type Picker
 
         /// <summary>

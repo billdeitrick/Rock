@@ -7592,6 +7592,7 @@ const accountPickerGallery = defineComponent({
     setup() {
         return {
             value: ref(null),
+            isFlat: ref(false),
             importCode: getSfcControlImportPath("accountPicker"),
             exampleCode: `<AccountPicker label="Financial Account" v-model="value" />`
         };
@@ -7604,9 +7605,14 @@ const accountPickerGallery = defineComponent({
     hasMultipleValues
     enableReflection >
 
-    <AccountPicker label="Financial Account" v-model="value" />
+    <AccountPicker label="Financial Account" v-model="value" :mode="isFlat ? 'flat' : 'tree'" />
 
     <template #settings>
+        <div class="row">
+            <div class="col-md-4">
+                <CheckBox label="Flat View" v-model="isFlat" />
+            </div>
+        </div>
         <p class="text-semibold font-italic">Not all settings are demonstrated in this gallery.</p>
         <p>Additional props extend and are passed to the underlying <code>Rock Form Field</code>.</p>
     </template>
