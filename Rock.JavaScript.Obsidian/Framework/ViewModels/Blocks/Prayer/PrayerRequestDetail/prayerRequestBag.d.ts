@@ -32,15 +32,6 @@ export type PrayerRequestBag = {
     /** Gets or sets a description of the way that God has answered the prayer. */
     answer?: string | null;
 
-    /** Gets or sets the approved by person alias. */
-    approvedByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the PersonId of the Rock.Model.Person who approved this prayer request. */
-    approvedByPersonAliasId?: number | null;
-
-    /** Gets or sets the date this prayer request was approved. */
-    approvedOnDateTime?: string | null;
-
     /** Gets or sets the attributes. */
     attributes?: Record<string, PublicAttributeBag> | null;
 
@@ -50,29 +41,11 @@ export type PrayerRequestBag = {
     /** Gets or sets the campus. */
     campus?: ListItemBag | null;
 
-    /** Gets or sets the campus identifier. */
-    campusId?: number | null;
-
     /** Gets or sets the Rock.Model.Category that this prayer request belongs to. */
     category?: ListItemBag | null;
 
-    /** Gets or sets the CategoryId of the Rock.Model.Category that the PrayerRequest belongs to. */
-    categoryId?: number | null;
-
-    /** Gets or sets the created by person alias. */
-    createdByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the created by person alias identifier. */
-    createdByPersonAliasId?: number | null;
-
-    /** Gets or sets the created date time. */
-    createdDateTime?: string | null;
-
     /** Gets or sets the email address of the person requesting prayer. */
     email?: string | null;
-
-    /** Gets or sets the date that this prayer request was entered. */
-    enteredDateTime?: string | null;
 
     /** Gets or sets the date that the prayer request expires.  */
     expirationDate?: string | null;
@@ -82,27 +55,6 @@ export type PrayerRequestBag = {
 
     /** Gets or sets the number of times this request has been flagged. */
     flagCount?: number | null;
-
-    /** Gets or sets an optional Guid foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignGuid?: Guid | null;
-
-    /** Gets or sets an optional int foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignId?: number | null;
-
-    /** Gets or sets an optional string foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignKey?: string | null;
-
-    /**
-     * TODO: GET CONFIRMATION AND DOCUMENT -CSF
-     * Gets or sets the group.
-     */
-    group?: ListItemBag | null;
-
-    /**
-     * TODO: GET CLARIFICATION AND DOCUMENT
-     * Gets or sets the group id.
-     */
-    groupId?: number | null;
 
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;
@@ -119,32 +71,14 @@ export type PrayerRequestBag = {
     /** Gets or sets a flag indicating if this is an urgent prayer request. */
     isUrgent?: boolean | null;
 
-    /** Gets or sets the Language Rock.Model.DefinedValue for this prayer request. */
-    languageValue?: ListItemBag | null;
-
-    /** Gets or sets the DefinedValueId of the Rock.Model.DefinedValue that represents the Language for this prayer request. */
-    languageValueId?: number | null;
-
     /** Gets or sets the Last Name of the person that this prayer request is about. This property is required. */
     lastName?: string | null;
-
-    /** Gets or sets the modified by person alias. */
-    modifiedByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the modified by person alias identifier. */
-    modifiedByPersonAliasId?: number | null;
-
-    /** Gets or sets the modified date time. */
-    modifiedDateTime?: string | null;
 
     /** Gets or sets the number of times that this prayer request has been prayed for. */
     prayerCount?: number | null;
 
     /** Gets or sets the requested by person alias. */
     requestedByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the PersonId of the Rock.Model.Person who is submitting the PrayerRequest */
-    requestedByPersonAliasId?: number | null;
 
     /** Gets or sets the text/content of the request. */
     text?: string | null;

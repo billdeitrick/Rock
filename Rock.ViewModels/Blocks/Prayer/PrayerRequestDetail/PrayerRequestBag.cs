@@ -34,29 +34,9 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         public string Answer { get; set; }
 
         /// <summary>
-        /// Gets or sets the approved by person alias.
-        /// </summary>
-        public ListItemBag ApprovedByPersonAlias { get; set; }
-
-        /// <summary>
-        /// Gets or sets the PersonId of the Rock.Model.Person who approved this prayer request.
-        /// </summary>
-        public int? ApprovedByPersonAliasId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date this prayer request was approved.
-        /// </summary>
-        public DateTime? ApprovedOnDateTime { get; set; }
-
-        /// <summary>
         /// Gets or sets the campus.
         /// </summary>
         public ListItemBag Campus { get; set; }
-
-        /// <summary>
-        /// Gets or sets the campus identifier.
-        /// </summary>
-        public int? CampusId { get; set; }
 
         /// <summary>
         /// Gets or sets the Rock.Model.Category that this prayer request belongs to.
@@ -64,34 +44,9 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         public ListItemBag Category { get; set; }
 
         /// <summary>
-        /// Gets or sets the CategoryId of the Rock.Model.Category that the PrayerRequest belongs to.
-        /// </summary>
-        public int? CategoryId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the created by person alias.
-        /// </summary>
-        public ListItemBag CreatedByPersonAlias { get; set; }
-
-        /// <summary>
-        /// Gets or sets the created by person alias identifier.
-        /// </summary>
-        public int? CreatedByPersonAliasId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the created date time.
-        /// </summary>
-        public DateTime? CreatedDateTime { get; set; }
-
-        /// <summary>
         /// Gets or sets the email address of the person requesting prayer.
         /// </summary>
         public string Email { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date that this prayer request was entered.
-        /// </summary>
-        public DateTime EnteredDateTime { get; set; }
 
         /// <summary>
         /// Gets or sets the date that the prayer request expires. 
@@ -107,33 +62,6 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         /// Gets or sets the number of times this request has been flagged.
         /// </summary>
         public int? FlagCount { get; set; }
-
-        /// <summary>
-        /// Gets or sets an optional Guid foreign identifier.  This can be used for importing or syncing data to a foreign system
-        /// </summary>
-        public Guid? ForeignGuid { get; set; }
-
-        /// <summary>
-        /// Gets or sets an optional int foreign identifier.  This can be used for importing or syncing data to a foreign system
-        /// </summary>
-        public int? ForeignId { get; set; }
-
-        /// <summary>
-        /// Gets or sets an optional string foreign identifier.  This can be used for importing or syncing data to a foreign system
-        /// </summary>
-        public string ForeignKey { get; set; }
-
-        /// <summary>
-        /// TODO: GET CONFIRMATION AND DOCUMENT -CSF
-        /// Gets or sets the group.
-        /// </summary>
-        public ListItemBag Group { get; set; }
-
-        /// <summary>
-        /// TODO: GET CLARIFICATION AND DOCUMENT
-        /// Gets or sets the group id.
-        /// </summary>
-        public int? GroupId { get; set; }
 
         /// <summary>
         /// Gets or sets a flag indicating if this prayer request is active.
@@ -156,34 +84,9 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         public bool? IsUrgent { get; set; }
 
         /// <summary>
-        /// Gets or sets the Language Rock.Model.DefinedValue for this prayer request.
-        /// </summary>
-        public ListItemBag LanguageValue { get; set; }
-
-        /// <summary>
-        /// Gets or sets the DefinedValueId of the Rock.Model.DefinedValue that represents the Language for this prayer request.
-        /// </summary>
-        public int? LanguageValueId { get; set; }
-
-        /// <summary>
         /// Gets or sets the Last Name of the person that this prayer request is about. This property is required.
         /// </summary>
         public string LastName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the modified by person alias.
-        /// </summary>
-        public ListItemBag ModifiedByPersonAlias { get; set; }
-
-        /// <summary>
-        /// Gets or sets the modified by person alias identifier.
-        /// </summary>
-        public int? ModifiedByPersonAliasId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the modified date time.
-        /// </summary>
-        public DateTime? ModifiedDateTime { get; set; }
 
         /// <summary>
         /// Gets or sets the number of times that this prayer request has been prayed for.
@@ -194,11 +97,6 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         /// Gets or sets the requested by person alias.
         /// </summary>
         public ListItemBag RequestedByPersonAlias { get; set; }
-
-        /// <summary>
-        /// Gets or sets the PersonId of the Rock.Model.Person who is submitting the PrayerRequest
-        /// </summary>
-        public int? RequestedByPersonAliasId { get; set; }
 
         /// <summary>
         /// Gets or sets the text/content of the request.

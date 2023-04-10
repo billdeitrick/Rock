@@ -258,39 +258,19 @@ namespace Rock.Blocks.Prayer
                 IdKey = entity.IdKey,
                 AllowComments = entity.AllowComments,
                 Answer = entity.Answer,
-                ApprovedByPersonAlias = entity.ApprovedByPersonAlias.ToListItemBag(),
-                ApprovedByPersonAliasId = entity.ApprovedByPersonAliasId,
-                ApprovedOnDateTime = entity.ApprovedOnDateTime,
                 Campus = entity.Campus.ToListItemBag(),
-                CampusId = entity.CampusId,
                 Category = entity.Category.ToListItemBag(),
-                CategoryId = entity.CategoryId,
-                CreatedByPersonAlias = entity.CreatedByPersonAlias.ToListItemBag(),
-                CreatedByPersonAliasId = entity.CreatedByPersonAliasId,
-                CreatedDateTime = entity.CreatedDateTime,
                 Email = entity.Email,
-                EnteredDateTime = entity.EnteredDateTime,
                 ExpirationDate = entity.ExpirationDate,
                 FirstName = entity.FirstName,
                 FlagCount = entity.FlagCount,
-                ForeignGuid = entity.ForeignGuid,
-                ForeignId = entity.ForeignId,
-                ForeignKey = entity.ForeignKey,
-                Group = entity.Group.ToListItemBag(),
-                GroupId = entity.GroupId,
                 IsActive = entity.IsActive,
                 IsApproved = entity.IsApproved,
                 IsPublic = entity.IsPublic,
                 IsUrgent = entity.IsUrgent,
-                LanguageValue = entity.LanguageValue.ToListItemBag(),
-                LanguageValueId = entity.LanguageValueId,
                 LastName = entity.LastName,
-                ModifiedByPersonAlias = entity.ModifiedByPersonAlias.ToListItemBag(),
-                ModifiedByPersonAliasId = entity.ModifiedByPersonAliasId,
-                ModifiedDateTime = entity.ModifiedDateTime,
                 PrayerCount = entity.PrayerCount,
                 RequestedByPersonAlias = entity.RequestedByPersonAlias.ToListItemBag(),
-                RequestedByPersonAliasId = entity.RequestedByPersonAliasId,
                 Text = entity.Text,
                 FullName = entity.FullName
             };
@@ -374,32 +354,14 @@ namespace Rock.Blocks.Prayer
             box.IfValidProperty( nameof( box.Entity.Answer ),
                 () => entity.Answer = box.Entity.Answer );
 
-            box.IfValidProperty( nameof( box.Entity.ApprovedByPersonAlias ),
-                () => entity.ApprovedByPersonAliasId = box.Entity.ApprovedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.ApprovedByPersonAliasId ),
-                () => entity.ApprovedByPersonAliasId = box.Entity.ApprovedByPersonAliasId );
-
-            box.IfValidProperty( nameof( box.Entity.ApprovedOnDateTime ),
-                () => entity.ApprovedOnDateTime = box.Entity.ApprovedOnDateTime );
-
             box.IfValidProperty( nameof( box.Entity.Campus ),
                 () => entity.CampusId = box.Entity.Campus.GetEntityId<Campus>( rockContext ) );
 
             box.IfValidProperty( nameof( box.Entity.Category ),
                 () => entity.CategoryId = box.Entity.Category.GetEntityId<Category>( rockContext ) );
 
-            box.IfValidProperty( nameof( box.Entity.CreatedByPersonAlias ),
-                () => entity.CreatedByPersonAliasId = box.Entity.CreatedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.CreatedDateTime ),
-                () => entity.CreatedDateTime = box.Entity.CreatedDateTime );
-
             box.IfValidProperty( nameof( box.Entity.Email ),
                 () => entity.Email = box.Entity.Email );
-
-            box.IfValidProperty( nameof( box.Entity.EnteredDateTime ),
-                () => entity.EnteredDateTime = box.Entity.EnteredDateTime );
 
             box.IfValidProperty( nameof( box.Entity.ExpirationDate ),
                 () => entity.ExpirationDate = box.Entity.ExpirationDate );
@@ -409,12 +371,6 @@ namespace Rock.Blocks.Prayer
 
             box.IfValidProperty( nameof( box.Entity.FlagCount ),
                 () => entity.FlagCount = box.Entity.FlagCount );
-
-            box.IfValidProperty( nameof( box.Entity.ForeignKey ),
-                () => entity.ForeignKey = box.Entity.ForeignKey );
-
-            box.IfValidProperty( nameof( box.Entity.Group ),
-                () => entity.GroupId = box.Entity.Group.GetEntityId<Group>( rockContext ) );
 
             box.IfValidProperty( nameof( box.Entity.IsActive ),
                 () => entity.IsActive = box.Entity.IsActive );
@@ -428,17 +384,8 @@ namespace Rock.Blocks.Prayer
             box.IfValidProperty( nameof( box.Entity.IsUrgent ),
                 () => entity.IsUrgent = box.Entity.IsUrgent );
 
-            box.IfValidProperty( nameof( box.Entity.LanguageValue ),
-                () => entity.LanguageValueId = box.Entity.LanguageValue.GetEntityId<DefinedValue>( rockContext ) );
-
             box.IfValidProperty( nameof( box.Entity.LastName ),
                 () => entity.LastName = box.Entity.LastName );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedByPersonAlias ),
-                () => entity.ModifiedByPersonAliasId = box.Entity.ModifiedByPersonAlias.GetEntityId<PersonAlias>( rockContext ) );
-
-            box.IfValidProperty( nameof( box.Entity.ModifiedDateTime ),
-                () => entity.ModifiedDateTime = box.Entity.ModifiedDateTime );
 
             box.IfValidProperty( nameof( box.Entity.PrayerCount ),
                 () => entity.PrayerCount = box.Entity.PrayerCount );

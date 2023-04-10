@@ -58,18 +58,6 @@
     const attributeValues = ref(props.modelValue?.attributeValues ?? {});
 
 
-    // enable the tooltips for the badges
-    const flagCountRef = ref<Element | null>(null);
-    const prayerCountRef = ref<Element | null>(null);
-    onMounted(() => {
-        if(flagCountRef?.value) {
-            tooltip(flagCountRef.value);
-        }
-        if(prayerCountRef?.value) {
-            tooltip(prayerCountRef.value);
-        }
-    });
-
     // #endregion
 
     // #region Computed Values
@@ -140,6 +128,18 @@
     // #endregion
 
     // #region Event Handlers
+
+    // enable the tooltips for the badges
+    const flagCountRef = ref<Element | null>(null);
+    const prayerCountRef = ref<Element | null>(null);
+    onMounted(() => {
+        if(flagCountRef?.value) {
+            tooltip(flagCountRef.value);
+        }
+        if(prayerCountRef?.value) {
+            tooltip(prayerCountRef.value);
+        }
+    });
 
     // #endregion
 </script>
