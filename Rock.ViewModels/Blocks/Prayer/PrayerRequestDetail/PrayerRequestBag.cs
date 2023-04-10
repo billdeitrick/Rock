@@ -64,6 +64,11 @@ namespace Rock.ViewModels.Blocks.Prayer.PrayerRequestDetail
         public int? FlagCount { get; set; }
 
         /// <summary>
+        /// Gets or sets the group.
+        /// </summary>
+        public ListItemBag Group { get; set; }
+
+        /// <summary>
         /// Gets or sets a flag indicating if this prayer request is active.
         /// </summary>
         public bool? IsActive { get; set; }

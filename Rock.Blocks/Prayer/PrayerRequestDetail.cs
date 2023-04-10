@@ -264,6 +264,7 @@ namespace Rock.Blocks.Prayer
                 ExpirationDate = entity.ExpirationDate,
                 FirstName = entity.FirstName,
                 FlagCount = entity.FlagCount,
+                Group = entity.Group.ToListItemBag(),
                 IsActive = entity.IsActive,
                 IsApproved = entity.IsApproved,
                 IsPublic = entity.IsPublic,

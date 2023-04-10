@@ -21,7 +21,6 @@
 // </copyright>
 //
 
-import { Guid } from "@Obsidian/Types";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
@@ -55,6 +54,11 @@ export type PrayerRequestBag = {
 
     /** Gets or sets the number of times this request has been flagged. */
     flagCount?: number | null;
+
+    /**
+     * Gets or sets the group.
+     */
+    group?: ListItemBag | null;
 
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;

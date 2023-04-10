@@ -107,15 +107,15 @@
     const attributeValues = ref(props.modelValue.attributeValues ?? {});
     const isActive = propertyRef(props.modelValue.isActive ?? false, "IsActive");
     const requestedByPersonAlias = propertyRef(props.modelValue.requestedByPersonAlias ?? undefined, "RequestedByPersonAliasId");
-    const isApproved = propertyRef(props.modelValue.isApproved, "IsApproved");
+    const isApproved = propertyRef(props.modelValue.isApproved ?? false, "IsApproved");
     const firstName = propertyRef(props.modelValue.firstName ?? "", "FirstName");
     const lastName = propertyRef(props.modelValue.lastName ?? "", "LastName");
     const email = propertyRef(props.modelValue.email ?? "", "Email");
     const expirationDate = propertyRef(props.modelValue.expirationDate ?? "", "ExpirationDate");
     const campus = propertyRef(props.modelValue?.campus, "CampusId");
     const category = propertyRef(props.modelValue.category, "Category");
-    const request = propertyRef(props.modelValue.text, "Text");
-    const answer = propertyRef(props.modelValue.answer, "Answer");
+    const request = propertyRef(props.modelValue.text ?? "", "Text");
+    const answer = propertyRef(props.modelValue.answer ?? "", "Answer");
     const isPublic = propertyRef(props.modelValue.isPublic, "IsPublic");
     const isUrgent = propertyRef(props.modelValue.isUrgent, "IsUrgent");
     const allowComments = propertyRef(props.modelValue.allowComments, "AllowComments");
@@ -166,14 +166,6 @@
     // #endregion
 
     // #region Functions
-
-    // enable the tooltips for the badges
-    const flagCountRef = ref<HTMLElement | null>(null);
-    onMounted(() => {
-        if(flagCountRef?.value) {
-            tooltip(flagCountRef.value);
-        }
-    });
 
     // #endregion
 
@@ -228,4 +220,12 @@
     // Watch for any changes to props that represent properties and then
     // automatically emit which property changed.
     watchPropertyChanges(propRefs, emit);
+
+    // enable the tooltips for the badges
+    const flagCountRef = ref<HTMLElement | null>(null);
+    onMounted(() => {
+        if(flagCountRef?.value) {
+            tooltip(flagCountRef.value);
+        }
+    });
 </script>
