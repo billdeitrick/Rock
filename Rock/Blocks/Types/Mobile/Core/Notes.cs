@@ -80,7 +80,7 @@ namespace Rock.Blocks.Types.Mobile.Core
         Order = 4 )]
 
     [CommunicationTemplateField( "Group Notification Communication Template",
-        Description = "The template to use to send the communication.Note  will be passed as a merge field.",
+        Description = "The template to use to send the communication. `Note`  will be passed in as a merge field.",
         IsRequired = false,
         Key = AttributeKey.GroupNotificationCommunicationTemplate,
         Order = 5 )]
@@ -505,11 +505,11 @@ namespace Rock.Blocks.Types.Mobile.Core
         }
 
         /// <summary>
-        /// Sends the note added communication to group.
+        /// Sends a 
         /// </summary>
         /// <param name="group">The group.</param>
         /// <param name="noteText">The note text.</param>
-        private void SendNoteAddedCommunicationToGroup( Group group, string noteText )
+        private void SendNoteAddedCommunicationToGroup( int groupId, string noteText )
         {
             using ( var rockContext = new RockContext() )
             {
@@ -541,7 +541,7 @@ namespace Rock.Blocks.Types.Mobile.Core
                     .Queryable()
                     .AsNoTracking()
                     .Where( m =>
-                        m.GroupId == group.Id &&
+                        m.GroupId == groupId &&
                         m.GroupMemberStatus == GroupMemberStatus.Active &&
                         m.Person != null
                      )
@@ -557,6 +557,8 @@ namespace Rock.Blocks.Types.Mobile.Core
                 // Let's go through and create our actual Communication Recipients from that list.
                 foreach ( var recipientBag in communicationRecipientBags )
                 {
+                    // Based on the recipient's communication preference, we need to get the
+                    // determined Medium Entity Type ID.
                     var emailMediumEntityTypeId = EntityTypeCache.Get( SystemGuid.EntityType.COMMUNICATION_MEDIUM_EMAIL.AsGuid() ).Id;
                     var smsMediumEntityTypeId = EntityTypeCache.Get( SystemGuid.EntityType.COMMUNICATION_MEDIUM_SMS.AsGuid() ).Id;
                     var pushMediumEntityTypeId = EntityTypeCache.Get( SystemGuid.EntityType.COMMUNICATION_MEDIUM_PUSH_NOTIFICATION.AsGuid() ).Id;
@@ -809,11 +811,12 @@ namespace Rock.Blocks.Types.Mobile.Core
                 if ( newNote && EnableGroupNotification && GroupNotificationCommunicationTemplate.HasValue )
                 {
                     // If there is a Group context, send the communication. Even in the cases where the note entity type is Group.
-                    if ( RequestContext.ContextEntities.TryGetValue( typeof( Group ), out var contextGroupEntity ) )
+                    if ( RequestContext.ContextEntities.TryGetValue( typeof( Group ), out var contextGroupEntity ) && contextGroupEntity.Value is Group contextGroup )
                     {
+                        // We wrap this in a Task.Run() so that the request doesn't get held up.
                         Task.Run( () =>
                         {
-                            SendNoteAddedCommunicationToGroup( contextGroupEntity.Value as Group, text );
+                            SendNoteAddedCommunicationToGroup( contextGroup.Id, text );
                         } );
                     }
                 }
