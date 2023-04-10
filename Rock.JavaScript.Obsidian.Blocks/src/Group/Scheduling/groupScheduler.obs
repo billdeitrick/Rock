@@ -26,11 +26,18 @@
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isBusy"
                             class="ml-1"
-                            @click="onAutoScheduleClick"><i class="fa fa-magic"></i> Auto Schedule</RockButton>
+                            @click="onAutoScheduleClick">
+                    <i class="fa fa-magic"></i> Auto Schedule
+                    <Loading :isLoading="isAutoScheduling" :isSmall="true" class="d-inline-block" />
+                </RockButton>
 
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isBusy"
-                            class="ml-1"><i class="fa fa-envelope-o"></i> Send Now</RockButton>
+                            class="ml-1"
+                            @click="onSendNowClick">
+                    <i class="fa fa-envelope-o"></i> Send Now
+                    <Loading :isLoading="isSendingNow" :isSmall="true" class="d-inline-block" />
+                </RockButton>
             </div>
         </div>
 
@@ -48,13 +55,16 @@
                             aria-haspopup="true"
                             aria-expanded="false"
                             :disabled="isBusy">
-                        <i class="fa fa-ellipsis-v"></i>
+                        <Loading :isLoading="isAutoScheduling || isSendingNow" :isSmall="true">
+                            <i class="fa fa-ellipsis-v"></i>
+                        </Loading>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-right">
                         <li>
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy">
+                                    :disabled="isBusy"
+                                    @click="onSendNowClick">
                                 <i class="fa fa-envelope-o"></i> Send Now
                             </button>
                         </li>
@@ -105,6 +115,44 @@
         <SelectFilters v-model:isVisible="isSelectingFilters"
                        :appliedFilters="appliedFilters"
                        @filtersApplied="onFiltersApplied" />
+
+        <Dialog v-model="isSendNowResponseDialogVisible"
+                :dismissible="true">
+            <template #header>
+                {{ sendNowResponseDialogHeader }}
+            </template>
+            <template #default>
+
+                <div v-if="sendNowResponse?.errors?.length">
+                    One or more errors occurred when sending confirmations:
+                    <ul>
+                        <li v-for="error in sendNowResponse.errors">
+                            {{ error }}
+                        </li>
+                    </ul>
+                </div>
+
+                <div v-if="sendNowResponse?.warnings?.length">
+                    One or more warnings occurred when sending confirmations:
+                    <ul>
+                        <li v-for="warning in sendNowResponse.warnings">
+                            {{ warning }}
+                        </li>
+                    </ul>
+                </div>
+
+                <p v-if="sendNowResponse?.anyCommunicationsToSend === false">
+                    Everybody has already been sent a confirmation. No additional confirmations sent.
+                </p>
+                <p v-else-if="sentConfirmationsMessage">
+                    {{ sentConfirmationsMessage }}
+                </p>
+
+            </template>
+            <template #footer>
+                <RockButton @click="isSendNowResponseDialogVisible = false" :btnType="BtnType.Primary">OK</RockButton>
+            </template>
+        </Dialog>
     </Panel>
 </template>
 
@@ -114,15 +162,19 @@
     import SelectFilters from "./GroupScheduler/selectFilters.partial.obs";
     import { ReloadScheduleOccurrences } from "./GroupScheduler/types.partial";
     import Alert from "@Obsidian/Controls/alert.obs";
+    import Dialog from "@Obsidian/Controls/dialog";
+    import Loading from "@Obsidian/Controls/loading";
     import Panel from "@Obsidian/Controls/panel";
     import RockButton from "@Obsidian/Controls/rockButton";
     import { AlertType } from "@Obsidian/Enums/Controls/alertType";
     import { BtnSize } from "@Obsidian/Enums/Controls/btnSize";
+    import { BtnType } from "@Obsidian/Enums/Controls/btnType";
     import { getSecurityGrant, onConfigurationValuesChanged, provideSecurityGrant, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { GroupSchedulerAppliedFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerAppliedFiltersBag";
     import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
     import { GroupSchedulerInitializationBox } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/GroupSchedulerInitializationBox";
     import { GroupSchedulerOccurrenceBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerOccurrenceBag";
+    import { GroupSchedulerSendNowResponseBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerSendNowResponseBag";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
     const config = useConfigurationValues<GroupSchedulerInitializationBox>();
@@ -138,6 +190,8 @@
 
     // #region Values
 
+    const blockActionErrorMessage = ref("");
+
     const snapContainer = ref<HTMLElement | null>(null);
     const scheduleComponentsByOccurrenceDate = ref<Record<number, (ComponentPublicInstance | null)[]>>({});
 
@@ -147,7 +201,10 @@
     const isSelectingFilters = ref(false);
 
     const isAutoScheduling = ref(false);
-    const autoScheduleErrorMessage = ref("");
+
+    const isSendingNow = ref(false);
+    const sendNowResponse = ref<GroupSchedulerSendNowResponseBag | null>(null);
+    const isSendNowResponseDialogVisible = ref(false);
 
     const reloadScheduleOccurrences = ref(false);
 
@@ -252,7 +309,25 @@
     });
 
     const isBusy = computed((): boolean => {
-        return isSelectingFilters.value || isAutoScheduling.value;
+        return isSelectingFilters.value || isAutoScheduling.value || isSendingNow.value;
+    });
+
+    const sendNowResponseDialogHeader = computed((): string => {
+        if (sendNowResponse.value?.errors?.length) {
+            return "Alert";
+        }
+        else if (sendNowResponse.value?.warnings?.length) {
+            return "Warning";
+        }
+
+        return "Information";
+    });
+
+    const sentConfirmationsMessage = computed((): string | null => {
+        const count = sendNowResponse.value?.communicationsSentCount ?? 0;
+        return count
+            ? `Successfully sent ${count} confirmation${(count > 1 ? "s" : "")}.`
+            : null;
     });
 
     // #endregion
@@ -354,7 +429,7 @@
     }
 
     /**
-     * Handles the click event of the "Auto Schedule" button".
+     * Handles the click event of the "Auto Schedule" button.
      */
     async function onAutoScheduleClick(): Promise<void> {
         if (isAutoScheduling.value) {
@@ -362,13 +437,13 @@
         }
 
         isAutoScheduling.value = true;
-        autoScheduleErrorMessage.value = "";
+        blockActionErrorMessage.value = "";
 
         const result = await invokeBlockAction<GroupSchedulerAppliedFiltersBag>("AutoSchedule", { bag: filters.value });
         isAutoScheduling.value = false;
 
         if (!result.isSuccess) {
-            autoScheduleErrorMessage.value = result.errorMessage || "Unknown error while auto-scheduling.";
+            blockActionErrorMessage.value = result.errorMessage || "Unknown error while auto-scheduling.";
             return;
         }
 
@@ -380,6 +455,30 @@
         nextTick(() => {
             reloadScheduleOccurrences.value = false;
         });
+    }
+
+    /**
+     * Handles the click event of the "Send Now" button.
+     */
+    async function onSendNowClick(): Promise<void> {
+        if (isSendingNow.value) {
+            return;
+        }
+
+        isSendingNow.value = true;
+        sendNowResponse.value = null;
+        blockActionErrorMessage.value = "";
+
+        const result = await invokeBlockAction<GroupSchedulerSendNowResponseBag>("SendNow", { bag: filters.value });
+        isSendingNow.value = false;
+
+        if (!result.isSuccess) {
+            blockActionErrorMessage.value = result.errorMessage || "Unknown error while sending confirmations.";
+            return;
+        }
+
+        sendNowResponse.value = result.data;
+        isSendNowResponseDialogVisible.value = true;
     }
 
     /**

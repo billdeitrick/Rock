@@ -794,7 +794,7 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Validates and auto-schedules groups specified within the provided filters.
+        /// Validates filters and auto-schedules groups specified within the provided filters.
         /// </summary>
         /// <param name="bag">The filters containing the groups to auto-schedule.</param>
         /// <returns>An object containing the validated filters and new list of filtered [group, location, schedule, occurrence date] occurrences.</returns>
@@ -825,6 +825,44 @@ namespace Rock.Blocks.Group.Scheduling
                 };
 
                 return ActionOk( results );
+            }
+        }
+
+        /// <summary>
+        /// Validates filters and sends confirmations to individuals scheduled for occurrences within the provided filter groups.
+        /// </summary>
+        /// <param name="bag">The filters containing the groups with individuals who should receive confirmations.</param>
+        /// <returns>An object containing the outcome of the send communications attempt.</returns>
+        [BlockAction]
+        public BlockActionResult SendNow( GroupSchedulerFiltersBag bag )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var response = new GroupSchedulerSendNowResponseBag();
+
+                RefineFilters( rockContext, bag );
+
+                var attendanceOccurrenceIds = GetScheduleOccurrences( rockContext )
+                    .Select( s => s.AttendanceOccurrenceId )
+                    .ToList();
+
+                if ( attendanceOccurrenceIds.Any() )
+                {
+                    var attendanceService = new AttendanceService( rockContext );
+                    var sendConfirmationAttendancesQuery = attendanceService.GetPendingAndAutoAcceptScheduledConfirmations()
+                        .Where( a => attendanceOccurrenceIds.Contains( a.OccurrenceId ) )
+                        .Where( a => a.ScheduleConfirmationSent != true );
+
+                    var sendMessageResult = attendanceService.SendScheduleConfirmationCommunication( sendConfirmationAttendancesQuery );
+                    response.AnyCommunicationsToSend = sendConfirmationAttendancesQuery.Any();
+                    rockContext.SaveChanges();
+
+                    response.Errors = sendMessageResult.Errors;
+                    response.Warnings = sendMessageResult.Warnings;
+                    response.CommunicationsSentCount = sendMessageResult.MessagesSent;
+                }
+
+                return ActionOk( response );
             }
         }
 
