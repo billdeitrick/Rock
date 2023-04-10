@@ -72,24 +72,26 @@
                                     alertType="validation" />
 
                                 <div :class="getColumnClass(3)">
-                                    <template v-if="config.isUpdateAllowed && adult1.firstName">
+                                    <template v-if="adult1.isFirstNameReadOnly">
                                         <RockLabel>First Name</RockLabel>
                                         <div>{{ adult1.firstName }}</div>
                                     </template>
                                     <TextBox v-else
                                         v-model="adult1.firstName"
                                         id="tbFirstName1"
-                                        label="First Name" />
+                                        label="First Name"
+                                        :rules="[atLeastOneAdultFirstNameRule, adult1FirstNameRule]" />
                                 </div>
                                 <div :class="getColumnClass(3)">
-                                    <template v-if="config.isUpdateAllowed && adult1.lastName">
+                                    <template v-if="adult1.isLastNameReadOnly">
                                         <RockLabel>Last Name</RockLabel>
                                         <div>{{ adult1.lastName }}</div>
                                     </template>
                                     <TextBox v-else
                                         v-model="adult1.lastName"
                                         id="tbLastName1"
-                                        label="Last Name" />
+                                        label="Last Name"
+                                        :rules="[adult1LastNameRule]" />
                                 </div>
                                 <div id="pnlGender1" :class="getColumnClass(3)">
                                     <GenderDropDownList
@@ -98,7 +100,11 @@
                                         label="Gender" />
                                 </div>
                                 <div id="pnlSuffix1" :class="getColumnClass(3)">
-                                    <DefinedValuePicker :definedTypeGuid="DefinedType.PersonSuffix" id="dvpSuffix1" label="Suffix" :showBlankItem="true" />
+                                    <DefinedValuePicker
+                                        :definedTypeGuid="DefinedType.PersonSuffix"
+                                        id="dvpSuffix1"
+                                        label="Suffix"
+                                        :showBlankItem="true" />
                                 </div>
                                 <div id="pnlBirthDate1" :class="getColumnClass(6)">
                                     <BirthdayPicker
@@ -108,10 +114,19 @@
                                         rules="required" />
                                 </div>
                                 <div id="pnlMaritalStatus1" :class="getColumnClass(3)">
-                                    <DefinedValuePicker :definedTypeGuid="DefinedType.PersonMaritalStatus" id="dvpMaritalStatus1" label="Marital Status" :showBlankItem="true" />
+                                    <DefinedValuePicker
+                                        :definedTypeGuid="DefinedType.PersonMaritalStatus"
+                                        id="dvpMaritalStatus1"
+                                        label="Marital Status"
+                                        :showBlankItem="true" />
                                 </div>
                                 <div v-if="!config.isAdultMobilePhoneHidden" :class="getColumnClass(3)" id="pnlMobilePhone1">
-                                    <PhoneNumberBox v-model="adult1.mobilePhone" v-model:countryCode="adult1.mobilePhoneCountryCode" id="pnMobilePhone1" label="Mobile Phone" :rules="config.isAdultMobilePhoneOptional ? [] : ['required']" />
+                                    <PhoneNumberBox
+                                        v-model="adult1.mobilePhone"
+                                        v-model:countryCode="adult1.mobilePhoneCountryCode"
+                                        id="pnMobilePhone1"
+                                        label="Mobile Phone"
+                                        :rules="config.isAdultMobilePhoneOptional ? '' : 'required'" />
                                 </div>
                                 <div id="pnlEmail1" :class="getColumnClass(6)">
                                     <EmailBox v-model="adult1.email" id="tbEmail1" label="Email" />
@@ -137,7 +152,11 @@
 
                             <div class="row">
                                 <div v-if="!config.isAdultProfilePhotoHidden" id="pnlProfileImage1" class="col-sm-6">
-                                    <ImageUploader id="imgProfile1" label="Profile Photo" :rules="profilePhotoRules" />
+                                    <ImageUploader
+                                        v-model="adult1ProfileImageListItemBag"
+                                        id="imgProfile1"
+                                        label="Profile Photo"
+                                        :rules="profilePhotoRules" />
                                 </div>
                             </div>
 
@@ -146,6 +165,7 @@
                                     v-if="adult1.attributes != null"
                                     v-model="adult1.attributeValues"
                                     :attributes="adult1.attributes"
+                                    id="phAttributes1"
                                     isEditMode
                                     :showCategoryLabel="true" />
                             </div>
@@ -214,53 +234,102 @@
 
                                 <div class="row">
                                     <div :class="getColumnClass(3)">
-                                        <Rock:RockLiteral ID="lFirstName2" runat="server" Label="First Name" Visible="false" />
-                                        <Rock:DataTextBox ID="tbFirstName2" runat="server" SourceTypeName="Rock.Model.Person" PropertyName="NickName" Label="First Name" />
-                                    </div>
+                                        <template v-if="adult2.isFirstNameReadOnly">
+                                            <RockLabel>First Name</RockLabel>
+                                            <div>{{ adult2.firstName }}</div>
+                                        </template>
+                                        <TextBox v-else
+                                            v-model="adult2.firstName"
+                                            id="tbFirstName2"
+                                            label="First Name"
+                                            :rules="[atLeastOneAdultFirstNameRule, adult2FirstNameRule]" />
+                                        </div>
                                     <div :class="getColumnClass(3)">
-                                        <Rock:RockLiteral ID="lLastName2" runat="server" Label="Last Name" Visible="false" />
-                                        <Rock:DataTextBox ID="tbLastName2" runat="server" SourceTypeName="Rock.Model.Person" PropertyName="LastName" Label="Last Name" />
+                                        <template v-if="adult2.isLastNameReadOnly">
+                                            <RockLabel>Last Name</RockLabel>
+                                            <div>{{ adult2.lastName }}</div>
+                                        </template>
+                                        <TextBox v-else
+                                            v-model="adult2.lastName"
+                                            id="tbLastName2"
+                                            label="Last Name"
+                                            :rules="[adult2LastNameRule]" />
+                                        </div>
+                                    <div id="pnlGender2" :class="getColumnClass(3)">
+                                        <GenderDropDownList
+                                            v-model="adult2.gender"
+                                            id="ddlGender2"
+                                            label="Gender" />
                                     </div>
-                                    <div id="pnlGender2">
-                                        <Rock:RockDropDownList ID="ddlGender2" runat="server" Label="Gender" />
+                                    <div id="pnlSuffix2" :class="getColumnClass(3)">
+                                        <DefinedValuePicker
+                                            :definedTypeGuid="DefinedType.PersonSuffix"
+                                            id="dvpSuffix2"
+                                            label="Suffix"
+                                            :showBlankItem="true" />
                                     </div>
-                                    <div id="pnlSuffix2">
-                                        <Rock:DefinedValuePicker ID="dvpSuffix2" runat="server" Label="Suffix" />
+                                    <div id="pnlBirthDate2" :class="getColumnClass(6)">
+                                        <BirthdayPicker
+                                            v-model="adult2.birthDate"
+                                            id="bpBirthDate2"
+                                            label="Birth Date"
+                                            rules="required" />
                                     </div>
-                                    <div id="pnlBirthDate2">
-                                        <Rock:BirthdayPicker ID="bpBirthDate2" runat="server" Label="Birth Date" />
+                                    <div id="pnlMaritalStatus2" :class="getColumnClass(3)">
+                                        <DefinedValuePicker
+                                            :definedTypeGuid="DefinedType.PersonMaritalStatus"
+                                            id="dvpMaritalStatus2"
+                                            label="Marital Status"
+                                            :showBlankItem="true" />
                                     </div>
-                                    <div id="pnlMaritalStatus2">
-                                        <Rock:DefinedValuePicker ID="dvpMaritalStatus2" runat="server" Label="Marital Status" />
+                                    <div v-if="!config.isAdultMobilePhoneHidden" :class="getColumnClass(3)" id="pnlMobilePhone2">
+                                        <PhoneNumberBox
+                                            v-model="adult2.mobilePhone"
+                                            v-model:countryCode="adult2.mobilePhoneCountryCode"
+                                            id="pnMobilePhone2"
+                                            label="Mobile Phone"
+                                            :rules="config.isAdultMobilePhoneOptional ? '' : 'required'" />
                                     </div>
-                                    <div id="pnlMobilePhone2">
-                                        <Rock:PhoneNumberBox ID="pnMobilePhone2" runat="server" Label="Mobile Phone" />
+                                    <div id="pnlEmail2" :class="getColumnClass(6)">
+                                        <EmailBox v-model="adult2.email" id="tbEmail2" label="Email" />
                                     </div>
-                                    <div id="pnlEmail2">
-                                        <Rock:EmailBox ID="tbEmail2" runat="server" Label="Email" />
+                                    <div id="pnlCommunicationPreference2" :class="getColumnClass(6)">
+                                        <RadioButtonList
+                                            v-model="adult1CommunicationPreferenceId"
+                                            :horizontal="true"
+                                            id="rblCommunicationPreference2"
+                                            :items="[
+                                                { text: 'Email', value: CommunicationPreference.Email.toString() },
+                                                { text: 'SMS', value: CommunicationPreference.SMS.toString() }
+                                            ]"
+                                            label="Communication Preference" />
                                     </div>
-                                    <div id="pnlCommunicationPreference2">
-                                        <Rock:RockRadioButtonList ID="rblCommunicationPreference2" runat="server" RepeatDirection="Horizontal" Label="Communication Preference">
-                                            <asp:ListItem Text="Email" Value="1" />
-                                            <asp:ListItem Text="SMS" Value="2" />
-                                        </Rock:RockRadioButtonList>
+                                    <div id="pnlRace2" :class="getColumnClass(3)">
+                                        <RacePicker v-model="adult2RaceListItemBag" id="rpRace2" :showBlankItem="true" />
                                     </div>
-                                    <div id="pnlRace2">
-                                        <Rock:RacePicker ID="rpRace2" runat="server" />
-                                    </div>
-                                    <div id="pnlEthnicity2">
-                                        <Rock:EthnicityPicker ID="epEthnicity2" runat="server" />
+                                    <div id="pnlEthnicity2" :class="getColumnClass(3)">
+                                        <EthnicityPicker v-model="adult2EthnicityListItemBag" id="epEthnicity2" :showBlankItem="true" />
                                     </div>
                                 </div>
 
                                 <div class="row">
-                                    <div id="pnlProfileImage2" class="col-sm-6">
-                                        <Rock:ImageEditor ID="imgProfile2" runat="server" Label="Profile Photo" RequiredErrorMessage="Profile photo is required for each adult." />
+                                    <div v-if="!config.isAdultProfilePhotoHidden" id="pnlProfileImage2" class="col-sm-6">
+                                        <ImageUploader
+                                            v-model="adult2ProfileImageListItemBag"
+                                            id="imgProfile2"
+                                            label="Profile Photo"
+                                            :rules="profilePhotoRules" />
                                     </div>
                                 </div>
 
                                 <div class="row">
-                                    <Rock:DynamicPlaceholder ID="phAttributes2" runat="server" />
+                                    <AttributeValuesContainer
+                                        v-if="adult2.attributes != null"
+                                        v-model="adult2.attributeValues"
+                                        :attributes="adult2.attributes"
+                                        id="phAttributes2"
+                                        isEditMode
+                                        :showCategoryLabel="true" />
                                 </div>
                             </div>
 
@@ -268,10 +337,22 @@
 
                             <div class="row">
                                 <div :class="getColumnClass(6)">
-                                    <Rock:AddressControl ID="acAddress" Label="Address" runat="server" UseStateAbbreviation="true" UseCountryAbbreviation="false" />
+                                    <AddressControl
+                                        v-if="!config.isAddressHidden"
+                                        v-model="address"
+                                        id="acAddress"
+                                        label="Address"
+                                        :useCountryAbbreviation="false"
+                                     />
                                 </div>
                                 <div :class="getColumnClass(6)">
-                                    <Rock:DynamicPlaceholder ID="phFamilyAttributes" runat="server" />
+                                    <AttributeValuesContainer
+                                        v-if="config.familyAttributes"
+                                        v-model="familyAttributeValues"
+                                        :attributes="config.familyAttributes"
+                                        id="phFamilyAttributes"
+                                        isEditMode
+                                        :showCategoryLabel="false" />
                                 </div>
                             </div>
                         </template>
@@ -298,6 +379,7 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref } from "vue";
+    import AddressControl from "@Obsidian/Controls/addressControl.obs";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
     import CampusPicker from "@Obsidian/Controls/campusPicker.obs";
@@ -321,6 +403,7 @@
     import { DefinedType } from "@Obsidian/SystemGuids/definedType";
     import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { useHttp } from "@Obsidian/Utility/http";
+    import { ValidationResult, ValidationRule, ValidationRuleFunction } from "@Obsidian/ValidationRules";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import { FamilyPreRegistrationCreateAccountRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationCreateAccountRequestBag";
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
@@ -328,7 +411,7 @@
     import { FamilyPreRegistrationGetScheduleDatesResponseBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesResponseBag";
     import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
     import { FamilyPreRegistrationScheduleDateBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationScheduleDateBag";
-    import { ValidationResult, ValidationRule, ValidationRuleFunction } from "@Obsidian/ValidationRules";
+    import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
 
     /**
      * Make specific properties in T required and non-nullable.
@@ -339,18 +422,25 @@
      *  width?: number | null
      * };
      *
-     * type StaticShape = RequiredNonNullable<Shape, "length", "width">;
+     * type StaticShape = RequiredProperties<Shape, "length" | "width">;
      * // {
      * //   length: number,
      * //   width: number
      * // }
      */
-    // type RequiredNonNullable<T, K extends keyof T> = T & Required<{
-    //     [L in keyof Pick<T, K>]: NonNullable<T[L]>
-    // }>;
     type RequiredProperties<T, K extends keyof T> = Omit<T, K> & {
         [L in keyof Pick<T, K>]-?: NonNullable<T[L]>
     };
+
+    type PersonRequestBag = RequiredProperties<FamilyPreRegistrationPersonBag,
+        "firstName" |
+        "lastName" |
+        "email" |
+        "mobilePhone" |
+        "mobilePhoneCountryCode" |
+        "attributeValues">;
+
+    type CreateAccountRequest = RequiredProperties<FamilyPreRegistrationCreateAccountRequestBag, "username" | "password">;
 
     const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
     const invokeBlockAction = useInvokeBlockAction();
@@ -365,14 +455,6 @@
         return true;
     };
 
-    const profilePhotoRules = computed<ValidationRule[]>(() => {
-        if (config.isAdultProfilePhotoOptional) {
-            return [];
-        }
-
-        return [profilePhotoRequiredValidator];
-    });
-
     //#region Values
 
     const errorTitle = ref<string | null | undefined>();
@@ -381,26 +463,17 @@
     const selectedScheduleGuids = ref<string | string[]>([]);
     const selectedTimeGuids = ref<string | string[]>([]);
     const scheduleDateItems = ref<FamilyPreRegistrationScheduleDateBag[]>([]);
+    const isUsernameInUse = ref<boolean>(false);
+    const confirmPassword = ref<string>("");
+    const address = ref<AddressControlBag | undefined>();
 
     // First Adult
-    const isUpdateAllowed = ref<boolean>(config.isUpdateAllowed);
 
-    type PersonRequestBag = RequiredProperties<FamilyPreRegistrationPersonBag, "firstName" | "lastName" | "email" | "mobilePhone" | "mobilePhoneCountryCode" | "attributeValues">;
     const fullName = ref<string>("");
-    const adult1 = ref<PersonRequestBag>(({
-        // Use defaults from config.
-        ...config.adult1,
 
-        // Overwrite required fields.
-        gender: config.adult1?.gender || 0,
-        firstName: config.adult1?.firstName || "",
-        lastName: config.adult1?.lastName || "",
-        email: config.adult1?.email || "",
-        mobilePhone: config.adult1?.mobilePhone || "",
-        mobilePhoneCountryCode: config.adult1?.mobilePhoneCountryCode || "",
-        communicationPreference: CommunicationPreference.None,
-        attributeValues: config.adult1?.attributeValues || {}
-    }));
+    const adult1 = ref<PersonRequestBag>(initializeAdult(config.adult1));
+
+    const adult2 = ref<PersonRequestBag>(initializeAdult(config.adult2));
 
     const adult1CommunicationPreferenceId = computed<string>({
         get() {
@@ -422,6 +495,17 @@
         }
     });
 
+    const adult2RaceListItemBag = computed<ListItemBag>({
+        get() {
+            return {
+                value: adult2.value.raceGuid?.toString()
+            };
+        },
+        set(newValue: ListItemBag) {
+            adult2.value.raceGuid = newValue.value;
+        }
+    });
+
     const adult1EthnicityListItemBag = computed<ListItemBag>({
         get() {
             return {
@@ -433,14 +517,45 @@
         }
     });
 
-    type CreateAccountRequest = RequiredProperties<FamilyPreRegistrationCreateAccountRequestBag, "username" | "password">;
+    const adult2EthnicityListItemBag = computed<ListItemBag>({
+        get() {
+            return {
+                value: adult2.value.ethnicityGuid?.toString()
+            };
+        },
+        set(newValue: ListItemBag) {
+            adult2.value.ethnicityGuid = newValue.value;
+        }
+    });
+
+    const adult1ProfileImageListItemBag = computed<ListItemBag>({
+        get() {
+            return {
+                value: adult1.value.profilePhotoGuid?.toString()
+            };
+        },
+        set(newValue: ListItemBag) {
+            adult1.value.profilePhotoGuid = newValue.value;
+        }
+    });
+
+    const adult2ProfileImageListItemBag = computed<ListItemBag>({
+        get() {
+            return {
+                value: adult2.value.profilePhotoGuid?.toString()
+            };
+        },
+        set(newValue: ListItemBag) {
+            adult2.value.profilePhotoGuid = newValue.value;
+        }
+    });
+
     const createAccount = ref<CreateAccountRequest>({
         username: "",
         password: ""
     });
-    const isUsernameInUse = ref<boolean>(false);
 
-    const confirmPassword = ref<string>("");
+    const familyAttributeValues = ref<Record<string, string>>(config.familyAttributeValues || {});
 
     //#endregion
 
@@ -456,14 +571,23 @@
             updateScheduleDateControl();
         }
     });
+
+    const confirmPasswordRules = computed<string>(() => {
+        return `equalsfield:and Password do not match,${createAccount.value.password}`;
+    });
+
+    const profilePhotoRules = computed<ValidationRule[]>(() => {
+        if (config.isAdultProfilePhotoOptional) {
+            return [];
+        }
+
+        return [profilePhotoRequiredValidator];
+    });
+
     const scheduleTimeItems = computed<ListItemBag[]>(() => {
         const scheduleDateItem = scheduleDateItems.value.find(s => s.value === selectedScheduleGuids.value);
 
         return scheduleDateItem?.scheduleTimes ?? [];
-    });
-
-    const confirmPasswordRules = computed<string>(() => {
-        return `equalsfield:and Password do not match,${createAccount.value.password}`;
     });
 
     //#endregion
@@ -481,6 +605,61 @@
     //#endregion
 
     //#region Functions
+
+    function atLeastOneAdultFirstNameRule(): ValidationResult {
+        const adult1FirstName = adult1.value.firstName?.trim();
+        const adult2FirstName = adult2.value.firstName?.trim();
+
+        if (!adult1FirstName && !adult2FirstName) {
+            return "is invalid. The name of at least one adult needs to be entered.";
+        }
+
+        return true;
+    }
+
+    function adult1FirstNameRule(): ValidationResult {
+        const adult1FirstName = adult1.value.firstName?.trim();
+        const adult1LastName = adult1.value.lastName?.trim();
+
+        if (!adult1FirstName && adult1LastName) {
+            return "is invalid. First and Last Name are required.";
+        }
+
+        return true;
+    }
+
+    function adult1LastNameRule(): ValidationResult {
+        const adult1FirstName = adult1.value.firstName?.trim();
+        const adult1LastName = adult1.value.lastName?.trim();
+
+        if (adult1FirstName && !adult1LastName) {
+            return "is invalid. First and Last Name are required.";
+        }
+
+        return true;
+    }
+
+    function adult2FirstNameRule(): ValidationResult {
+        const adult2FirstName = adult2.value.firstName?.trim();
+        const adult2LastName = adult2.value.lastName?.trim();
+
+        if (!adult2FirstName && adult2LastName) {
+            return "is invalid. First and Last Name are required.";
+        }
+
+        return true;
+    }
+
+    function adult2LastNameRule(): ValidationResult {
+        const adult2FirstName = adult2.value.firstName?.trim();
+        const adult2LastName = adult2.value.lastName?.trim();
+
+        if (adult2FirstName && !adult2LastName) {
+            return "is invalid. First and Last Name are required.";
+        }
+
+        return true;
+    }
 
     /**
      * Checks availability of the current username.
@@ -515,6 +694,25 @@
         }
 
         return `col-sm-${columns * 2}`;
+    }
+
+    function initializeAdult(adult: FamilyPreRegistrationPersonBag | null | undefined): PersonRequestBag {
+        return {
+            // Use defaults from config.
+            ...adult,
+
+            // Overwrite required fields.
+            attributeValues: adult?.attributeValues || {},
+            communicationPreference: adult?.communicationPreference ?? CommunicationPreference.None,
+            email: adult?.email || "",
+            firstName: adult?.firstName || "",
+            gender: adult?.gender || 0,
+            isFirstNameReadOnly: !!adult?.isFirstNameReadOnly,
+            isLastNameReadOnly: !!adult?.isLastNameReadOnly,
+            lastName: adult?.lastName || "",
+            mobilePhone: adult?.mobilePhone || "",
+            mobilePhoneCountryCode: adult?.mobilePhoneCountryCode || "",
+        };
     }
 
     function setError(text?: string | null, title?: string | null): void {

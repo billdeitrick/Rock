@@ -86,5 +86,9 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public string CreateAccountDescription { get; set; }
         public bool IsCreateAccountOptional { get; set; }
         public bool IsCreateAccountHidden { get; set; }
+        public bool IsAddressOptional { get; set; }
+        public bool IsAddressHidden { get; set; }
+        public Dictionary<string, PublicAttributeBag> FamilyAttributes { get; set; }
+        public Dictionary<string, string> FamilyAttributeValues { get; set; }
     }
 }

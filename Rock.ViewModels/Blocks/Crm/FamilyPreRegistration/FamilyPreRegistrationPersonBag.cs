@@ -47,7 +47,13 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public Guid? RaceGuid { get; set; }
 
         public Guid? EthnicityGuid { get; set; }
+
         public Dictionary<string, PublicAttributeBag> Attributes { get; set; }
+
         public Dictionary<string, string> AttributeValues { get; set; }
+
+        public Guid? ProfilePhotoGuid { get; set; }
+        public bool IsFirstNameReadOnly { get; set; }
+        public bool IsLastNameReadOnly { get; set; }
     }
 }

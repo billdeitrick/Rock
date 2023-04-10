@@ -23,6 +23,7 @@
 
 import { Guid } from "@Obsidian/Types";
 import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
+import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 /** The box that contains all the initialization information for the Family Pre-Registration block. */
 export type FamilyPreRegistrationInitializationBox = {
@@ -56,6 +57,14 @@ export type FamilyPreRegistrationInitializationBox = {
      * an error is preventing the block from being displayed.
      */
     errorMessage?: string | null;
+
+    familyAttributes?: Record<string, PublicAttributeBag> | null;
+
+    familyAttributeValues?: Record<string, string> | null;
+
+    isAddressHidden: boolean;
+
+    isAddressOptional: boolean;
 
     isAdultMobilePhoneHidden: boolean;
 

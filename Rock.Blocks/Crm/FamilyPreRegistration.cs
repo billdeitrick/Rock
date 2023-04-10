@@ -19,11 +19,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
 using Rock.ViewModels.Blocks.Crm.FamilyPreRegistration;
+using Rock.ViewModels.Controls;
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
@@ -634,51 +636,24 @@ namespace Rock.Blocks.Crm
         #region Properties
 
         /// <summary>
-        /// Gets or sets the child members that have been added by user
+        /// Gets the address properties.
         /// </summary>
-        /// <value>
-        /// The group members.
-        /// </value>
-        protected List<PreRegistrationChild> Children { get; set; }
-
-        protected string GetColumnStyle( int columns )
-        {
-            if ( ( columns != 3 && columns != 6 ) || GetAttributeValue( AttributeKey.Columns ) == "4" )
-            {
-                return "col-sm-" + columns.ToString();
-            }
-
-            if ( columns == 6 )
-            {
-                return "col-sm-" + columns.ToString();
-            }
-
-            return "col-sm-" + ( columns * 2 ).ToString();
-        }
+        private (bool IsOptional, bool IsHidden) AddressProperties => this.GetFieldProperties( AttributeKey.AdultAddress );
 
         /// <summary>
-        /// An optional campus to use by default when adding a new family.
-        private Guid? DefaultCampusGuid => this.GetAttributeValue( AttributeKey.DefaultCampus ).AsGuidOrNull();
+        /// Gets the adult mobile phone field properties.
+        /// </summary>
+        private (bool IsOptional, bool IsHidden) AdultMobilePhoneProperties => this.GetFieldProperties( AttributeKey.AdultMobilePhone );
 
         /// <summary>
-        /// Indicates whether campus is optional.
+        /// Gets the adult profile photo properties.
         /// </summary>
-        private bool IsCampusOptional => !this.GetAttributeValue( AttributeKey.RequireCampus ).AsBoolean();
+        private (bool IsOptional, bool IsHidden) AdultProfilePhotoProperties => this.GetFieldProperties( AttributeKey.AdultProfilePhoto );
 
         /// <summary>
-        /// Indicates whether campus is hidden.
+        /// Gets the adult attribute category guids.
         /// </summary>
-        private bool IsCampusHidden => !this.GetAttributeValue( AttributeKey.ShowCampus ).AsBoolean();
-
-        /// <summary>
-        /// List of campus type defined value guids used to filter the campus field.
-        /// </summary>
-        private List<Guid> CampusTypesFilter => this.GetAttributeValues( AttributeKey.CampusTypes ).AsGuidList().Where( guid => DefinedValueCache.Get( guid ) != null ).ToList();
-
-        /// <summary>
-        /// List of campus status defined value guids used to filter the campus field.
-        /// </summary>
-        private List<Guid> CampusStatusesFilter => this.GetAttributeValues( AttributeKey.CampusStatuses ).AsGuidList().Where( guid => DefinedValueCache.Get( guid ) != null ).ToList();
+        private List<Guid> AdultAttributeCategoryGuids => this.GetAttributeValues( AttributeKey.AdultAttributeCategories ).AsGuidList();
 
         /// <summary>
         /// Gets the optional unique identifier for the attribute to use for selecting a campus schedule.
@@ -686,41 +661,64 @@ namespace Rock.Blocks.Crm
         private Guid? CampusSchedulesAttributeGuid => this.GetAttributeValue( AttributeKey.CampusScheduleAttribute ).AsGuidOrNull();
 
         /// <summary>
-        /// Gets the planned visit date field properties.
+        /// List of campus status defined value guids used to filter the campus field.
         /// </summary>
-        private (bool IsOptional, bool IsHidden) PlannedVisitDateProperties => GetFieldProperties( AttributeKey.PlannedVisitDate );
+        private List<Guid> CampusStatusesFilter => this.GetAttributeValues( AttributeKey.CampusStatuses ).AsGuidList().Where( guid => DefinedValueCache.Get( guid ) != null ).ToList();
+
+        /// <summary>
+        /// List of campus type defined value guids used to filter the campus field.
+        /// </summary>
+        private List<Guid> CampusTypesFilter => this.GetAttributeValues( AttributeKey.CampusTypes ).AsGuidList().Where( guid => DefinedValueCache.Get( guid ) != null ).ToList();
 
         /// <summary>
         /// Gets the columns.
         /// </summary>
-        private int Columns => GetAttributeValue( AttributeKey.Columns ).AsInteger();
+        private int Columns => this.GetAttributeValue( AttributeKey.Columns ).AsInteger();
 
         /// <summary>
         /// Gets the "Create Account" description.
         /// </summary>
-        private string CreateAccountDescription => GetAttributeValue( AttributeKey.CreateAccountDescription );
+        private string CreateAccountDescription => this.GetAttributeValue( AttributeKey.CreateAccountDescription );
 
         /// <summary>
         /// Gets the create account properties.
         /// </summary>
-        private (bool IsOptional, bool IsHidden) CreateAccountProperties => GetFieldProperties( AttributeKey.FirstAdultCreateAccount );
+        private (bool IsOptional, bool IsHidden) CreateAccountProperties => this.GetFieldProperties( AttributeKey.FirstAdultCreateAccount );
 
         /// <summary>
         /// Gets the "Create Account" title.
         /// </summary>
-        private string CreateAccountTitle => GetAttributeValue( AttributeKey.CreateAccountTitle );
+        private string CreateAccountTitle => this.GetAttributeValue( AttributeKey.CreateAccountTitle );
 
         /// <summary>
-        /// Gets the adult mobile phone field properties.
-        /// </summary>
-        private (bool IsOptional, bool IsHidden) AdultMobilePhoneProperties => GetFieldProperties( AttributeKey.AdultMobilePhone );
+        /// An optional campus to use by default when adding a new family.
+        private Guid? DefaultCampusGuid => this.GetAttributeValue( AttributeKey.DefaultCampus ).AsGuidOrNull();
 
         /// <summary>
-        /// Gets the adult profile photo properties.
+        /// Gets the family attribute guids.
         /// </summary>
-        private (bool IsOptional, bool IsHidden) AdultProfilePhotoProperties => GetFieldProperties( AttributeKey.AdultProfilePhoto );
+        private List<Guid> FamilyAttributeGuids => this.GetAttributeValues( AttributeKey.FamilyAttributes ).AsGuidList();
 
-        private List<Guid> AdultAttributeCategoryGuids => GetAttributeValues( AttributeKey.AdultAttributeCategories ).AsGuidList();
+        /// <summary>
+        /// Indicates whether campus is hidden.
+        /// </summary>
+        private bool IsCampusHidden => !this.GetAttributeValue( AttributeKey.ShowCampus ).AsBoolean();
+
+        /// <summary>
+        /// Indicates whether campus is optional.
+        /// </summary>
+        private bool IsCampusOptional => !this.GetAttributeValue( AttributeKey.RequireCampus ).AsBoolean();
+
+        /// <summary>
+        /// If the person visiting this block is logged in, should the block be used to update their family?
+        /// If not, a new family will always be created unless 'Auto Match' is enabled and the information entered matches an existing person.
+        /// </summary>
+        private bool IsFamilyUpdateAllowedForCurrentPerson => this.GetAttributeValue( AttributeKey.AllowUpdates ).AsBoolean();
+
+        /// <summary>
+        /// Gets the planned visit date field properties.
+        /// </summary>
+        private (bool IsOptional, bool IsHidden) PlannedVisitDateProperties => this.GetFieldProperties( AttributeKey.PlannedVisitDate );
 
         #endregion
 
@@ -882,6 +880,27 @@ namespace Rock.Blocks.Crm
             return attributes;
         }
 
+        /// <summary>
+        /// Gets the family attributes.
+        /// </summary>
+        private List<AttributeCache> GetFamilyAttributes( RockContext rockContext, Person currentPerson )
+        {
+            var attributeService = new AttributeService( rockContext );
+            var attributes = new List<AttributeCache>();
+
+            foreach ( var attributeGuid in this.FamilyAttributeGuids )
+            {
+                var attribute = AttributeCache.Get( attributeGuid );
+
+                if ( attribute != null && attribute.IsAuthorized( Authorization.EDIT, currentPerson ) )
+                {
+                    attributes.Add( attribute );
+                }
+            }
+
+            return attributes;
+        }
+
         private FamilyPreRegistrationInitializationBox GetInitializationBox()
         {
             var box = new FamilyPreRegistrationInitializationBox
@@ -894,37 +913,99 @@ namespace Rock.Blocks.Crm
                 CreateAccountDescription = this.CreateAccountDescription,
                 CreateAccountTitle = this.CreateAccountTitle,
                 IsCampusOptional = this.IsCampusOptional,
-                IsCampusHidden = this.IsCampusHidden,
+                IsCampusHidden = this.IsCampusHidden
             };
 
             ( box.IsPlannedVisitDateOptional, box.IsPlannedVisitDatePanelHidden, box.IsPlannedSchedulePanelHidden, box.ErrorMessage ) = ShowHidePlannedDatePanels();
             ( box.IsAdultMobilePhoneOptional, box.IsAdultMobilePhoneHidden ) = this.AdultMobilePhoneProperties;
             ( box.IsAdultProfilePhotoOptional, box.IsAdultProfilePhotoHidden) = this.AdultProfilePhotoProperties;
             ( box.IsCreateAccountOptional, box.IsCreateAccountHidden ) = this.CreateAccountProperties;
+            ( box.IsAddressOptional, box.IsAddressHidden ) = this.AddressProperties;
 
             using ( var rockContext = new RockContext() )
             {
                 var currentPerson = this.GetCurrentPerson();
+
+                var (adult1, adult2, family) = GetCurrentFamilyValues( rockContext, currentPerson );
+
                 var adultAttributes = GetAdultAttributeCategoryAttributes( rockContext );
-                // TODO JMH Get adult1 from current person based on the old block.
-                var adult1 = new Person();
-                adult1.LoadAttributes( rockContext );
-                box.Adult1 = new FamilyPreRegistrationPersonBag
-                {
-                    Attributes = adult1.GetPublicAttributesForEdit( currentPerson, attributeFilter: a1 => adultAttributes.Any( a => a.Guid == a1.Guid ) ),
-                    AttributeValues = adult1.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: a1 => adultAttributes.Any( a => a.Guid == a1.Guid ) )
-                };
-                // TODO JMH Get adult1 from current person based on the old block.
-                var adult2 = new Person();
-                adult2.LoadAttributes( rockContext );
-                box.Adult2 = new FamilyPreRegistrationPersonBag
-                {
-                    Attributes = adult2.GetPublicAttributesForEdit( currentPerson, attributeFilter: a2 => adultAttributes.Any( a => a.Guid == a2.Guid ) ),
-                    AttributeValues = adult2.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: a2 => adultAttributes.Any( a => a.Guid == a2.Guid ) )
-                };
+                adult1?.LoadAttributes( rockContext );
+                adult2?.LoadAttributes( rockContext );
+
+                box.Adult1 = GetFamilyPreRegistrationPersonBag( adult1, currentPerson, adultAttributes );
+                box.Adult2 = GetFamilyPreRegistrationPersonBag( adult2, currentPerson, adultAttributes );
+
+                var familyAttributes = GetFamilyAttributes( rockContext, currentPerson );
+                family?.LoadAttributes( rockContext );
+                box.FamilyAttributes = family?.GetPublicAttributesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
+                box.FamilyAttributeValues = family?.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
             }
 
             return box;
+        }
+
+        private ( Person adult1, Person adult2, Group family ) GetCurrentFamilyValues( RockContext rockContext, Person currentPerson )
+        {
+            Person adult1 = null;
+            Person adult2 = null;
+            Group family = null;
+
+            // If there is a logged in person, attempt to find their family and spouse.
+            if ( this.IsFamilyUpdateAllowedForCurrentPerson && currentPerson != null )
+            {
+                Person spouse = null;
+
+                // Get all their families.
+                var families = currentPerson.GetFamilies( rockContext );
+
+                if ( families.Any() )
+                {
+                    // Get their spouse.
+                    spouse = currentPerson.GetSpouse( rockContext );
+
+                    if ( spouse != null )
+                    {
+                        // If spouse was found, find the first family that spouse belongs to also.
+                        family = families.Where( f => f.Members.Any( m => m.PersonId == spouse.Id ) ).FirstOrDefault();
+
+                        if ( family == null )
+                        {
+                            // If there was not family with spouse, something went wrong and assume there is no spouse.
+                            spouse = null;
+                        }
+                    }
+
+                    // If we didn't find a family yet (by checking spouses family), assume the first family.
+                    if ( family == null )
+                    {
+                        family = families.FirstOrDefault();
+                    }
+
+                    // Assume Adult1 is the current person...
+                    adult1 = currentPerson;
+
+                    if ( spouse != null )
+                    {
+                        // ...and Adult2 is the spouse.
+                        adult2 = spouse;
+
+                        // However, if spouse is actually head of family, make them Adult1 and current person Adult2
+                        var headOfFamilyId = family.Members
+                            .OrderBy( m => m.GroupRole.Order )
+                            .ThenBy( m => m.Person.Gender )
+                            .Select( m => m.PersonId )
+                            .FirstOrDefault();
+
+                        if ( headOfFamilyId != 0 && headOfFamilyId == spouse.Id )
+                        {
+                            adult1 = spouse;
+                            adult2 = currentPerson;
+                        }
+                    }
+                }
+            }
+
+            return ( adult1, adult2, family );
         }
 
         /// <summary>
@@ -2011,6 +2092,49 @@ namespace Rock.Blocks.Crm
             var isHidden = string.Equals( value, "Hide", StringComparison.OrdinalIgnoreCase );
 
             return (isOptional, isHidden);
+        }
+
+        private FamilyPreRegistrationPersonBag GetFamilyPreRegistrationPersonBag( Person adult, Person currentPerson, List<AttributeCache> adultAttributes )
+        {
+            if ( adult == null )
+            {
+                return new FamilyPreRegistrationPersonBag();
+            }
+
+            var bag = new FamilyPreRegistrationPersonBag
+            {
+                Attributes = adult.GetPublicAttributesForEdit( currentPerson, attributeFilter: a1 => adultAttributes.Any( a => a.Guid == a1.Guid ) ),
+                AttributeValues = adult.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: a1 => adultAttributes.Any( a => a.Guid == a1.Guid ) ),
+                BirthDate = adult.BirthDate != null ?
+                    new BirthdayPickerBag
+                    {
+                        Day = adult.BirthDate.Value.Day,
+                        Month = adult.BirthDate.Value.Month,
+                        Year = adult.BirthDate.Value.Year
+                    }
+                    : null,
+                CommunicationPreference = ( Enums.Blocks.Crm.FamilyPreRegistration.CommunicationPreference ) ( int ) adult.CommunicationPreference,
+                Email = adult.Email,
+                EthnicityGuid = adult.EthnicityValue?.Guid,
+                FirstName = adult.NickName,
+                IsFirstNameReadOnly = true,
+                IsLastNameReadOnly = true,
+                Gender = adult.Gender,
+                LastName = adult.LastName,
+                ProfilePhotoGuid = adult.Photo?.Guid,
+                RaceGuid = adult.RaceValue?.Guid,
+                SuffixDefinedValueGuid = adult.SuffixValue?.Guid
+            };
+
+            var mobilePhone = adult.GetPhoneNumber( SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
+
+            if ( mobilePhone != null )
+            {
+                bag.MobilePhone = mobilePhone.Number;
+                bag.MobilePhoneCountryCode = mobilePhone.CountryCode;
+            }
+
+            return bag;
         }
 
         #endregion
