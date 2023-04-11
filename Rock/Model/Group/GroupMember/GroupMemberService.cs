@@ -642,10 +642,13 @@ namespace Rock.Model
         /// <param name="removeFromRegistrants">if set to <c>true</c> [remove from registrants].</param>
         public void Delete( GroupMember groupMember, bool removeFromRegistrants )
         {
-            RegistrationRegistrantService registrantService = new RegistrationRegistrantService( this.Context as RockContext );
-            foreach ( var registrant in registrantService.Queryable().Where( r => r.GroupMemberId == groupMember.Id ) )
+            if ( removeFromRegistrants )
             {
-                registrant.GroupMemberId = null;
+                RegistrationRegistrantService registrantService = new RegistrationRegistrantService( this.Context as RockContext );
+                foreach ( var registrant in registrantService.Queryable().Where( r => r.GroupMemberId == groupMember.Id ) )
+                {
+                    registrant.GroupMemberId = null;
+                }
             }
 
             this.Delete( groupMember );
