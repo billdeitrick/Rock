@@ -113,6 +113,48 @@ namespace Rock.Field.Types
             return string.Empty;
         }
 
+        /// <inheritdoc/>
+        public override Dictionary<string, string> GetPrivateConfigurationValues( Dictionary<string, string> publicConfigurationValues )
+        {
+            var privateConfigurationValues = base.GetPrivateConfigurationValues( publicConfigurationValues );
+
+            if ( privateConfigurationValues?.ContainsKey( GROUP_TYPE_KEY ) == true )
+            {
+                var groupTypeValue = privateConfigurationValues[GROUP_TYPE_KEY].FromJsonOrNull<ListItemBag>();
+                if ( groupTypeValue != null )
+                {
+                    var groupType = GroupTypeCache.Get( groupTypeValue.Value.AsGuid() );
+                    if ( groupType != null )
+                    {
+                        privateConfigurationValues[GROUP_TYPE_KEY] = groupType.Id.ToString();
+                    }
+                }
+            }
+
+            return privateConfigurationValues;
+        }
+
+        /// <inheritdoc/>
+        public override Dictionary<string, string> GetPublicConfigurationValues( Dictionary<string, string> privateConfigurationValues, ConfigurationValueUsage usage, string value )
+        {
+            var publicConfigurationValues = base.GetPublicConfigurationValues( privateConfigurationValues, usage, value );
+
+            if ( publicConfigurationValues?.ContainsKey( GROUP_TYPE_KEY ) == true && int.TryParse( publicConfigurationValues[GROUP_TYPE_KEY], out int groupTypeId ) )
+            {
+                var groupType = GroupTypeCache.Get( groupTypeId );
+                if ( groupType != null )
+                {
+                    publicConfigurationValues[GROUP_TYPE_KEY] = new ListItemBag()
+                    {
+                        Text = groupType.Name,
+                        Value = groupType.Guid.ToString(),
+                    }.ToCamelCaseJson( false, true );
+                }
+            }
+
+            return publicConfigurationValues;
+        }
+
         #endregion
 
         #region Entity Methods
