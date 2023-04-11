@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Rock.Attribute;
+using Rock.Badge.Component;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
@@ -641,19 +642,24 @@ namespace Rock.Blocks.Crm
         private (bool IsOptional, bool IsHidden) AddressProperties => this.GetFieldProperties( AttributeKey.AdultAddress );
 
         /// <summary>
+        /// Gets the adult attribute category guids.
+        /// </summary>
+        private List<Guid> AdultAttributeCategoryGuids => this.GetAttributeValues( AttributeKey.AdultAttributeCategories ).AsGuidList();
+
+        /// <summary>
         /// Gets the adult mobile phone field properties.
         /// </summary>
         private (bool IsOptional, bool IsHidden) AdultMobilePhoneProperties => this.GetFieldProperties( AttributeKey.AdultMobilePhone );
 
         /// <summary>
+        /// Gets the adult gender properties.
+        /// </summary>
+        private (bool IsOptional, bool IsHidden) AdultGenderProperties => this.GetFieldProperties( AttributeKey.AdultGender );
+
+        /// <summary>
         /// Gets the adult profile photo properties.
         /// </summary>
         private (bool IsOptional, bool IsHidden) AdultProfilePhotoProperties => this.GetFieldProperties( AttributeKey.AdultProfilePhoto );
-
-        /// <summary>
-        /// Gets the adult attribute category guids.
-        /// </summary>
-        private List<Guid> AdultAttributeCategoryGuids => this.GetAttributeValues( AttributeKey.AdultAttributeCategories ).AsGuidList();
 
         /// <summary>
         /// Gets the optional unique identifier for the attribute to use for selecting a campus schedule.
@@ -885,7 +891,6 @@ namespace Rock.Blocks.Crm
         /// </summary>
         private List<AttributeCache> GetFamilyAttributes( RockContext rockContext, Person currentPerson )
         {
-            var attributeService = new AttributeService( rockContext );
             var attributes = new List<AttributeCache>();
 
             foreach ( var attributeGuid in this.FamilyAttributeGuids )
@@ -921,6 +926,15 @@ namespace Rock.Blocks.Crm
             ( box.IsAdultProfilePhotoOptional, box.IsAdultProfilePhotoHidden) = this.AdultProfilePhotoProperties;
             ( box.IsCreateAccountOptional, box.IsCreateAccountHidden ) = this.CreateAccountProperties;
             ( box.IsAddressOptional, box.IsAddressHidden ) = this.AddressProperties;
+            ( box.IsAdultGenderOptional, box.IsAdultGenderHidden ) = this.AdultGenderProperties;
+            ( box.IsAdultSuffixOptional, box.IsAdultSuffixHidden ) = this.GetFieldProperties( AttributeKey.AdultSuffix );
+            ( box.IsAdultBirthdayOptional, box.IsAdultBirthdayHidden ) = this.GetFieldProperties( AttributeKey.AdultBirthdate );
+            ( box.IsAdultEmailOptional, box.IsAdultEmailHidden ) = this.GetFieldProperties( AttributeKey.AdultEmail );
+            ( box.IsAdultMaritalStatusOptional, box.IsAdultMaritalStatusHidden) = this.GetFieldProperties( AttributeKey.AdultMaritalStatus );
+            ( box.IsAdultDisplayCommunicationPreferenceOptional, box.IsAdultDisplayCommunicationPreferenceHidden) = this.GetFieldProperties( AttributeKey.AdultDisplayCommunicationPreference );
+            (box.IsRaceOptionOptional, box.IsRaceOptionHidden) = this.GetFieldProperties( AttributeKey.RaceOption );
+            (box.IsEthnicityOptionOptional, box.IsEthnicityOptionHidden) = this.GetFieldProperties( AttributeKey.EthnicityOption );
+
 
             using ( var rockContext = new RockContext() )
             {
@@ -1003,6 +1017,19 @@ namespace Rock.Blocks.Crm
                         }
                     }
                 }
+            }
+            else
+            {
+                adult1 = new Person();
+                adult1.LoadAttributes( rockContext );
+                adult2 = new Person();
+                adult2.LoadAttributes( rockContext );
+                family = new Group
+                {
+                    // Setting group type id so family-specific attributes are loaded.
+                    GroupTypeId = GroupTypeCache.GetId( Rock.SystemGuid.GroupType.GROUPTYPE_FAMILY.AsGuid() ) ?? 0
+                };
+                family.LoadAttributes( rockContext );
             }
 
             return ( adult1, adult2, family );
@@ -2117,8 +2144,8 @@ namespace Rock.Blocks.Crm
                 Email = adult.Email,
                 EthnicityGuid = adult.EthnicityValue?.Guid,
                 FirstName = adult.NickName,
-                IsFirstNameReadOnly = true,
-                IsLastNameReadOnly = true,
+                IsFirstNameReadOnly = adult.Id != 0,
+                IsLastNameReadOnly = adult.Id != 0,
                 Gender = adult.Gender,
                 LastName = adult.LastName,
                 ProfilePhotoGuid = adult.Photo?.Guid,

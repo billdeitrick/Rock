@@ -73,8 +73,6 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         /// </summary>
         public bool IsCampusOptional { get; set; }
 
-        public bool IsUpdateAllowed { get; set; }
-
         public bool IsPlannedSchedulePanelHidden { get; set; }
         public bool IsPlannedVisitDatePanelHidden { get; set; }
         public bool IsPlannedVisitDateOptional { get; set; }
@@ -90,5 +88,21 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public bool IsAddressHidden { get; set; }
         public Dictionary<string, PublicAttributeBag> FamilyAttributes { get; set; }
         public Dictionary<string, string> FamilyAttributeValues { get; set; }
+        public bool IsAdultGenderOptional { get; set; }
+        public bool IsAdultGenderHidden { get; set; }
+        public bool IsAdultSuffixOptional { get; set; }
+        public bool IsAdultSuffixHidden { get; set; }
+        public bool IsAdultBirthdayOptional { get; set; }
+        public bool IsAdultBirthdayHidden { get; set; }
+        public bool IsAdultEmailOptional { get; set; }
+        public bool IsAdultEmailHidden { get; set; }
+        public bool IsAdultMaritalStatusOptional { get; set; }
+        public bool IsAdultDisplayCommunicationPreferenceHidden { get; set; }
+        public bool IsAdultDisplayCommunicationPreferenceOptional { get; set; }
+        public bool IsAdultMaritalStatusHidden { get; set; }
+        public bool IsRaceOptionOptional { get; set; }
+        public bool IsRaceOptionHidden { get; set; }
+        public bool IsEthnicityOptionOptional { get; set; }
+        public bool IsEthnicityOptionHidden { get; set; }
     }
 }

@@ -66,6 +66,26 @@ export type FamilyPreRegistrationInitializationBox = {
 
     isAddressOptional: boolean;
 
+    isAdultBirthdayHidden: boolean;
+
+    isAdultBirthdayOptional: boolean;
+
+    isAdultDisplayCommunicationPreferenceHidden: boolean;
+
+    isAdultDisplayCommunicationPreferenceOptional: boolean;
+
+    isAdultEmailHidden: boolean;
+
+    isAdultEmailOptional: boolean;
+
+    isAdultGenderHidden: boolean;
+
+    isAdultGenderOptional: boolean;
+
+    isAdultMaritalStatusHidden: boolean;
+
+    isAdultMaritalStatusOptional: boolean;
+
     isAdultMobilePhoneHidden: boolean;
 
     isAdultMobilePhoneOptional: boolean;
@@ -73,6 +93,10 @@ export type FamilyPreRegistrationInitializationBox = {
     isAdultProfilePhotoHidden: boolean;
 
     isAdultProfilePhotoOptional: boolean;
+
+    isAdultSuffixHidden: boolean;
+
+    isAdultSuffixOptional: boolean;
 
     /**
      * Indicates whether the campus field is hidden.
@@ -90,13 +114,19 @@ export type FamilyPreRegistrationInitializationBox = {
 
     isCreateAccountOptional: boolean;
 
+    isEthnicityOptionHidden: boolean;
+
+    isEthnicityOptionOptional: boolean;
+
     isPlannedSchedulePanelHidden: boolean;
 
     isPlannedVisitDateOptional: boolean;
 
     isPlannedVisitDatePanelHidden: boolean;
 
-    isUpdateAllowed: boolean;
+    isRaceOptionHidden: boolean;
+
+    isRaceOptionOptional: boolean;
 
     /** Gets or sets the navigation urls. */
     navigationUrls?: Record<string, string> | null;

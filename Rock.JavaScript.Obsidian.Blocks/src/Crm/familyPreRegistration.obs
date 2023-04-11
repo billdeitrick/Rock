@@ -93,31 +93,34 @@
                                         label="Last Name"
                                         :rules="[adult1LastNameRule]" />
                                 </div>
-                                <div id="pnlGender1" :class="getColumnClass(3)">
+                                <div v-if="!config.isAdultGenderHidden" id="pnlGender1" :class="getColumnClass(3)">
                                     <GenderDropDownList
                                         v-model="adult1.gender"
                                         id="ddlGender1"
-                                        label="Gender" />
+                                        label="Gender"
+                                        :rules="isAdult1Entered && !config.isAdultGenderOptional ? 'required' : []" />
                                 </div>
-                                <div id="pnlSuffix1" :class="getColumnClass(3)">
+                                <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
                                         :definedTypeGuid="DefinedType.PersonSuffix"
                                         id="dvpSuffix1"
                                         label="Suffix"
+                                        :rules="isAdult1Entered && !config.isAdultSuffixOptional ? 'required' : []"
                                         :showBlankItem="true" />
                                 </div>
-                                <div id="pnlBirthDate1" :class="getColumnClass(6)">
+                                <div v-if="!config.isAdultBirthdayHidden" id="pnlBirthDate1" :class="getColumnClass(6)">
                                     <BirthdayPicker
                                         v-model="adult1.birthDate"
                                         id="bpBirthDate1"
                                         label="Birth Date"
-                                        rules="required" />
+                                        :rules="isAdult1Entered && !config.isAdultBirthdayOptional ? 'required' : ''" />
                                 </div>
-                                <div id="pnlMaritalStatus1" :class="getColumnClass(3)">
+                                <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
                                         :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                         id="dvpMaritalStatus1"
                                         label="Marital Status"
+                                        :rules="isAdult1Entered && !config.isAdultMaritalStatusOptional ? 'required': ''"
                                         :showBlankItem="true" />
                                 </div>
                                 <div v-if="!config.isAdultMobilePhoneHidden" :class="getColumnClass(3)" id="pnlMobilePhone1">
@@ -126,10 +129,14 @@
                                         v-model:countryCode="adult1.mobilePhoneCountryCode"
                                         id="pnMobilePhone1"
                                         label="Mobile Phone"
-                                        :rules="config.isAdultMobilePhoneOptional ? '' : 'required'" />
+                                        :rules="isAdult1Entered && !config.isAdultMobilePhoneOptional ? 'required' : []" />
                                 </div>
-                                <div id="pnlEmail1" :class="getColumnClass(6)">
-                                    <EmailBox v-model="adult1.email" id="tbEmail1" label="Email" />
+                                <div v-if="!config.isAdultEmailHidden" id="pnlEmail1" :class="getColumnClass(6)">
+                                    <EmailBox
+                                        v-model="adult1.email"
+                                        id="tbEmail1"
+                                        label="Email"
+                                        :rules="isAdult1Entered && !config.isAdultEmailOptional ? 'required' : []" />
                                 </div>
                                 <div id="pnlCommunicationPreference1" :class="getColumnClass(6)">
                                     <RadioButtonList
@@ -140,13 +147,24 @@
                                             { text: 'Email', value: CommunicationPreference.Email.toString() },
                                             { text: 'SMS', value: CommunicationPreference.SMS.toString() }
                                         ]"
-                                        label="Communication Preference" />
+                                        label="Communication Preference"
+                                        :rules="isAdult1Entered && !config.isAdultDisplayCommunicationPreferenceOptional ? 'required' : ''" />
                                 </div>
                                 <div id="pnlRace1" :class="getColumnClass(3)">
-                                    <RacePicker v-model="adult1RaceListItemBag" id="rpRace1" :showBlankItem="true" />
+                                    <RacePicker
+                                        v-if="!config.isRaceOptionHidden"
+                                        v-model="adult1RaceListItemBag"
+                                        id="rpRace1"
+                                        :rules="isAdult1Entered && !config.isRaceOptionOptional ? 'required' : []"
+                                        :showBlankItem="true" />
                                 </div>
                                 <div id="pnlEthnicity1" :class="getColumnClass(3)">
-                                    <EthnicityPicker v-model="adult1EthnicityListItemBag" id="epEthnicity1" :showBlankItem="true" />
+                                    <EthnicityPicker
+                                        v-if="!config.isEthnicityOptionHidden"
+                                        v-model="adult1EthnicityListItemBag"
+                                        id="epEthnicity1"
+                                        :rules="isAdult1Entered && !config.isEthnicityOptionOptional ? 'required' : []"
+                                        :showBlankItem="true" />
                                 </div>
                             </div>
 
@@ -156,7 +174,7 @@
                                         v-model="adult1ProfileImageListItemBag"
                                         id="imgProfile1"
                                         label="Profile Photo"
-                                        :rules="profilePhotoRules" />
+                                        :rules="isAdult1Entered && !config.isAdultProfilePhotoOptional ? 'required' : ''" />
                                 </div>
                             </div>
 
@@ -165,8 +183,10 @@
                                     v-if="adult1.attributes != null"
                                     v-model="adult1.attributeValues"
                                     :attributes="adult1.attributes"
+                                    :displayWithinExistingRow="true"
                                     id="phAttributes1"
                                     isEditMode
+                                    :numberOfColumns="4"
                                     :showCategoryLabel="true" />
                             </div>
 
@@ -255,31 +275,34 @@
                                             label="Last Name"
                                             :rules="[adult2LastNameRule]" />
                                         </div>
-                                    <div id="pnlGender2" :class="getColumnClass(3)">
+                                    <div v-if="!config.isAdultGenderHidden" id="pnlGender2" :class="getColumnClass(3)">
                                         <GenderDropDownList
                                             v-model="adult2.gender"
                                             id="ddlGender2"
-                                            label="Gender" />
+                                            label="Gender"
+                                            :rules="isAdult2Entered && !config.isAdultGenderOptional ? 'required' : []" />
                                     </div>
-                                    <div id="pnlSuffix2" :class="getColumnClass(3)">
+                                    <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
                                             :definedTypeGuid="DefinedType.PersonSuffix"
                                             id="dvpSuffix2"
                                             label="Suffix"
+                                            :rules="isAdult2Entered && !config.isAdultSuffixOptional ? 'required' : []"
                                             :showBlankItem="true" />
                                     </div>
-                                    <div id="pnlBirthDate2" :class="getColumnClass(6)">
+                                    <div v-if="!config.isAdultBirthdayHidden" id="pnlBirthDate2" :class="getColumnClass(6)">
                                         <BirthdayPicker
                                             v-model="adult2.birthDate"
                                             id="bpBirthDate2"
                                             label="Birth Date"
-                                            rules="required" />
+                                            :rules="isAdult2Entered && !config.isAdultBirthdayOptional ? 'required' : ''" />
                                     </div>
-                                    <div id="pnlMaritalStatus2" :class="getColumnClass(3)">
+                                    <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
                                             :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                             id="dvpMaritalStatus2"
                                             label="Marital Status"
+                                            :rules="isAdult2Entered && !config.isAdultMaritalStatusOptional ? 'required': ''"
                                             :showBlankItem="true" />
                                     </div>
                                     <div v-if="!config.isAdultMobilePhoneHidden" :class="getColumnClass(3)" id="pnlMobilePhone2">
@@ -288,10 +311,14 @@
                                             v-model:countryCode="adult2.mobilePhoneCountryCode"
                                             id="pnMobilePhone2"
                                             label="Mobile Phone"
-                                            :rules="config.isAdultMobilePhoneOptional ? '' : 'required'" />
+                                            :rules="isAdult2Entered && !config.isAdultMobilePhoneOptional ? 'required' : []" />
                                     </div>
-                                    <div id="pnlEmail2" :class="getColumnClass(6)">
-                                        <EmailBox v-model="adult2.email" id="tbEmail2" label="Email" />
+                                    <div v-if="!config.isAdultEmailHidden" id="pnlEmail2" :class="getColumnClass(6)">
+                                        <EmailBox
+                                            v-model="adult2.email"
+                                            id="tbEmail2"
+                                            label="Email"
+                                            :rules="isAdult2Entered && !config.isAdultEmailOptional ? 'required' : []" />
                                     </div>
                                     <div id="pnlCommunicationPreference2" :class="getColumnClass(6)">
                                         <RadioButtonList
@@ -302,13 +329,24 @@
                                                 { text: 'Email', value: CommunicationPreference.Email.toString() },
                                                 { text: 'SMS', value: CommunicationPreference.SMS.toString() }
                                             ]"
-                                            label="Communication Preference" />
+                                            label="Communication Preference"
+                                            :rules="isAdult2Entered && !config.isAdultDisplayCommunicationPreferenceOptional ? 'required' : ''" />
                                     </div>
                                     <div id="pnlRace2" :class="getColumnClass(3)">
-                                        <RacePicker v-model="adult2RaceListItemBag" id="rpRace2" :showBlankItem="true" />
+                                        <RacePicker
+                                            v-if="!config.isRaceOptionHidden"
+                                            v-model="adult2RaceListItemBag"
+                                            id="rpRace2"
+                                            :rules="isAdult2Entered && !config.isRaceOptionOptional ? 'required' : []"
+                                            :showBlankItem="true" />
                                     </div>
                                     <div id="pnlEthnicity2" :class="getColumnClass(3)">
-                                        <EthnicityPicker v-model="adult2EthnicityListItemBag" id="epEthnicity2" :showBlankItem="true" />
+                                        <EthnicityPicker
+                                            v-if="!config.isEthnicityOptionHidden"
+                                            v-model="adult2EthnicityListItemBag"
+                                            id="epEthnicity2"
+                                            :rules="isAdult2Entered && !config.isEthnicityOptionOptional ? 'required' : []"
+                                            :showBlankItem="true" />
                                     </div>
                                 </div>
 
@@ -318,7 +356,7 @@
                                             v-model="adult2ProfileImageListItemBag"
                                             id="imgProfile2"
                                             label="Profile Photo"
-                                            :rules="profilePhotoRules" />
+                                            :rules="isAdult2Entered && !config.isAdultProfilePhotoOptional ? 'required' : ''" />
                                     </div>
                                 </div>
 
@@ -327,8 +365,10 @@
                                         v-if="adult2.attributes != null"
                                         v-model="adult2.attributeValues"
                                         :attributes="adult2.attributes"
+                                        :displayWithinExistingRow="true"
                                         id="phAttributes2"
                                         isEditMode
+                                        :numberOfColumns="4"
                                         :showCategoryLabel="true" />
                                 </div>
                             </div>
@@ -342,6 +382,7 @@
                                         v-model="address"
                                         id="acAddress"
                                         label="Address"
+                                        :rules="!config.isAddressOptional ? 'required' : ''"
                                         :useCountryAbbreviation="false"
                                      />
                                 </div>
@@ -403,7 +444,7 @@
     import { DefinedType } from "@Obsidian/SystemGuids/definedType";
     import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { useHttp } from "@Obsidian/Utility/http";
-    import { ValidationResult, ValidationRule, ValidationRuleFunction } from "@Obsidian/ValidationRules";
+    import { ValidationResult } from "@Obsidian/ValidationRules";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
     import { FamilyPreRegistrationCreateAccountRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationCreateAccountRequestBag";
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
@@ -445,15 +486,6 @@
     const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
     const invokeBlockAction = useInvokeBlockAction();
     const http = useHttp();
-
-    const profilePhotoRequiredValidator: ValidationRuleFunction = (value: unknown, params?: unknown[]): ValidationResult => {
-        if (value === undefined || value === null || value === "") {
-            // TODO JMH Make sure this works.
-            return "Profile photo is required for each adult.";
-        }
-
-        return true;
-    };
 
     //#region Values
 
@@ -561,6 +593,9 @@
 
     //#region Computed Values
 
+    const isAdult1Entered = computed<boolean>(() => !!adult1.value.firstName.trim());
+    const isAdult2Entered = computed<boolean>(() => !!adult2.value.firstName.trim());
+
     const campusListItemBag = computed<ListItemBag | null | undefined>({
         get(): ListItemBag | null | undefined {
             return internalCampusListItemBag.value;
@@ -574,14 +609,6 @@
 
     const confirmPasswordRules = computed<string>(() => {
         return `equalsfield:and Password do not match,${createAccount.value.password}`;
-    });
-
-    const profilePhotoRules = computed<ValidationRule[]>(() => {
-        if (config.isAdultProfilePhotoOptional) {
-            return [];
-        }
-
-        return [profilePhotoRequiredValidator];
     });
 
     const scheduleTimeItems = computed<ListItemBag[]>(() => {
