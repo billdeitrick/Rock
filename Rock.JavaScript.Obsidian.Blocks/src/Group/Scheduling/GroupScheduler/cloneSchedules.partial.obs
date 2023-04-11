@@ -1,0 +1,110 @@
+<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
+<template>
+    <Modal v-model="isVisible"
+           title="Clone Schedules"
+           saveText="Clone"
+           :saveButtonDisabled="saveButtonDisabled"
+           @save="onSave">
+
+        <NotificationBox :alertType="AlertType.Info">
+            Configure the settings below to clone schedules for a different date.
+        </NotificationBox>
+
+        <div class="row">
+
+            <div class="col-md-6">
+                <h4>Source Settings</h4>
+            </div>
+
+            <div class="col-md-6">
+                <h4>Destination Settings</h4>
+            </div>
+
+        </div>
+
+    </Modal>
+</template>
+
+<script setup lang="ts">
+    import { computed, PropType, ref, watch } from "vue";
+    import DropDownList from "@Obsidian/Controls/dropDownList";
+    import Modal from "@Obsidian/Controls/modal";
+    import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
+    import { AlertType } from "@Obsidian/Enums/Controls/alertType";
+    import { useVModelPassthrough } from "@Obsidian/Utility/component";
+    import { GroupSchedulerCloneSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSettingsBag";
+
+    const props = defineProps({
+        isVisible: {
+            type: Boolean as PropType<boolean>,
+            required: true
+        }
+    });
+
+    const emit = defineEmits<{
+        (e: "update:isVisible"): void
+    }>();
+
+    // #region Values
+
+    const isVisible = useVModelPassthrough(props, "isVisible", emit);
+
+    const isLoadingCloneSettings = ref(false);
+    const loadCloneSettingsErrorMessage = ref("");
+
+    const cloneSettings = ref<GroupSchedulerCloneSettingsBag | null>(null);
+
+    // #endregion
+
+    // #region Computed Values
+
+    const isBusy = computed((): boolean => {
+        return isLoadingCloneSettings.value;
+    });
+
+    const saveButtonDisabled = computed((): boolean => {
+        return isBusy.value;
+    });
+
+    // #endregion
+
+    // #region Functions
+
+    /**
+     * Gets the clone settings.
+     */
+    async function getCloneSettings(): Promise<void> {
+        if (isLoadingCloneSettings.value) {
+            return;
+        }
+
+        isLoadingCloneSettings.value = true;
+        loadCloneSettingsErrorMessage.value = "";
+
+        console.log("getting clone settings...");
+
+        isLoadingCloneSettings.value = false;
+    }
+
+    // #endregion
+
+    // #region Event Handlers
+
+    /**
+     * Handles the `save` event of the clone schedules modal.
+     */
+    function onSave(): void {
+        isVisible.value = false;
+    }
+
+    // #endregion
+
+    watch(isVisible, () => {
+        if (isVisible.value) {
+            getCloneSettings();
+        }
+        else {
+            isLoadingCloneSettings.value = false;
+        }
+    });
+</script>

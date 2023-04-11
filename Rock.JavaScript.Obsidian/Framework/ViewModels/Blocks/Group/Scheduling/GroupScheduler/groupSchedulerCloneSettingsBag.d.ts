@@ -21,6 +21,33 @@
 // </copyright>
 //
 
+import { GroupSchedulerLocationsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerLocationsBag";
+import { GroupSchedulerSchedulesBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerSchedulesBag";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+
 /** The clone settings to indicate how group schedules should be cloned. */
 export type GroupSchedulerCloneSettingsBag = {
+    /** Gets or sets the available destination dates. */
+    availableDestinationDates?: ListItemBag[] | null;
+
+    /** Gets or sets the available groups. */
+    availableGroups?: ListItemBag[] | null;
+
+    /** Gets or sets the available source dates. */
+    availableSourceDates?: ListItemBag[] | null;
+
+    /** Gets or sets the available and selected locations. */
+    locations?: GroupSchedulerLocationsBag | null;
+
+    /** Gets or sets the available and selected schedules. */
+    schedules?: GroupSchedulerSchedulesBag | null;
+
+    /** Gets or sets the selected destination date. */
+    selectedDestinationDate?: string | null;
+
+    /** Gets or sets the selected groups. */
+    selectedGroups?: string[] | null;
+
+    /** Gets or sets the selected source date. */
+    selectedSourceDate?: string | null;
 };

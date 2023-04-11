@@ -15,6 +15,10 @@
 // </copyright>
 //
 
+using System;
+using System.Collections.Generic;
+using Rock.ViewModels.Utility;
+
 namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
 {
     /// <summary>
@@ -22,5 +26,68 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
     /// </summary>
     public class GroupSchedulerCloneSettingsBag
     {
+        /// <summary>
+        /// Gets or sets the available source dates.
+        /// </summary>
+        /// <value>
+        /// The available source dates.
+        /// </value>
+        public List<ListItemBag> AvailableSourceDates { get; set; }
+
+        /// <summary>
+        /// Gets or sets the selected source date.
+        /// </summary>
+        /// <value>
+        /// The selected source date.
+        /// </value>
+        public DateTime SelectedSourceDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the available destination dates.
+        /// </summary>
+        /// <value>
+        /// The available destination dates.
+        /// </value>
+        public List<ListItemBag> AvailableDestinationDates { get; set; }
+
+        /// <summary>
+        /// Gets or sets the selected destination date.
+        /// </summary>
+        /// <value>
+        /// The selected destination date.
+        /// </value>
+        public DateTime SelectedDestinationDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the available groups.
+        /// </summary>
+        /// <value>
+        /// The available groups.
+        /// </value>
+        public List<ListItemBag> AvailableGroups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the selected groups.
+        /// </summary>
+        /// <value>
+        /// The selected groups.
+        /// </value>
+        public List<string> SelectedGroups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the available and selected locations.
+        /// </summary>
+        /// <value>
+        /// The available and selected locations.
+        /// </value>
+        public GroupSchedulerLocationsBag Locations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the available and selected schedules.
+        /// </summary>
+        /// <values>
+        /// The available and selected schedules.
+        /// </values>
+        public GroupSchedulerSchedulesBag Schedules { get; set; }
     }
 }

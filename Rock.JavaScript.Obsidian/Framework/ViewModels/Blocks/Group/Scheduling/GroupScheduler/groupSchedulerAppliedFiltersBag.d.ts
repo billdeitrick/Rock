@@ -29,6 +29,6 @@ export type GroupSchedulerAppliedFiltersBag = {
     /** Gets or sets the filters that were applied. */
     filters?: GroupSchedulerFiltersBag | null;
 
-    /** Gets or sets the occurrences to be scheduled. */
+    /** Gets or sets the occurrences to be scheduled, limited by the applied filters. */
     scheduleOccurrences?: GroupSchedulerOccurrenceBag[] | null;
 };

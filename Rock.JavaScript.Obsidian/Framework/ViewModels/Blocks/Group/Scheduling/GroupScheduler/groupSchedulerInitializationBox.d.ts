@@ -21,14 +21,12 @@
 // </copyright>
 //
 
-import { GroupSchedulerCloneSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSettingsBag";
-import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
-import { GroupSchedulerOccurrenceBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerOccurrenceBag";
+import { GroupSchedulerAppliedFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerAppliedFiltersBag";
 
 /** The box that contains all the initialization information for the Group Scheduler block. */
 export type GroupSchedulerInitializationBox = {
-    /** Gets or sets the clone settings to indicate how schedules should be cloned. */
-    cloneSettings?: GroupSchedulerCloneSettingsBag | null;
+    /** Gets or sets the applied filters, to limit what is shown on the Group Scheduler. */
+    appliedFilters?: GroupSchedulerAppliedFiltersBag | null;
 
     /**
      * Gets or sets the error message. A non-empty value indicates that
@@ -36,14 +34,8 @@ export type GroupSchedulerInitializationBox = {
      */
     errorMessage?: string | null;
 
-    /** Gets or sets the filters to limit what is shown on the Group scheduler. */
-    filters?: GroupSchedulerFiltersBag | null;
-
     /** Gets or sets the navigation urls. */
     navigationUrls?: Record<string, string> | null;
-
-    /** Gets or sets the [group, location, schedule] occurrences to be scheduled. */
-    scheduleOccurrences?: GroupSchedulerOccurrenceBag[] | null;
 
     /** Gets or sets the security grant token. */
     securityGrantToken?: string | null;

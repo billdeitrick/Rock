@@ -15,8 +15,6 @@
 // </copyright>
 //
 
-using System.Collections.Generic;
-
 namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
 {
     /// <summary>
@@ -25,27 +23,11 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
     public class GroupSchedulerInitializationBox : BlockBox
     {
         /// <summary>
-        /// Gets or sets the filters to limit what is shown on the Group scheduler.
+        /// Gets or sets the applied filters, to limit what is shown on the Group Scheduler.
         /// </summary>
         /// <value>
-        /// The filters to limit what is shown on the Group scheduler.
+        /// The applied filters, to limit what is shown on the Group Scheduler.
         /// </value>
-        public GroupSchedulerFiltersBag Filters { get; set; }
-
-        /// <summary>
-        /// Gets or sets the [group, location, schedule] occurrences to be scheduled.
-        /// </summary>
-        /// <value>
-        /// The [group, location, schedule] occurrences to be scheduled.
-        ///</value>
-        public List<GroupSchedulerOccurrenceBag> ScheduleOccurrences { get; set; }
-
-        /// <summary>
-        /// Gets or sets the clone settings to indicate how schedules should be cloned.
-        /// </summary>
-        /// <value>
-        /// The clone settings to indicate how schedules should be cloned.
-        /// </value>
-        public GroupSchedulerCloneSettingsBag CloneSettings { get; set; }
+        public GroupSchedulerAppliedFiltersBag AppliedFilters { get; set; }
     }
 }

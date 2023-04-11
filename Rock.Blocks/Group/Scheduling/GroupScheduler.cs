@@ -91,9 +91,6 @@ namespace Rock.Blocks.Group.Scheduling
         private List<int> _groupIds;
         private List<GroupLocationSchedule> _groupLocationSchedules;
 
-        private DateTime _actualStartDate = RockDateTime.Today;
-        private DateTime _actualEndDate = RockDateTime.Today.AddDays( 42 );
-
         #endregion
 
         #region Properties
@@ -131,9 +128,11 @@ namespace Rock.Blocks.Group.Scheduling
             var block = new BlockService( rockContext ).Get( this.BlockId );
             block.LoadAttributes( rockContext );
 
-            box.Filters = GetFilters( rockContext );
-            box.ScheduleOccurrences = GetScheduleOccurrences( rockContext );
-            box.CloneSettings = GetCloneSettings();
+            box.AppliedFilters = new GroupSchedulerAppliedFiltersBag
+            {
+                Filters = GetFilters( rockContext ),
+                ScheduleOccurrences = GetScheduleOccurrences( rockContext )
+            };
             box.SecurityGrantToken = GetSecurityGrantToken();
         }
 
@@ -179,42 +178,93 @@ namespace Rock.Blocks.Group.Scheduling
         /// <param name="filters">The filters whose date range should be validated.</param>
         private void ValidateDateRange( GroupSchedulerFiltersBag filters )
         {
+            /*
+             * Date range validation approach: Since we're likely scheduling for recurring schedules that have no end date, we must
+             * have defined start and end date filters so we don't try to show occurrences that span into eternity. We'll allow the
+             * selection of past dates, so the individual may choose a past week as the source when cloning schedules. The UI will be
+             * responsible for preventing the scheduling/manipulation of past schedules (and we'll also double-check & prevent doing
+             * so within this block's action methods).
+             * 
+             *  1) If no date range selected, default to the next 6 weeks.
+             *  2) If only a start date is selected, set end date = start date.
+             *  3) If only an end date is selected, set start date = end date.
+             *  4) If end date >= start date, set end date = start date.
+             *  5) Allow any other valid selections (knowing they might be selecting an excessively-large range).
+             * 
+             * Our goal is to "translate" the sliding date range selection to weeks, as the Group Scheduler is designed to work
+             * against a week at a time. More specifically, we need to determine the "end of week dates" we're working against,
+             * and from those values, we can then determine the "start of week dates" to have blocks of 7-day ranges.
+             */
+
+            var defaultDateRange = new SlidingDateRangeBag
+            {
+                RangeType = SlidingDateRangeType.Next,
+                TimeUnit = TimeUnitType.Week,
+                TimeValue = 6
+            };
+
+            var defaultStartDate = RockDateTime.Today;
+            // Add 35 days to today's "end of week" date, so we'll include this current week + the following 5 weeks.
+            var defaultEndDate = RockDateTime.Today.EndOfWeek( RockDateTime.FirstDayOfWeek ).AddDays( 35 );
+
             if ( filters.DateRange == null )
             {
-                // Default to the next 6 weeks.
-                filters.DateRange = new SlidingDateRangeBag
-                {
-                    RangeType = SlidingDateRangeType.Next,
-                    TimeUnit = TimeUnitType.Week,
-                    TimeValue = 6
-                };
+                filters.DateRange = defaultDateRange;
             }
 
-            var lowerDate = filters.DateRange.LowerDate;
-            var upperDate = filters.DateRange.UpperDate;
-
-            // Make sure we have a date range that makes sense.
-            if ( lowerDate.HasValue && upperDate.HasValue && lowerDate > upperDate )
+            if ( filters.DateRange.RangeType == SlidingDateRangeType.DateRange )
             {
-                upperDate = lowerDate;
+                var lowerDate = filters.DateRange.LowerDate;
+                var upperDate = filters.DateRange.UpperDate;
+
+                if ( lowerDate.HasValue && upperDate.HasValue )
+                {
+                    if ( upperDate < lowerDate )
+                    {
+                        filters.DateRange.UpperDate = lowerDate;
+                    }
+                }
+                else if ( lowerDate.HasValue )
+                {
+                    filters.DateRange.UpperDate = lowerDate;
+                }
+                else if ( upperDate.HasValue )
+                {
+                    filters.DateRange.LowerDate = upperDate;
+                }
+                else
+                {
+                    filters.DateRange.LowerDate = defaultStartDate;
+                    filters.DateRange.UpperDate = defaultEndDate;
+                }
             }
 
             /*
              * Use the non-Obsidian Sliding Date Range Picker control (for now) to calculate the selected start and end dates,
-             * as it has quite a bit of built-in logic.
+             * as it has logic built into its property getters and setters. This way, we'll keep our behavior consistent with
+             * Web Forms usages of this picker.
              */
-            var picker = new SlidingDateRangePicker
+            SlidingDateRangePicker NewPicker( SlidingDateRangeBag slidingDateRange )
             {
-                SlidingDateRangeMode = ( SlidingDateRangePicker.SlidingDateRangeType ) ( int ) filters.DateRange.RangeType,
-                TimeUnit = ( SlidingDateRangePicker.TimeUnitType ) ( int ) ( filters.DateRange.TimeUnit ?? 0 ),
-                NumberOfTimeUnits = filters.DateRange.TimeValue ?? 1,
-                DateRangeModeStart = lowerDate?.DateTime,
-                DateRangeModeEnd = upperDate?.DateTime
-            };
+                return new SlidingDateRangePicker
+                {
+                    SlidingDateRangeMode = ( SlidingDateRangePicker.SlidingDateRangeType ) ( int ) slidingDateRange.RangeType,
+                    TimeUnit = ( SlidingDateRangePicker.TimeUnitType ) ( int ) ( slidingDateRange.TimeUnit ?? 0 ),
+                    NumberOfTimeUnits = slidingDateRange.TimeValue ?? 1,
+                    DateRangeModeStart = slidingDateRange.LowerDate?.DateTime,
+                    DateRangeModeEnd = slidingDateRange.UpperDate?.DateTime
+                };
+            }
 
+            var picker = NewPicker( filters.DateRange );
             var dateRange = picker.SelectedDateRange;
-            var startDate = dateRange.Start;
-            var endDate = dateRange.End;
+
+            // At this point, we should have validated start and end dates, but if for some reason we don't, default to the next 6 weeks.
+            if ( dateRange?.Start == null || dateRange?.End == null )
+            {
+                picker = NewPicker( defaultDateRange );
+                dateRange = picker.SelectedDateRange;
+            }
 
             // Reset the Obsidian picker control to match any changes made above.
             filters.DateRange = new SlidingDateRangeBag
@@ -226,54 +276,46 @@ namespace Rock.Blocks.Group.Scheduling
                 UpperDate = picker.DateRangeModeEnd
             };
 
-            DateTime? firstEndOfWeekDate = null;
-            if ( startDate.HasValue )
+            var firstEndOfWeekDate =  ( dateRange?.Start ?? defaultStartDate ).EndOfWeek( RockDateTime.FirstDayOfWeek );
+            var lastEndOfWeekDate = ( dateRange?.End ?? defaultEndDate ).EndOfWeek( RockDateTime.FirstDayOfWeek );
+
+            string friendlyDateRange;
+
+            // This doesn't need to be precise; just need to determine if we should try to list all "end of week" dates or just a range.
+            var numberOfWeeks = ( lastEndOfWeekDate - firstEndOfWeekDate ).TotalDays / 7;
+            if ( numberOfWeeks > 4 )
             {
-                firstEndOfWeekDate = startDate.Value.EndOfWeek( RockDateTime.FirstDayOfWeek );
+                friendlyDateRange = $"{FormatDate( firstEndOfWeekDate )} - {FormatDate( lastEndOfWeekDate )}";
             }
-
-            DateTime? lastEndOfWeekDate = null;
-            if ( endDate.HasValue )
+            else
             {
-                lastEndOfWeekDate = endDate.Value.EndOfWeek( RockDateTime.FirstDayOfWeek );
-            }
-
-            var format = "M/d";
-            string friendlyDateRange = null;
-
-            if ( firstEndOfWeekDate.HasValue && lastEndOfWeekDate.HasValue )
-            {
-                // This doesn't need to be precise; just need to determine if we should try to list all "end of week" dates or just a range.
-                var numberOfWeeks = ( lastEndOfWeekDate.Value - firstEndOfWeekDate.Value ).TotalDays / 7;
-                if ( numberOfWeeks > 4 )
+                var endOfWeekDates = new List<DateTime>();
+                var endOfWeekDate = firstEndOfWeekDate;
+                while ( endOfWeekDate <= lastEndOfWeekDate )
                 {
-                    friendlyDateRange = $"{firstEndOfWeekDate.Value.ToString( format )} - {lastEndOfWeekDate.Value.ToString( format )}";
+                    endOfWeekDates.Add( endOfWeekDate );
+                    endOfWeekDate = endOfWeekDate.AddDays( 7 );
                 }
-                else
-                {
-                    var endOfWeekDates = new List<DateTime>();
-                    var endOfWeekDate = firstEndOfWeekDate.Value;
-                    while ( endOfWeekDate <= lastEndOfWeekDate.Value )
-                    {
-                        endOfWeekDates.Add( endOfWeekDate );
-                        endOfWeekDate = endOfWeekDate.AddDays( 7 );
-                    }
 
-                    friendlyDateRange = string.Join( ", ", endOfWeekDates.Select( d => d.ToString( format ) ) );
-                }
-            }
-            else if ( firstEndOfWeekDate.HasValue )
-            {
-                friendlyDateRange = $"From {firstEndOfWeekDate.Value.ToString( format )}";
-            }
-            else if ( lastEndOfWeekDate.HasValue )
-            {
-                friendlyDateRange = $"Through {lastEndOfWeekDate.Value.ToString( format )}";
+                friendlyDateRange = string.Join( ", ", endOfWeekDates.Select( d => FormatDate( d ) ) );
             }
 
             filters.FirstEndOfWeekDate = firstEndOfWeekDate;
             filters.LastEndOfWeekDate = lastEndOfWeekDate;
             filters.FriendlyDateRange = friendlyDateRange;
+        }
+
+        /// <summary>
+        /// Formats the provided date.
+        /// </summary>
+        /// <param name="date">The date to format.</param>
+        /// <returns>A formatted date string.</returns>
+        private string FormatDate( DateTime date )
+        {
+            var currentYear = RockDateTime.Now.Year;
+            var format = date.Year == currentYear ? "M/d" : "M/d/yyyy";
+
+            return date.ToString( format );
         }
 
         /// <summary>
@@ -367,6 +409,13 @@ namespace Rock.Blocks.Group.Scheduling
                 .AsNoTracking();
 
             /*
+             * Determine the actual start and end dates, based on the date range validation that has already taken place.
+             * For the end date, add a day so we can follow Rock's rule: let your start be "inclusive" and your end be "exclusive".
+             */
+            var actualStartDate = filters.FirstEndOfWeekDate.StartOfWeek( RockDateTime.FirstDayOfWeek );
+            var actualEndDate = filters.LastEndOfWeekDate.AddDays( 1 );
+
+            /*
              * Get all locations and schedules tied to the selected group(s) initially, so we can properly load the "available" lists.
              * 
              * Go ahead and materialize the list so we can:
@@ -403,10 +452,10 @@ namespace Rock.Blocks.Group.Scheduling
                      * Keep in mind that schedules with a null EffectiveEndDate represent recurring schedules that have no end date.
                      */
                     && gls.Schedule.EffectiveStartDate.HasValue
-                    && gls.Schedule.EffectiveStartDate.Value < _actualEndDate
+                    && gls.Schedule.EffectiveStartDate.Value < actualEndDate
                     && (
                         !gls.Schedule.EffectiveEndDate.HasValue
-                        || gls.Schedule.EffectiveEndDate.Value >= _actualStartDate
+                        || gls.Schedule.EffectiveEndDate.Value >= actualStartDate
                     )
                 )
                 .Select( gls => new GroupLocationSchedule
@@ -432,7 +481,7 @@ namespace Rock.Blocks.Group.Scheduling
                 {
                     var groupLocationSchedule = groupLocationSchedules.ElementAt( i );
 
-                    var startDateTimes = groupLocationSchedule.Schedule.GetScheduledStartTimes( _actualStartDate, _actualEndDate );
+                    var startDateTimes = groupLocationSchedule.Schedule.GetScheduledStartTimes( actualStartDate, actualEndDate );
                     if ( startDateTimes?.Any() != true )
                     {
                         groupLocationSchedules.Remove( groupLocationSchedule );
@@ -615,17 +664,6 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Gets the clone settings, overriding any defaults with user preferences.
-        /// </summary>
-        /// <returns>The clone settings.</returns>
-        private GroupSchedulerCloneSettingsBag GetCloneSettings()
-        {
-            // TODO (JPH): Hook into user preferences to override defaults, once supported in Obsidian blocks.
-
-            return new GroupSchedulerCloneSettingsBag();
-        }
-
-        /// <summary>
         /// Gets the resource settings, overriding defaults with any previously-saved user preferences.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
@@ -724,6 +762,18 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Gets the clone settings, overriding any defaults with user preferences.
+        /// </summary>
+        /// <param name="rockContext">The rock context.</param>
+        /// <returns>The clone settings.</returns>
+        private GroupSchedulerCloneSettingsBag GetCloneSettings( RockContext rockContext )
+        {
+            // TODO (JPH): Hook into user preferences to override defaults, once supported in Obsidian blocks.
+
+            return new GroupSchedulerCloneSettingsBag();
+        }
+
+        /// <summary>
         /// Gets the security grant token that will be used by UI controls on this block to ensure they have the proper permissions.
         /// </summary>
         /// <returns>A string that represents the security grant token.</returns>
@@ -753,7 +803,7 @@ namespace Rock.Blocks.Group.Scheduling
 
                 var results = new GroupSchedulerAppliedFiltersBag
                 {
-                    filters = bag,
+                    Filters = bag,
                     ScheduleOccurrences = GetScheduleOccurrences( rockContext )
                 };
 
@@ -794,6 +844,36 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Validates filters and gets clone settings, overriding defaults with any previously-saved user preferences.
+        /// </summary>
+        /// <param name="bag">The filters containing the groups currently visible.</param>
+        /// <returns>An object containing the available and applied clone settings.</returns>
+        [BlockAction]
+        public BlockActionResult GetCloneSettings( GroupSchedulerFiltersBag bag )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                var cloneSettings = new GroupSchedulerCloneSettingsBag();
+
+                return ActionOk( cloneSettings );
+            }
+        }
+
+        /// <summary>
+        /// Attempts to clone the schedules specified within the provided settings.
+        /// </summary>
+        /// <param name="bag">The clone settings dictating which schedules should be cloned.</param>
+        /// <returns>An object containing the outcome of the clone attempt.</returns>
+        [BlockAction]
+        public BlockActionResult CloneSchedules( GroupSchedulerCloneSettingsBag bag )
+        {
+            using ( var rockContext = new RockContext() )
+            {
+                return ActionOk();
+            }
+        }
+
+        /// <summary>
         /// Validates filters and auto-schedules groups specified within the provided filters.
         /// </summary>
         /// <param name="bag">The filters containing the groups to auto-schedule.</param>
@@ -820,7 +900,7 @@ namespace Rock.Blocks.Group.Scheduling
 
                 var results = new GroupSchedulerAppliedFiltersBag
                 {
-                    filters = bag,
+                    Filters = bag,
                     ScheduleOccurrences = scheduleOccurrences
                 };
 

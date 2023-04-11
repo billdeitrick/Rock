@@ -3,7 +3,7 @@
     <Modal v-model="isVisible"
            title="Select Individuals"
            saveText="Assign"
-           :saveButtonDisabled="disabled"
+           :saveButtonDisabled="saveButtonDisabled"
            @save="onSave">
 
         <div class="new-group-scheduler">
@@ -343,7 +343,7 @@
         return isLoadingResourceSettings.value || isLoadingResources.value || isAssigningResources.value;
     });
 
-    const disabled = computed((): boolean => {
+    const saveButtonDisabled = computed((): boolean => {
         return isBusy.value
             || selectedSourceType.value === undefined
             || !selectedPersonIds.value?.length;

@@ -15,13 +15,18 @@
             <div :class="filtersCssClass"
                  @click="onSelectFiltersClick"><i class="fa fa-sliders-h"></i> {{ filtersText }}</div>
 
-            <div class="d-block">
+            <div class="d-block flex-shrink-0">
                 <RockButton :btnSize="BtnSize.ExtraSmall"
-                            :disabled="isBusy"><i class="fa fa-clone"></i> Clone Schedules</RockButton>
+                            :disabled="isBusy"
+                            @click="onCloneSchedulesClick">
+                    <i class="fa fa-clone"></i> Clone Schedules
+                </RockButton>
 
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isBusy"
-                            class="ml-1"><i class="fa fa-calendar-check"></i> Rosters</RockButton>
+                            class="ml-1">
+                    <i class="fa fa-calendar-check"></i> Rosters
+                </RockButton>
 
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isBusy"
@@ -71,7 +76,8 @@
                         <li>
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy">
+                                    :disabled="isBusy"
+                                    @click="onCloneSchedulesClick">
                                 <i class="fa fa-clone"></i> Clone Schedules
                             </button>
                         </li>
@@ -113,8 +119,10 @@
         </div>
 
         <SelectFilters v-model:isVisible="isSelectingFilters"
-                       :appliedFilters="appliedFilters"
+                       :appliedFilters="currentlyAppliedFilters"
                        @filtersApplied="onFiltersApplied" />
+
+        <CloneSchedules v-model:isVisible="isCloningSchedules" />
 
         <Dialog v-model="isSendNowResponseDialogVisible"
                 :dismissible="true">
@@ -158,6 +166,7 @@
 
 <script setup lang="ts">
     import { ComponentPublicInstance, computed, nextTick, provide, ref } from "vue";
+    import CloneSchedules from "./GroupScheduler/cloneSchedules.partial.obs";
     import OccurrenceDate from "./GroupScheduler/occurrenceDate.partial.obs";
     import SelectFilters from "./GroupScheduler/selectFilters.partial.obs";
     import { ReloadScheduleOccurrences } from "./GroupScheduler/types.partial";
@@ -195,13 +204,12 @@
     const snapContainer = ref<HTMLElement | null>(null);
     const scheduleComponentsByOccurrenceDate = ref<Record<number, (ComponentPublicInstance | null)[]>>({});
 
-    const filters = ref<GroupSchedulerFiltersBag | null | undefined>(config.filters);
-    const scheduleOccurrences = ref<GroupSchedulerOccurrenceBag[] | null | undefined>(config.scheduleOccurrences);
+    const filters = ref<GroupSchedulerFiltersBag | null | undefined>(config.appliedFilters?.filters);
+    const scheduleOccurrences = ref<GroupSchedulerOccurrenceBag[] | null | undefined>(config.appliedFilters?.scheduleOccurrences);
 
     const isSelectingFilters = ref(false);
-
+    const isCloningSchedules = ref(false);
     const isAutoScheduling = ref(false);
-
     const isSendingNow = ref(false);
     const sendNowResponse = ref<GroupSchedulerSendNowResponseBag | null>(null);
     const isSendNowResponseDialogVisible = ref(false);
@@ -247,10 +255,10 @@
     });
 
     const filtersCssClass = computed((): string => {
-        return `d-block text-muted${(isBusy.value ? "" : " clickable")}`;
+        return `d-block text-muted${(isBusy.value ? "" : " clickable")} text-truncate`;
     });
 
-    const appliedFilters = computed((): GroupSchedulerAppliedFiltersBag => {
+    const currentlyAppliedFilters = computed((): GroupSchedulerAppliedFiltersBag => {
         return {
             filters: filters.value,
             scheduleOccurrences: scheduleOccurrences.value
@@ -309,7 +317,7 @@
     });
 
     const isBusy = computed((): boolean => {
-        return isSelectingFilters.value || isAutoScheduling.value || isSendingNow.value;
+        return isSelectingFilters.value || isCloningSchedules.value || isAutoScheduling.value || isSendingNow.value;
     });
 
     const sendNowResponseDialogHeader = computed((): string => {
@@ -429,6 +437,17 @@
     }
 
     /**
+     * Handles the click event of the "Clone Schedules" button.
+     */
+    function onCloneSchedulesClick(): void {
+        if (isBusy.value) {
+            return;
+        }
+
+        isCloningSchedules.value = true;
+    }
+
+    /**
      * Handles the click event of the "Auto Schedule" button.
      */
     async function onAutoScheduleClick(): Promise<void> {
@@ -489,7 +508,7 @@
     function onFiltersApplied(appliedFilters: GroupSchedulerAppliedFiltersBag): void {
         filters.value = appliedFilters?.filters;
         scheduleComponentsByOccurrenceDate.value = {};
-        scheduleOccurrences.value = appliedFilters.scheduleOccurrences;
+        scheduleOccurrences.value = appliedFilters?.scheduleOccurrences;
 
         nextTick(() => {
             if (snapContainer.value) {
