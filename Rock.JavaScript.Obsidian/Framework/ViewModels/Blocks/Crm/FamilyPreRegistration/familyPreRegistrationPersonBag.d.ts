@@ -43,11 +43,15 @@ export type FamilyPreRegistrationPersonBag = {
 
     gender: number;
 
+    gradeDefinedValueGuid?: Guid | null;
+
     isFirstNameReadOnly: boolean;
 
     isLastNameReadOnly: boolean;
 
     lastName?: string | null;
+
+    maritalStatusDefinedValueGuid?: Guid | null;
 
     mobilePhone?: string | null;
 

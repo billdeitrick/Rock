@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Entity.Core.Metadata.Edm;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Rock.Attribute;
@@ -955,7 +956,48 @@ namespace Rock.Blocks.Crm
                 box.FamilyAttributeValues = family?.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
             }
 
+            box.ChildRelationshipTypes = GetChildRelationshipTypes();
+
             return box;
+        }
+
+        private List<ListItemBag> GetChildRelationshipTypes()
+        {
+            var childRelationshipTypeIds = this.GetAttributeValues( AttributeKey.Relationships ).AsIntegerList();
+
+            List<ListItemBag> relationshipTypes = null;
+
+            if ( childRelationshipTypeIds.Any( id => id != 0 ) )
+            {
+                var knownRelationshipGroupType = GroupTypeCache.Get( Rock.SystemGuid.GroupType.GROUPTYPE_KNOWN_RELATIONSHIPS.AsGuid() );
+                if ( knownRelationshipGroupType != null )
+                {
+                    relationshipTypes = knownRelationshipGroupType
+                        .Roles
+                        .Where( r => childRelationshipTypeIds.Contains( r.Id ) )
+                        .Select( r => new ListItemBag
+                        {
+                            Text = r.Name,
+                            Value = r.Guid.ToString()
+                        } )
+                        .ToList();
+                }
+            }
+            else
+            {
+                relationshipTypes = new List<ListItemBag>();
+            } 
+
+            if ( childRelationshipTypeIds.Contains( 0 ) )
+            {
+                relationshipTypes.Insert( 0, new ListItemBag
+                {
+                    Text = "Child",
+                    Value = Guid.Empty.ToString()
+                } );
+            }
+
+            return relationshipTypes;
         }
 
         private ( Person adult1, Person adult2, Group family ) GetCurrentFamilyValues( RockContext rockContext, Person currentPerson )
@@ -2148,6 +2190,7 @@ namespace Rock.Blocks.Crm
                 IsLastNameReadOnly = adult.Id != 0,
                 Gender = adult.Gender,
                 LastName = adult.LastName,
+                MaritalStatusDefinedValueGuid = adult.MaritalStatusValue?.Guid,
                 ProfilePhotoGuid = adult.Photo?.Guid,
                 RaceGuid = adult.RaceValue?.Guid,
                 SuffixDefinedValueGuid = adult.SuffixValue?.Guid

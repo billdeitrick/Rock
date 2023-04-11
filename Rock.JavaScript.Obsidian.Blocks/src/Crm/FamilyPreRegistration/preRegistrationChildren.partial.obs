@@ -1,0 +1,57 @@
+<template>
+    <template v-for="child in children">
+        <PreRegistrationChild
+            :relationships="relationships"
+            :child="child"
+            @remove="onRemoveChild" />
+        <hr>
+    </template>
+    <RockButton
+        btnSize="xs"
+        btnType="default"
+        class="add pull-right"
+        @click="onAddChildClicked">
+        <i class="fa fa-user"></i>
+        <span> Add Child</span>
+    </RockButton>
+</template>
+
+<script setup lang="ts">
+    import { PropType, ref } from "vue";
+    import PreRegistrationChild from "./preRegistrationChild.partial.obs";
+    import { PersonRequestBag } from "./types.partial";
+    import { createPersonRequest } from "./utils.partial";
+    import RockButton from "@Obsidian/Controls/rockButton";
+    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+
+    const props = defineProps({
+        relationships: {
+            type: Object as PropType<ListItemBag[]>,
+            required: true
+        }
+    });
+
+    const children = ref<PersonRequestBag[]>([]);
+
+    //#region Event Handlers
+
+    /**
+     * Event handler for a child being added.
+     */
+    function onAddChildClicked(): void {
+        children.value.push(createPersonRequest());
+    }
+
+    /**
+     * Event handler for a child being removed.
+     */
+    function onRemoveChild(child: PersonRequestBag): void {
+        const index = children.value.indexOf(child);
+
+        if (index !== -1) {
+            children.value.splice(index, 1);
+        }
+    }
+
+    //#endregion
+</script>

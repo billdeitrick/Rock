@@ -104,5 +104,6 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public bool IsRaceOptionHidden { get; set; }
         public bool IsEthnicityOptionOptional { get; set; }
         public bool IsEthnicityOptionHidden { get; set; }
+        public List<ListItemBag> ChildRelationshipTypes { get; set; }
     }
 }

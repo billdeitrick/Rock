@@ -55,5 +55,7 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public Guid? ProfilePhotoGuid { get; set; }
         public bool IsFirstNameReadOnly { get; set; }
         public bool IsLastNameReadOnly { get; set; }
+        public Guid? MaritalStatusDefinedValueGuid { get; set; }
+        public Guid? GradeDefinedValueGuid { get; set; }
     }
 }

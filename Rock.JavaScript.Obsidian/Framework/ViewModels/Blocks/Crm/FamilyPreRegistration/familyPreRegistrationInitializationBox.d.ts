@@ -23,6 +23,7 @@
 
 import { Guid } from "@Obsidian/Types";
 import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 /** The box that contains all the initialization information for the Family Pre-Registration block. */
@@ -41,6 +42,8 @@ export type FamilyPreRegistrationInitializationBox = {
 
     /** Filters the campus field by campus types. */
     campusTypesFilter?: Guid[] | null;
+
+    childRelationshipTypes?: ListItemBag[] | null;
 
     /** The number of columns used to display the form. */
     columns: number;

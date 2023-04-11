@@ -102,6 +102,7 @@
                                 </div>
                                 <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
+                                        v-model="adult1SuffixListItemBag"
                                         :definedTypeGuid="DefinedType.PersonSuffix"
                                         id="dvpSuffix1"
                                         label="Suffix"
@@ -117,6 +118,7 @@
                                 </div>
                                 <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
+                                        v-model="adult1MaritalStatusDefinedValueGuid"
                                         :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                         id="dvpMaritalStatus1"
                                         label="Marital Status"
@@ -284,6 +286,7 @@
                                     </div>
                                     <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
+                                            v-model="adult2SuffixListItemBag"
                                             :definedTypeGuid="DefinedType.PersonSuffix"
                                             id="dvpSuffix2"
                                             label="Suffix"
@@ -299,6 +302,7 @@
                                     </div>
                                     <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
+                                            v-model="adult2MaritalStatusDefinedValueGuid"
                                             :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                             id="dvpMaritalStatus2"
                                             label="Marital Status"
@@ -322,7 +326,7 @@
                                     </div>
                                     <div id="pnlCommunicationPreference2" :class="getColumnClass(6)">
                                         <RadioButtonList
-                                            v-model="adult1CommunicationPreferenceId"
+                                            v-model="adult2CommunicationPreferenceId"
                                             :horizontal="true"
                                             id="rblCommunicationPreference2"
                                             :items="[
@@ -399,14 +403,11 @@
                         </template>
                     </Panel>
 
-                    <!-- <asp:Panel ID="pnlChildren" runat="server" CssClass="panel panel-default">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Children</h3>
-                        </div>
-                        <div class="panel-body">
-                            <Rock:PreRegistrationChildren ID="prChildren" runat="server" OnAddChildClick="prChildren_AddChildClick" />
-                        </div>
-                    </asp:Panel> -->
+                    <Panel id="pnlChildren" type="default" title="Children">
+                        <PreRegistrationChildren
+                            id="prChildren"
+                            :relationships="config.childRelationshipTypes || []" />
+                    </Panel>
                 </template>
 
                 <template #footerActions>
@@ -420,6 +421,9 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref } from "vue";
+    import PreRegistrationChildren from "./FamilyPreRegistration/preRegistrationChildren.partial.obs";
+    import { CreateAccountRequest, PersonRequestBag } from "./FamilyPreRegistration/types.partial";
+    import { convertPersonToPersonRequest, createListItemBagWrapper } from "./FamilyPreRegistration/utils.partial";
     import AddressControl from "@Obsidian/Controls/addressControl.obs";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
@@ -446,42 +450,11 @@
     import { useHttp } from "@Obsidian/Utility/http";
     import { ValidationResult } from "@Obsidian/ValidationRules";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
-    import { FamilyPreRegistrationCreateAccountRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationCreateAccountRequestBag";
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
     import { FamilyPreRegistrationGetScheduleDatesRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesRequestBag";
     import { FamilyPreRegistrationGetScheduleDatesResponseBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesResponseBag";
-    import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
     import { FamilyPreRegistrationScheduleDateBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationScheduleDateBag";
     import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
-
-    /**
-     * Make specific properties in T required and non-nullable.
-     *
-     * @example
-     * type Shape = {
-     *  length?: number | null,
-     *  width?: number | null
-     * };
-     *
-     * type StaticShape = RequiredProperties<Shape, "length" | "width">;
-     * // {
-     * //   length: number,
-     * //   width: number
-     * // }
-     */
-    type RequiredProperties<T, K extends keyof T> = Omit<T, K> & {
-        [L in keyof Pick<T, K>]-?: NonNullable<T[L]>
-    };
-
-    type PersonRequestBag = RequiredProperties<FamilyPreRegistrationPersonBag,
-        "firstName" |
-        "lastName" |
-        "email" |
-        "mobilePhone" |
-        "mobilePhoneCountryCode" |
-        "attributeValues">;
-
-    type CreateAccountRequest = RequiredProperties<FamilyPreRegistrationCreateAccountRequestBag, "username" | "password">;
 
     const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
     const invokeBlockAction = useInvokeBlockAction();
@@ -498,15 +471,25 @@
     const isUsernameInUse = ref<boolean>(false);
     const confirmPassword = ref<string>("");
     const address = ref<AddressControlBag | undefined>();
-
-    // First Adult
-
     const fullName = ref<string>("");
+    const adult1 = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult1));
+    const adult2 = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult2));
+    const createAccount = ref<CreateAccountRequest>({
+        username: "",
+        password: ""
+    });
+    const familyAttributeValues = ref<Record<string, string>>(config.familyAttributeValues || {});
 
-    const adult1 = ref<PersonRequestBag>(initializeAdult(config.adult1));
+    //#endregion
 
-    const adult2 = ref<PersonRequestBag>(initializeAdult(config.adult2));
+    //#region Computed Values
 
+    const isAdult1Entered = computed<boolean>(() => !!adult1.value.firstName.trim());
+    const adult1ProfileImageListItemBag = createListItemBagWrapper(adult1, "profilePhotoGuid");
+    const adult1SuffixListItemBag = createListItemBagWrapper(adult1, "suffixDefinedValueGuid");
+    const adult1MaritalStatusDefinedValueGuid = createListItemBagWrapper(adult1, "maritalStatusDefinedValueGuid");
+    const adult1RaceListItemBag =  createListItemBagWrapper(adult1, "raceGuid");
+    const adult1EthnicityListItemBag = createListItemBagWrapper(adult1, "ethnicityGuid");
     const adult1CommunicationPreferenceId = computed<string>({
         get() {
             return adult1.value.communicationPreference?.toString();
@@ -516,85 +499,20 @@
         }
     });
 
-    const adult1RaceListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult1.value.raceGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult1.value.raceGuid = newValue.value;
-        }
-    });
-
-    const adult2RaceListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult2.value.raceGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult2.value.raceGuid = newValue.value;
-        }
-    });
-
-    const adult1EthnicityListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult1.value.ethnicityGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult1.value.ethnicityGuid = newValue.value;
-        }
-    });
-
-    const adult2EthnicityListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult2.value.ethnicityGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult2.value.ethnicityGuid = newValue.value;
-        }
-    });
-
-    const adult1ProfileImageListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult1.value.profilePhotoGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult1.value.profilePhotoGuid = newValue.value;
-        }
-    });
-
-    const adult2ProfileImageListItemBag = computed<ListItemBag>({
-        get() {
-            return {
-                value: adult2.value.profilePhotoGuid?.toString()
-            };
-        },
-        set(newValue: ListItemBag) {
-            adult2.value.profilePhotoGuid = newValue.value;
-        }
-    });
-
-    const createAccount = ref<CreateAccountRequest>({
-        username: "",
-        password: ""
-    });
-
-    const familyAttributeValues = ref<Record<string, string>>(config.familyAttributeValues || {});
-
-    //#endregion
-
-    //#region Computed Values
-
-    const isAdult1Entered = computed<boolean>(() => !!adult1.value.firstName.trim());
     const isAdult2Entered = computed<boolean>(() => !!adult2.value.firstName.trim());
+    const adult2ProfileImageListItemBag = createListItemBagWrapper(adult2, "profilePhotoGuid");
+    const adult2SuffixListItemBag = createListItemBagWrapper(adult2, "suffixDefinedValueGuid");
+    const adult2MaritalStatusDefinedValueGuid = createListItemBagWrapper(adult2, "maritalStatusDefinedValueGuid");
+    const adult2RaceListItemBag =  createListItemBagWrapper(adult2, "raceGuid");
+    const adult2EthnicityListItemBag = createListItemBagWrapper(adult2, "ethnicityGuid");
+    const adult2CommunicationPreferenceId = computed<string>({
+        get() {
+            return adult2.value.communicationPreference?.toString();
+        },
+        set(newValue: string) {
+            adult2.value.communicationPreference = CommunicationPreference[newValue];
+        }
+    });
 
     const campusListItemBag = computed<ListItemBag | null | undefined>({
         get(): ListItemBag | null | undefined {
@@ -627,6 +545,8 @@
 
     async function onSaveClicked(): Promise<void> {
         // TODO JMH Save the family pre-registration.
+        console.log("adult1: ", JSON.stringify(adult1.value, null, 4));
+        console.log("adult2: ", JSON.stringify(adult2.value, null, 4));
     }
 
     //#endregion
@@ -711,6 +631,7 @@
     //         }
     //     });
     // }
+
     function getColumnClass(columns: number): string {
         if ((columns != 3 && columns != 6) || config.columns === 4) {
             return `col-sm-${columns}`;
@@ -721,25 +642,6 @@
         }
 
         return `col-sm-${columns * 2}`;
-    }
-
-    function initializeAdult(adult: FamilyPreRegistrationPersonBag | null | undefined): PersonRequestBag {
-        return {
-            // Use defaults from config.
-            ...adult,
-
-            // Overwrite required fields.
-            attributeValues: adult?.attributeValues || {},
-            communicationPreference: adult?.communicationPreference ?? CommunicationPreference.None,
-            email: adult?.email || "",
-            firstName: adult?.firstName || "",
-            gender: adult?.gender || 0,
-            isFirstNameReadOnly: !!adult?.isFirstNameReadOnly,
-            isLastNameReadOnly: !!adult?.isLastNameReadOnly,
-            lastName: adult?.lastName || "",
-            mobilePhone: adult?.mobilePhone || "",
-            mobilePhoneCountryCode: adult?.mobilePhoneCountryCode || "",
-        };
     }
 
     function setError(text?: string | null, title?: string | null): void {
