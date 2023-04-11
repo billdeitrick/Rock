@@ -56,7 +56,6 @@
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import SlidingDateRangePicker from "@Obsidian/Controls/slidingDateRangePicker.obs";
     import { AlertType } from "@Obsidian/Enums/Controls/alertType";
-    import { SlidingDateRangeType } from "@Obsidian/Enums/Controls/slidingDateRangeType";
     import { useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { SlidingDateRange } from "@Obsidian/Utility/slidingDateRange";
@@ -95,16 +94,16 @@
     const originalValue = ref(props.appliedFilters);
 
     const selectedGroups = ref<ListItemBag[]>(props.appliedFilters?.filters?.groups ?? []);
-    const selectedDateRange = ref<SlidingDateRange | null>(getSlidingDateRange(props.appliedFilters?.filters?.dateRange));
     const availableLocations = ref<ListItemBag[]>(props.appliedFilters?.filters?.locations?.availableLocations ?? []);
     const selectedLocations = ref<ListItemBag[]>(props.appliedFilters?.filters?.locations?.selectedLocations ?? []);
     const availableSchedules = ref<ListItemBag[]>(props.appliedFilters?.filters?.schedules?.availableSchedules ?? []);
     const selectedSchedules = ref<ListItemBag[]>(props.appliedFilters?.filters?.schedules?.selectedSchedules ?? []);
-    const scheduleOccurrences = ref<GroupSchedulerOccurrenceBag[] | null | undefined>(props.appliedFilters?.scheduleOccurrences);
-
+    const selectedDateRange = ref<SlidingDateRange | null>(getSlidingDateRange(props.appliedFilters?.filters?.dateRange));
     const firstEndOfWeekDate = ref<string | null | undefined>(props.appliedFilters?.filters?.firstEndOfWeekDate);
     const lastEndOfWeekdDate = ref<string | null | undefined>(props.appliedFilters?.filters?.lastEndOfWeekDate);
     const friendlyDateRange = ref<string | null | undefined>(props.appliedFilters?.filters?.friendlyDateRange);
+    const scheduleOccurrences = ref<GroupSchedulerOccurrenceBag[] | null | undefined>(props.appliedFilters?.scheduleOccurrences);
+    const navigationUrls = ref<Record<string, string> | null | undefined>(props.appliedFilters?.navigationUrls);
 
     // #endregion
 
@@ -170,9 +169,13 @@
                     availableSchedules: availableSchedules.value,
                     selectedSchedules: selectedSchedules.value
                 },
-                dateRange
+                dateRange,
+                firstEndOfWeekDate: firstEndOfWeekDate.value,
+                lastEndOfWeekDate: lastEndOfWeekdDate.value,
+                friendlyDateRange: friendlyDateRange.value
             },
-            scheduleOccurrences: scheduleOccurrences.value
+            scheduleOccurrences: scheduleOccurrences.value,
+            navigationUrls: navigationUrls.value
         };
     }
 
@@ -183,15 +186,16 @@
      */
     function setCurrentFilters(appliedFilters: GroupSchedulerAppliedFiltersBag | null): void {
         selectedGroups.value = appliedFilters?.filters?.groups ?? [];
-        selectedDateRange.value = getSlidingDateRange(appliedFilters?.filters?.dateRange);
         availableLocations.value = appliedFilters?.filters?.locations?.availableLocations ?? [];
         selectedLocations.value = appliedFilters?.filters?.locations?.selectedLocations ?? [];
         availableSchedules.value = appliedFilters?.filters?.schedules?.availableSchedules ?? [];
         selectedSchedules.value = appliedFilters?.filters?.schedules?.selectedSchedules ?? [];
-        scheduleOccurrences.value = appliedFilters?.scheduleOccurrences;
+        selectedDateRange.value = getSlidingDateRange(appliedFilters?.filters?.dateRange);
         firstEndOfWeekDate.value = appliedFilters?.filters?.firstEndOfWeekDate;
         lastEndOfWeekdDate.value = appliedFilters?.filters?.lastEndOfWeekDate;
         friendlyDateRange.value = appliedFilters?.filters?.friendlyDateRange;
+        scheduleOccurrences.value = appliedFilters?.scheduleOccurrences;
+        navigationUrls.value = appliedFilters?.navigationUrls;
     }
 
     // #endregion
@@ -202,16 +206,7 @@
      * Handles the `save` event of the select filters modal.
      */
     function onSave(): void {
-        var appliedFilters = getCurrentAppliedFilters();
-        emit("filtersApplied", {
-            ...appliedFilters,
-            filters: {
-                ...appliedFilters.filters,
-                firstEndOfWeekDate: firstEndOfWeekDate.value,
-                lastEndOfWeekDate: lastEndOfWeekdDate.value,
-                friendlyDateRange: friendlyDateRange.value
-            }
-        });
+        emit("filtersApplied", getCurrentAppliedFilters());
         isCanceled.value = false;
         isVisible.value = false;
     }

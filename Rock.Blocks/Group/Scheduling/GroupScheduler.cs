@@ -69,6 +69,12 @@ namespace Rock.Blocks.Group.Scheduling
         Order = 2,
         IsRequired = false )]
 
+    [LinkedPage( "Roster Page",
+        Key = AttributeKey.RosterPage,
+        Description = "Page used for viewing the group schedule roster.",
+        Order = 3,
+        IsRequired = true )]
+
     #endregion
 
     [Rock.SystemGuid.EntityTypeGuid( "7ADCE833-A785-4A54-9805-7335809C5367" )]
@@ -82,6 +88,20 @@ namespace Rock.Blocks.Group.Scheduling
             public const string EnableAlternateGroupIndividualSelection = "EnableAlternateGroupIndividualSelection";
             public const string EnableParentGroupIndividualSelection = "EnableParentGroupIndividualSelection";
             public const string EnableDataViewIndividualSelection = "EnableDataViewIndividualSelection";
+            public const string RosterPage = "RosterPage";
+        }
+
+        private static class NavigationUrlKey
+        {
+            public const string RosterPage = "RosterPage";
+        }
+
+        private static class PageParameterKey
+        {
+            public const string GroupIds = "GroupIds";
+            public const string LocationIds = "LocationIds";
+            public const string ScheduleIds = "ScheduleIds";
+            public const string OccurrenceDate = "OccurrenceDate";
         }
 
         #endregion
@@ -89,6 +109,10 @@ namespace Rock.Blocks.Group.Scheduling
         #region Fields
 
         private List<int> _groupIds;
+        private List<int> _locationIds;
+        private List<int> _scheduleIds;
+
+        private List<string> _occurrenceDates;
         private List<GroupLocationSchedule> _groupLocationSchedules;
 
         #endregion
@@ -131,7 +155,8 @@ namespace Rock.Blocks.Group.Scheduling
             box.AppliedFilters = new GroupSchedulerAppliedFiltersBag
             {
                 Filters = GetFilters( rockContext ),
-                ScheduleOccurrences = GetScheduleOccurrences( rockContext )
+                ScheduleOccurrences = GetScheduleOccurrences( rockContext ),
+                NavigationUrls = GetNavigationUrls()
             };
             box.SecurityGrantToken = GetSecurityGrantToken();
         }
@@ -276,7 +301,7 @@ namespace Rock.Blocks.Group.Scheduling
                 UpperDate = picker.DateRangeModeEnd
             };
 
-            var firstEndOfWeekDate =  ( dateRange?.Start ?? defaultStartDate ).EndOfWeek( RockDateTime.FirstDayOfWeek );
+            var firstEndOfWeekDate = ( dateRange?.Start ?? defaultStartDate ).EndOfWeek( RockDateTime.FirstDayOfWeek );
             var lastEndOfWeekDate = ( dateRange?.End ?? defaultEndDate ).EndOfWeek( RockDateTime.FirstDayOfWeek );
 
             string friendlyDateRange;
@@ -515,7 +540,7 @@ namespace Rock.Blocks.Group.Scheduling
                 .ToList();
 
             /*
-             * Refine down to the intersect of the above two collections.
+             * Refine down to the intersection of the above two collections.
              * This is the list of GroupLocationSchedules that match all currently-applied filters.
              */
             _groupLocationSchedules = glsMatchingLocations
@@ -578,7 +603,7 @@ namespace Rock.Blocks.Group.Scheduling
 
             EnsureAttendanceOccurrencesExist( rockContext );
 
-            return _groupLocationSchedules
+            var occurrences = _groupLocationSchedules
                 .SelectMany( gls => gls.StartDateTimes, ( gls, startDateTime ) =>
                 {
                     var attendanceOccurrenceId = gls.AttendanceOccurrences
@@ -615,6 +640,12 @@ namespace Rock.Blocks.Group.Scheduling
                 .ThenBy( o => o.ScheduleOrder )
                 .ThenBy( o => o.OccurrenceDateTime )
                 .ToList();
+
+            _locationIds = occurrences.Select( o => o.LocationId ).Distinct().ToList();
+            _scheduleIds = occurrences.Select( o => o.ScheduleId ).Distinct().ToList();
+            _occurrenceDates = occurrences.Select( o => o.OccurrenceDate ).Distinct().ToList();
+
+            return occurrences;
         }
 
         /// <summary>
@@ -774,6 +805,39 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Gets the navigation URLs required for the page to operate.
+        /// </summary>
+        /// <returns>A dictionary of key names and URL values.</returns>
+        private Dictionary<string, string> GetNavigationUrls()
+        {
+            var queryParams = new Dictionary<string, string>();
+            if ( _groupIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.GroupIds, _groupIds.AsDelimited( "," ) );
+            }
+
+            if ( _locationIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.LocationIds, _locationIds.AsDelimited( "," ) );
+            }
+
+            if ( _scheduleIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.ScheduleIds, _scheduleIds.AsDelimited( "," ) );
+            }
+
+            if ( _occurrenceDates?.Count == 1 )
+            {
+                queryParams.Add( PageParameterKey.OccurrenceDate, _occurrenceDates.First() );
+            }
+
+            return new Dictionary<string, string>
+            {
+                [NavigationUrlKey.RosterPage] = this.GetLinkedPageUrl( AttributeKey.RosterPage, queryParams )
+            };
+        }
+
+        /// <summary>
         /// Gets the security grant token that will be used by UI controls on this block to ensure they have the proper permissions.
         /// </summary>
         /// <returns>A string that represents the security grant token.</returns>
@@ -804,7 +868,8 @@ namespace Rock.Blocks.Group.Scheduling
                 var results = new GroupSchedulerAppliedFiltersBag
                 {
                     Filters = bag,
-                    ScheduleOccurrences = GetScheduleOccurrences( rockContext )
+                    ScheduleOccurrences = GetScheduleOccurrences( rockContext ),
+                    NavigationUrls = GetNavigationUrls()
                 };
 
                 return ActionOk( results );
@@ -901,7 +966,8 @@ namespace Rock.Blocks.Group.Scheduling
                 var results = new GroupSchedulerAppliedFiltersBag
                 {
                     Filters = bag,
-                    ScheduleOccurrences = scheduleOccurrences
+                    ScheduleOccurrences = scheduleOccurrences,
+                    NavigationUrls = GetNavigationUrls()
                 };
 
                 return ActionOk( results );

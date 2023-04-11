@@ -22,9 +22,11 @@
                     <i class="fa fa-clone"></i> Clone Schedules
                 </RockButton>
 
-                <RockButton :btnSize="BtnSize.ExtraSmall"
+                <RockButton v-if="rosterUrl"
+                            :btnSize="BtnSize.ExtraSmall"
                             :disabled="isBusy"
-                            class="ml-1">
+                            class="ml-1"
+                            @click="onRosterClick">
                     <i class="fa fa-calendar-check"></i> Rosters
                 </RockButton>
 
@@ -82,9 +84,11 @@
                             </button>
                         </li>
                         <li>
-                            <button type="button"
+                            <button v-if="rosterUrl"
+                                    type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy">
+                                    :disabled="isBusy"
+                                    @click="onRosterClick">
                                 <i class="fa fa-calendar-check"></i> Rosters
                             </button>
                         </li>
@@ -169,7 +173,7 @@
     import CloneSchedules from "./GroupScheduler/cloneSchedules.partial.obs";
     import OccurrenceDate from "./GroupScheduler/occurrenceDate.partial.obs";
     import SelectFilters from "./GroupScheduler/selectFilters.partial.obs";
-    import { ReloadScheduleOccurrences } from "./GroupScheduler/types.partial";
+    import { NavigationUrlKey, ReloadScheduleOccurrences } from "./GroupScheduler/types.partial";
     import Alert from "@Obsidian/Controls/alert.obs";
     import Dialog from "@Obsidian/Controls/dialog";
     import Loading from "@Obsidian/Controls/loading";
@@ -206,6 +210,7 @@
 
     const filters = ref<GroupSchedulerFiltersBag | null | undefined>(config.appliedFilters?.filters);
     const scheduleOccurrences = ref<GroupSchedulerOccurrenceBag[] | null | undefined>(config.appliedFilters?.scheduleOccurrences);
+    const navigationUrls = ref<Record<string, string> | null | undefined>(config.appliedFilters?.navigationUrls);
 
     const isSelectingFilters = ref(false);
     const isCloningSchedules = ref(false);
@@ -261,7 +266,8 @@
     const currentlyAppliedFilters = computed((): GroupSchedulerAppliedFiltersBag => {
         return {
             filters: filters.value,
-            scheduleOccurrences: scheduleOccurrences.value
+            scheduleOccurrences: scheduleOccurrences.value,
+            navigationUrls: navigationUrls.value
         };
     });
 
@@ -316,8 +322,8 @@
         return uniqueScheduleIds.length > 0;
     });
 
-    const isBusy = computed((): boolean => {
-        return isSelectingFilters.value || isCloningSchedules.value || isAutoScheduling.value || isSendingNow.value;
+    const rosterUrl = computed((): string | null => {
+        return navigationUrls.value?.[NavigationUrlKey.RosterPage] ?? null;
     });
 
     const sendNowResponseDialogHeader = computed((): string => {
@@ -336,6 +342,10 @@
         return count
             ? `Successfully sent ${count} confirmation${(count > 1 ? "s" : "")}.`
             : null;
+    });
+
+    const isBusy = computed((): boolean => {
+        return isSelectingFilters.value || isCloningSchedules.value || isAutoScheduling.value || isSendingNow.value;
     });
 
     // #endregion
@@ -448,6 +458,17 @@
     }
 
     /**
+     * Handles the click event of the "Roster" button.
+     */
+    function onRosterClick(): void {
+        if (!rosterUrl.value) {
+            return;
+        }
+
+        window.location.href = rosterUrl.value;
+    }
+
+    /**
      * Handles the click event of the "Auto Schedule" button.
      */
     async function onAutoScheduleClick(): Promise<void> {
@@ -468,6 +489,7 @@
 
         filters.value = result.data?.filters;
         scheduleOccurrences.value = result.data?.scheduleOccurrences;
+        navigationUrls.value = result.data?.navigationUrls;
 
         reloadScheduleOccurrences.value = true;
 
@@ -506,9 +528,11 @@
      * @param appliedFilters The filters to apply.
      */
     function onFiltersApplied(appliedFilters: GroupSchedulerAppliedFiltersBag): void {
-        filters.value = appliedFilters?.filters;
         scheduleComponentsByOccurrenceDate.value = {};
+
+        filters.value = appliedFilters?.filters;
         scheduleOccurrences.value = appliedFilters?.scheduleOccurrences;
+        navigationUrls.value = appliedFilters?.navigationUrls;
 
         nextTick(() => {
             if (snapContainer.value) {

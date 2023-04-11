@@ -39,5 +39,11 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
         /// The occurrences to be scheduled, limited by the applied filters..
         ///</value>
         public List<GroupSchedulerOccurrenceBag> ScheduleOccurrences { get; set; }
+
+        /// <summary>
+        /// Gets or sets the navigation urls.
+        /// </summary>
+        /// <value>The navigation urls.</value>
+        public Dictionary<string, string> NavigationUrls { get; set; } = new Dictionary<string, string>();
     }
 }

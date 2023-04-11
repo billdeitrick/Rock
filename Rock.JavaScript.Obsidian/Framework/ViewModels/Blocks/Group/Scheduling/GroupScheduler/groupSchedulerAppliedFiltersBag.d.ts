@@ -29,6 +29,9 @@ export type GroupSchedulerAppliedFiltersBag = {
     /** Gets or sets the filters that were applied. */
     filters?: GroupSchedulerFiltersBag | null;
 
+    /** Gets or sets the navigation urls. */
+    navigationUrls?: Record<string, string> | null;
+
     /** Gets or sets the occurrences to be scheduled, limited by the applied filters. */
     scheduleOccurrences?: GroupSchedulerOccurrenceBag[] | null;
 };

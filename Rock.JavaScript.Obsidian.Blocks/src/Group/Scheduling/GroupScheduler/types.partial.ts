@@ -250,11 +250,18 @@ export const ProgressState = {
 /**
  * The actions that can be taken for a given, scheduled resource.
  */
-export enum ResourceAction {
+export const enum ResourceAction {
     MarkConfirmed = 0,
     MarkPending = 1,
     MarkDeclined = 2,
     ResendConfirmation = 3,
     UpdatePreference = 4,
     Remove = 5
+}
+
+/**
+ * The navigation url keys for linked pages.
+ */
+export const enum NavigationUrlKey {
+    RosterPage = "RosterPage"
 }
