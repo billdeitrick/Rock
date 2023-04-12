@@ -111,7 +111,6 @@ namespace Rock.Blocks.Group.Scheduling
         private List<int> _groupIds;
         private List<int> _locationIds;
         private List<int> _scheduleIds;
-
         private List<string> _occurrenceDates;
         private List<GroupLocationSchedule> _groupLocationSchedules;
 
@@ -632,7 +631,8 @@ namespace Rock.Blocks.Group.Scheduling
                         SundayDate = RockDateTime.GetSundayDate( startDateTime ).ToISO8601DateString(),
                         MinimumCapacity = gls.Config?.MinimumCapacity,
                         DesiredCapacity = gls.Config?.DesiredCapacity,
-                        MaximumCapacity = gls.Config?.MaximumCapacity
+                        MaximumCapacity = gls.Config?.MaximumCapacity,
+                        IsSchedulingEnabled = startDateTime.Date >= RockDateTime.Today
                     };
                 } )
                 .Where( o => o.AttendanceOccurrenceId > 0 )
@@ -876,6 +876,7 @@ namespace Rock.Blocks.Group.Scheduling
             if ( scheduleOccurrences.Any() )
             {
                 var attendanceOccurrenceIds = scheduleOccurrences
+                    .Where( s => s.OccurrenceDateTime > RockDateTime.Now )
                     .Select( s => s.AttendanceOccurrenceId )
                     .ToList();
 
@@ -908,6 +909,7 @@ namespace Rock.Blocks.Group.Scheduling
             RefineFilters( rockContext, filters );
 
             var attendanceOccurrenceIds = GetScheduleOccurrences( rockContext )
+                .Where( s => s.OccurrenceDateTime > RockDateTime.Now )
                 .Select( s => s.AttendanceOccurrenceId )
                 .ToList();
 

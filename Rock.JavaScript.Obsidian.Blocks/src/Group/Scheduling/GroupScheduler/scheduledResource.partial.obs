@@ -11,7 +11,7 @@
                     data-toggle="dropdown"
                     aria-haspopup="true"
                     aria-expanded="false"
-                    :disabled="isBusy">
+                    :disabled="isSchedulingDisabled">
                 <i class="fa fa-ellipsis-v"></i>
             </button>
 
@@ -19,7 +19,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.MarkConfirmed)">
                         Mark Confirmed
                     </button>
@@ -27,7 +27,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.MarkPending)">
                         Mark Pending
                     </button>
@@ -35,7 +35,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.MarkDeclined)">
                         Mark Declined
                     </button>
@@ -43,7 +43,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.ResendConfirmation)">
                         Resend Confirmation
                     </button>
@@ -51,7 +51,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.UpdatePreference)">
                         Update Preference
                     </button>
@@ -59,7 +59,7 @@
                 <li>
                     <button type="button"
                             class="dropdown-item dropdown-item-danger btn-link"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onUpdateResource(ResourceAction.Remove)">
                         Remove
                     </button>
@@ -125,7 +125,7 @@
         return props.resource?.AttendanceId ?? 0;
     });
 
-    const isBusy = computed((): boolean => {
+    const isSchedulingDisabled = computed((): boolean => {
         return props.disabled || isUpdatingResource.value;
     });
 

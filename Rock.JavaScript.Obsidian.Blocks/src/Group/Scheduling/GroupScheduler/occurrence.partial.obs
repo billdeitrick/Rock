@@ -24,14 +24,14 @@
             <ScheduledResource v-for="resource in resources" :key="resource.AttendanceId"
                                :resource="resource"
                                v-model:updateResourceWarningMessage="updateResourceWarningMessage"
-                               :disabled="isBusy"
+                               :disabled="schedulingDisabled"
                                @resourceUpdated="onResourceUpdated"></ScheduledResource>
 
             <li class="list-group-item d-flex align-items-center">
                 <ProgressBar :progress="scheduleProgress"></ProgressBar>
                 <RockButton type="button"
                             class="circle-plus"
-                            :disabled="isBusy"
+                            :disabled="schedulingDisabled"
                             @click="onSelectIndividualsClick">
                     <i class="fa fa-plus"></i>
                 </RockButton>
@@ -140,8 +140,8 @@
         return progress;
     });
 
-    const isBusy = computed((): boolean => {
-        return props.disabled || isLoadingResources.value;
+    const schedulingDisabled = computed((): boolean => {
+        return props.disabled || isLoadingResources.value || !props.occurrence.isSchedulingEnabled;
     });
 
     // #endregion

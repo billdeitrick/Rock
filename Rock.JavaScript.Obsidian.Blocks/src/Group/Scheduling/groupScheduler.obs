@@ -17,21 +17,21 @@
 
             <div class="d-block flex-shrink-0">
                 <RockButton :btnSize="BtnSize.ExtraSmall"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @click="onCloneSchedulesClick">
                     <i class="fa fa-clone"></i> Clone Schedules
                 </RockButton>
 
                 <RockButton v-if="rosterUrl"
                             :btnSize="BtnSize.ExtraSmall"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             class="ml-1"
                             @click="onRosterClick">
                     <i class="fa fa-calendar-check"></i> Rosters
                 </RockButton>
 
                 <RockButton :btnSize="BtnSize.ExtraSmall"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             class="ml-1"
                             @click="onAutoScheduleClick">
                     <i class="fa fa-magic"></i> Auto Schedule
@@ -39,7 +39,7 @@
                 </RockButton>
 
                 <RockButton :btnSize="BtnSize.ExtraSmall"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             class="ml-1"
                             @click="onSendNowClick">
                     <i class="fa fa-envelope-o"></i> Send Now
@@ -51,7 +51,7 @@
         <!-- Toolbar: Mobile -->
         <div class="panel-toolbar panel-toolbar-mobile d-flex d-md-none justify-content-between">
             <RockButton :btnSize="BtnSize.Small"
-                        :disabled="isBusy"
+                        :disabled="isSchedulingDisabled"
                         @click="onSelectFiltersClick"><i class="fa fa-sliders-h"></i> Filters</RockButton>
 
             <div class="d-flex">
@@ -61,7 +61,7 @@
                             data-toggle="dropdown"
                             aria-haspopup="true"
                             aria-expanded="false"
-                            :disabled="isBusy">
+                            :disabled="isSchedulingDisabled">
                         <Loading :isLoading="isAutoScheduling || isSendingNow" :isSmall="true">
                             <i class="fa fa-ellipsis-v"></i>
                         </Loading>
@@ -70,7 +70,7 @@
                         <li>
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy"
+                                    :disabled="isSchedulingDisabled"
                                     @click="onSendNowClick">
                                 <i class="fa fa-envelope-o"></i> Send Now
                             </button>
@@ -78,7 +78,7 @@
                         <li>
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy"
+                                    :disabled="isSchedulingDisabled"
                                     @click="onCloneSchedulesClick">
                                 <i class="fa fa-clone"></i> Clone Schedules
                             </button>
@@ -87,7 +87,7 @@
                             <button v-if="rosterUrl"
                                     type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy"
+                                    :disabled="isSchedulingDisabled"
                                     @click="onRosterClick">
                                 <i class="fa fa-calendar-check"></i> Rosters
                             </button>
@@ -95,7 +95,7 @@
                         <li>
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
-                                    :disabled="isBusy"
+                                    :disabled="isSchedulingDisabled"
                                     @click="onAutoScheduleClick">
                                 <i class="fa fa-magic"></i> Auto Schedule
                             </button>
@@ -115,7 +115,7 @@
             <OccurrenceDate v-for="(occurrences, key, index) in occurrencesByDate" :key="key"
                             :occurrences="occurrences"
                             :showPrevNextButtons="showPrevNextButtons"
-                            :disabled="isBusy"
+                            :disabled="isSchedulingDisabled"
                             @scheduleComponentsCreated="onScheduleComponentsCreated(index, $event)"
                             @goPrevious="onGoPrevious(index, $event)"
                             @goNext="onGoNext(index, $event)"></OccurrenceDate>
@@ -348,6 +348,10 @@
         return isSelectingFilters.value || isCloningSchedules.value || isAutoScheduling.value || isSendingNow.value;
     });
 
+    const isSchedulingDisabled = computed((): boolean => {
+        return isBusy.value || !anyGroupsSelected.value;
+    });
+
     // #endregion
 
     // #region Functions
@@ -450,7 +454,7 @@
      * Handles the click event of the "Clone Schedules" button.
      */
     function onCloneSchedulesClick(): void {
-        if (isBusy.value) {
+        if (isSchedulingDisabled.value) {
             return;
         }
 

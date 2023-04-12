@@ -159,5 +159,13 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
         /// The maximum capacity for this occurrence.
         /// </value>
         public int? MaximumCapacity { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether scheduling is enabled for this occurrence.
+        /// </summary>
+        /// <value>
+        /// Whether scheduling is enabled for this occurrence.
+        /// </value>
+        public bool IsSchedulingEnabled { get; set; }
     }
 }

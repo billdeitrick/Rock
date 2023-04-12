@@ -38,6 +38,9 @@ export type GroupSchedulerOccurrenceBag = {
     /** Gets or sets the group name for this occurrence. */
     groupName?: string | null;
 
+    /** Gets or sets whether scheduling is enabled for this occurrence. */
+    isSchedulingEnabled: boolean;
+
     /** Gets or sets the location ID for this occurrence. */
     locationId: number;
 
