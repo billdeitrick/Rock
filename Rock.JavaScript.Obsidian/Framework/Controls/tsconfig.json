@@ -16,6 +16,7 @@
   ],
   "references": [
     { "path": "../Core" },
+    { "path": "../Directives" },
     { "path": "../Enums" },
     { "path": "../Libs" },
     { "path": "../SystemGuids" }

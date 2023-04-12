@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, reactive, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { defineComponent, PropType, reactive, ref, Ref, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { DateFilterMethod } from "@Obsidian/Enums/Controls/Grid/dateFilterMethod";
 import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps, StandardHeaderCellProps } from "@Obsidian/Types/Controls/grid";
@@ -541,7 +541,8 @@ function buildAttributeColumns(columns: ColumnDefinition[], node: VNode): void {
             quickFilterValue: (r, c, g) => getOrAddRowCacheValue(r, c, "quickFilterValue", g, () => c.field ? String(r[c.field]) : undefined),
             filterValue: (r, c) => c.field ? String(r[c.field]) : undefined,
             format: getVNodeProp<VNode>(node, "format") ?? defaultCell,
-            props: {}
+            props: {},
+            data: {}
         });
     }
 }
@@ -687,7 +688,8 @@ function buildColumn(name: string, node: VNode): ColumnDefinition {
         quickFilterValue,
         headerClass,
         itemClass,
-        props: getVNodeProps(node)
+        props: getVNodeProps(node),
+        data: {}
     };
 
     return column;
@@ -1001,6 +1003,10 @@ export class GridState implements IGridState {
 
     public readonly selectedKeys: string[] = reactive([]);
 
+    public isFiltered: Ref<boolean> = ref(false);
+
+    public isSorted: Ref<boolean> = ref(false);
+
     get rows(): Record<string, unknown>[] {
         return this.internalRows.value;
     }
@@ -1262,6 +1268,8 @@ export class GridState implements IGridState {
         this.quickFilter = quickFilter ?? "";
         this.columnFilters = columnFilters ?? {};
         this.updateFilteredRows();
+
+        this.isFiltered.value = this.quickFilter !== "" || Object.keys(this.columnFilters).length > 0;
     }
 
     /**
@@ -1272,6 +1280,8 @@ export class GridState implements IGridState {
     public setSort(columnSort: ColumnSort | undefined): void {
         this.columnSort = columnSort;
         this.updateSortedRows();
+
+        this.isSorted.value = this.columnSort !== undefined;
     }
 
     // #endregion

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 
 using Rock.Attribute;
+using Rock.Blocks;
 using Rock.Model;
 using Rock.ViewModels.Core.Grid;
 using Rock.Web.Cache;
@@ -135,7 +136,7 @@ namespace Rock.Obsidian.UI
         /// <param name="builder">The <see cref="GridBuilder{T}"/> to add the field to.</param>
         /// <param name="block">The block that is displaying this grid.</param>
         /// <returns>A reference to the original <see cref="GridBuilder{T}"/> object that can be used to chain calls.</returns>
-        public static GridBuilder<T> UseWithBlock<T>( this GridBuilder<T> builder, BlockCache block )
+        public static GridBuilder<T> UseWithBlock<T>( this GridBuilder<T> builder, IRockBlockType block )
         {
             // Add all the action URLs for the current site.
             builder.AddDefinitionAction( definition =>
@@ -143,17 +144,17 @@ namespace Rock.Obsidian.UI
                 var communicationUrl = "/Communication/{EntitySetId}";
                 SiteCache site;
 
-                if ( block.Page != null )
+                if ( block.BlockCache.Page != null )
                 {
-                    site = SiteCache.Get( block.Page.SiteId );
+                    site = SiteCache.Get( block.BlockCache.Page.SiteId );
                 }
-                else if ( block.Layout != null )
+                else if ( block.BlockCache.Layout != null )
                 {
-                    site = block.Layout.Site;
+                    site = block.BlockCache.Layout.Site;
                 }
                 else
                 {
-                    site = block.Site;
+                    site = block.BlockCache.Site;
                 }
 
                 if ( site != null )
@@ -162,8 +163,13 @@ namespace Rock.Obsidian.UI
 
                     if ( pageRef.PageId > 0 )
                     {
-                        pageRef.Parameters.AddOrReplace( "CommunicationId", "{EntitySetId}" );
-                        communicationUrl = pageRef.BuildUrl();
+                        var communicationPage = PageCache.Get( pageRef.PageId );
+
+                        if ( communicationPage.IsAuthorized( Security.Authorization.VIEW, block.RequestContext.CurrentPerson ) )
+                        {
+                            pageRef.Parameters.AddOrReplace( "CommunicationId", "{EntitySetId}" );
+                            communicationUrl = pageRef.BuildUrl();
+                        }
                     }
                 }
 

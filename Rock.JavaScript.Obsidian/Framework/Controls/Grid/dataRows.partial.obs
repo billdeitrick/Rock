@@ -1,5 +1,6 @@
 <template>
     <DataRow v-for="row in props.rows"
+             :key="props.grid.getRowKey(row)"
              :columns="props.columns"
              :data="row"
              :grid="props.grid"

@@ -15,7 +15,7 @@
 // </copyright>
 //
 
-import { Component, PropType, ShallowRef, VNode } from "vue";
+import { Component, PropType, Ref, ShallowRef, VNode } from "vue";
 import { Guid } from "..";
 
 // #region Caching
@@ -512,6 +512,9 @@ export type ColumnDefinition = {
 
     /** All properties and attributes that were defined on the column. */
     props: Record<string, unknown>;
+
+    /** Custom data that the column and cells can use any way they desire. */
+    data: Record<string, unknown>;
 };
 
 /**
@@ -565,13 +568,19 @@ export interface IGridState {
     readonly rows: Record<string, unknown>[];
 
     /** The current set of rows that have passed the filters. */
-    readonly filteredRows: ShallowRef<Record<string, unknown>[]>;
+    readonly filteredRows: Readonly<ShallowRef<Record<string, unknown>[]>>;
 
     /** The current set of rows that have been filtered and sorted. */
-    readonly sortedRows: ShallowRef<Record<string, unknown>[]>;
+    readonly sortedRows: Readonly<ShallowRef<Record<string, unknown>[]>>;
 
     /** The word or phrase that describes the individual row items.  */
     readonly itemTerm: string;
+
+    /** Will be `true` if the grid rows currently have any filtering applied. */
+    readonly isFiltered: Readonly<Ref<boolean>>;
+
+    /** Will be `true` if the grid rows currently have any sorting applied. */
+    readonly isSorted: Readonly<Ref<boolean>>;
 
     /**
      * The unique identifier of the entity type that the rows represent. If the

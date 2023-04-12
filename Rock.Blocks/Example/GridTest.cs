@@ -108,7 +108,7 @@ namespace Rock.Blocks.Example
         private GridBuilder<PrayerRequest> GetGridBuilder( List<AttributeCache> gridAttributes )
         {
             return new GridBuilder<PrayerRequest>()
-                .UseWithBlock( BlockCache )
+                .UseWithBlock( this )
                 .AddField( "guid", pr => pr.Guid.ToString() )
                 .AddField( "name", pr => new { pr.FirstName, pr.LastName } )
                 .AddTextField( "email", pr => pr.Email )

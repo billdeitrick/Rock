@@ -25,6 +25,7 @@ import DeleteColumn from "./Grid/Columns/deleteColumn.partial";
 import EditColumn from "./Grid/Columns/editColumn.partial";
 import LabelColumn from "./Grid/Columns/labelColumn.partial";
 import NumberColumn from "./Grid/Columns/numberColumn.partial";
+import ReorderColumn from "./Grid/Columns/reorderColumn.partial";
 import SecurityColumn from "./Grid/Columns/securityColumn.partial";
 import SelectColumn from "./Grid/Columns/selectColumn.partial";
 
@@ -34,6 +35,7 @@ import DeleteCell from "./Grid/Cells/deleteCell.partial.obs";
 import EditCell from "./Grid/Cells/editCell.partial.obs";
 import NumberCell from "./Grid/Cells/numberCell.partial.obs";
 import LabelCell from "./Grid/Cells/labelCell.partial.obs";
+import ReorderCell from "./Grid/Cells/reorderCell.partial.obs";
 import SecurityCell from "./Grid/Cells/securityCell.partial.obs";
 import SelectCell from "./Grid/Cells/selectCell.partial.obs";
 import SelectHeaderCell from "./Grid/Cells/selectHeaderCell.partial.obs";
@@ -60,6 +62,7 @@ export {
     EditColumn,
     LabelColumn,
     NumberColumn,
+    ReorderColumn,
     SecurityColumn,
     SelectColumn
 };
@@ -72,6 +75,7 @@ export {
     EditCell,
     LabelCell,
     NumberCell,
+    ReorderCell,
     SecurityCell,
     SelectCell,
     SelectHeaderCell,

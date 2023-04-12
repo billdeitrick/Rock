@@ -6,7 +6,7 @@
           stickyHeader
           tooltipField="attr_TextValue1"
           entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13">
-        <SelectColumn name="select" />
+        <ReorderColumn @orderChanged="onOrderChanged" />
 
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
@@ -68,7 +68,7 @@
     import { RockDateTime } from "@Obsidian/Utility/rockDateTime";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
-    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, SecurityColumn, SelectColumn, textValueFilter } from "@Obsidian/Controls/grid";
+    import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, ReorderColumn, SecurityColumn, SelectColumn, textValueFilter } from "@Obsidian/Controls/grid";
 
     // Putting this here as an example of how to call methods on components.
     // Such as myGrid.value.reloadItem(item.id);
@@ -140,6 +140,12 @@
             setTimeout(() => {
                 resolve();
             }, 500);
+        });
+    }
+
+    async function onOrderChanged(): Promise<boolean> {
+        return new Promise<boolean>(resolve => {
+            setTimeout(() => resolve(true), 1000);
         });
     }
 </script>

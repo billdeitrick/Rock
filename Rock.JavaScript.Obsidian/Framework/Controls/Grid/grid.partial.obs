@@ -3,6 +3,8 @@
     <table class="grid-table table table-bordered table-striped table-hover table-obsidian" :class="{ 'table-sticky': props.stickyHeader }">
         <thead>
             <FilterHeaderRow v-model:filterValue="quickFilterValue"
+                             :grid="gridState"
+                             :enableFiltering="!reorderColumn"
                              :gridActions="gridActions"
                              :visibleColumnCount="visibleColumnCount" />
 
@@ -13,7 +15,15 @@
                              :grid="gridState" />
         </thead>
 
-        <tbody>
+        <tbody v-if="dragOptions" v-dragSource="dragOptions" v-dragTarget="dragOptions">
+            <DataRows
+                      :columns="visibleColumnDefinitions"
+                      :rows="visibleRows"
+                      :grid="gridState"
+                      :tooltipField="tooltipField" />
+        </tbody>
+
+        <tbody v-else>
             <tr v-if="loadingData">
                 <td class="grid-error" :colspan="visibleColumnCount">
                     <LoadingIndicator />
@@ -182,6 +192,7 @@ table.table-obsidian th.grid-filter .grid-title {
     align-self: center;
     font-size: 18px;
 }
+
 table.table-obsidian th.grid-filter .grid-quick-filter {
     display: flex;
     max-width: 480px;
@@ -210,13 +221,15 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
-    import { computed, PropType, ref, shallowRef, useSlots, watch } from "vue";
+    import { computed, PropType, ref, useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
     import { getColumnDefinitions, GridState } from "@Obsidian/Core/Controls/grid";
+    import { DragSource as vDragSource, DragTarget as vDragTarget, IDragSourceOptions, useDragReorder } from "@Obsidian/Directives/dragDrop";
     import { ColumnSort, GridAction, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { Guid } from "@Obsidian/Types";
+    import { isPromise } from "@Obsidian/Utility/promiseUtils";
 
     /*
      * 8/17/2022 - DSH
@@ -295,12 +308,7 @@ table.table-obsidian th.grid-error > .alert {
 
     const slots = useSlots();
 
-    const gridState: GridState = new GridState(
-        getColumnDefinitions(slots["default"]?.() ?? []),
-        props.liveUpdates ?? false,
-        props.itemTerm || "item",
-        props.entityTypeGuid);
-    gridState.setItemKey(props.keyField);
+    const gridState = getGridState();
 
     const gridActions = ref<GridAction[]>([]);
     const currentPage = ref(1);
@@ -311,15 +319,28 @@ table.table-obsidian th.grid-error > .alert {
     const gridErrorMessage = ref("");
     const columnFilterValues = ref<Record<string, unknown | undefined>>({});
     const columnSortDirection = ref<ColumnSort | undefined>();
-    const visibleRows = shallowRef<Record<string, unknown>[]>([]);
+    const visibleRows = ref<Record<string, unknown>[]>([]);
     const pageCount = ref(0);
     const pagerMessage = ref("");
-    const columns: ColumnDefinition[] = getColumnDefinitions(slots["default"]?.() ?? []);
-    const visibleColumnDefinitions = ref<ColumnDefinition[]>(columns);
+    const visibleColumnDefinitions = ref<ColumnDefinition[]>(gridState.columns);
+    const dragOptions = ref<IDragSourceOptions | undefined>();
+    const reorderColumn: ColumnDefinition | undefined = gridState.columns.find(c => c.name === "__reorder");
 
     const visibleColumnCount = computed((): number => {
         return visibleColumnDefinitions.value.length;
     });
+
+    function getGridState(): GridState {
+        const state = new GridState(
+            getColumnDefinitions(slots["default"]?.() ?? []),
+            props.liveUpdates ?? false,
+            props.itemTerm || "item",
+            props.entityTypeGuid);
+
+        state.setItemKey(props.keyField);
+
+        return state;
+    }
 
     function updateVisibleRows(): void {
         const startIndex = (currentPage.value - 1) * pageSize.value;
@@ -351,6 +372,38 @@ table.table-obsidian th.grid-error > .alert {
             catch (error) {
                 gridErrorMessage.value = error instanceof Error ? error.message : new String(error).toString();
             }
+        }
+
+        if (reorderColumn && !gridErrorMessage.value) {
+            if (reorderColumn && !props.keyField) {
+                throw new Error("Re-ordering rows requires each row has a unique key.");
+            }
+
+            const dropOperationInProgress = ref(false);
+            reorderColumn.data.dropOperationInProgress = dropOperationInProgress;
+
+            dragOptions.value = useDragReorder(visibleRows, async (item, beforeItem) => {
+                if (typeof reorderColumn.props.onOrderChanged === "function") {
+                    const fn = reorderColumn.props.onOrderChanged as (item: Record<string, unknown>, beforeItem: Record<string, unknown> | null, order: number) => void | Promise<void> | boolean | Promise<boolean>;
+
+                    dropOperationInProgress.value = true;
+                    try {
+                        const result = fn(item, beforeItem, visibleRows.value.indexOf(item));
+
+                        if (isPromise(result)) {
+                            await result;
+                        }
+
+                        return result;
+                    }
+                    finally {
+                        dropOperationInProgress.value = false;
+                    }
+                }
+                else {
+                    return true;
+                }
+            });
         }
 
         loadingData.value = false;

@@ -1,7 +1,7 @@
 <template>
     <th ref="columnHeaderElement" class="grid-column-header" :class="additionalHeaderClass">
         <component v-if="column.headerTemplate" :is="column.headerTemplate" :column="column" :grid="grid" />
-        <span v-else class="grid-column-title clickable" @click.prevent="onSortClick">{{ column.title }}</span>
+        <span v-else :class="titleClass" @click.prevent="onSortClick">{{ column.title }}</span>
 
         <span v-if="isSortAscending" class="grid-sort-direction"><i class="fa fa-sort-alpha-up"></i></span>
         <span v-else-if="isSortDescending" class="grid-sort-direction"><i class="fa fa-sort-alpha-down"></i></span>
@@ -13,7 +13,7 @@
             <i class="fa fa-filter "></i>
         </button>
 
-        <div ref="resizeHandleElement" class="resize-handle"></div>
+        <div v-if="false" ref="resizeHandleElement" class="resize-handle"></div>
 
         <div v-if="isFilterVisible" ref="filterElement" class="grid-filter-popup">
             <div class="grid-filter-popup-content">
@@ -76,15 +76,41 @@
     let resizePositionX = 0;
     let resizeWidth = 0;
 
-    const hasFilter = computed((): boolean => props.column.filter !== undefined);
+    const hasFilter = computed((): boolean => {
+        return props.column.filter !== undefined && isFilteringEnabled.value;
+    });
+
+    const isSortingEnabled = computed((): boolean => {
+        return !props.grid.columns.some(c => c.name === "__reorder");
+    });
+
+    const isFilteringEnabled = computed((): boolean => {
+        return !props.grid.columns.some(c => c.name === "__reorder");
+    });
 
     const buttonCssClass = computed((): string => {
         return internalFilterValue.value !== undefined ? "btn-grid-column-filter active" : "btn-grid-column-filter";
     });
 
-    const isSortAscending = computed((): boolean => sortDirection.value > 0);
-    const isSortDescending = computed((): boolean => sortDirection.value < 0);
+    const isSortAscending = computed((): boolean => {
+        return sortDirection.value > 0 && isSortingEnabled.value;
+    });
+
+    const isSortDescending = computed((): boolean => {
+        return sortDirection.value < 0 && isSortingEnabled.value;
+    });
+
     const additionalHeaderClass = computed((): string | undefined => props.column.headerClass);
+
+    const titleClass = computed((): string => {
+        let classValue = "grid-column-title";
+
+        if (isSortingEnabled.value) {
+            classValue += " clickable";
+        }
+
+        return classValue;
+    });
 
     const onMouseDownEvent = (ev: MouseEvent): void => {
         if (ev.target && ev.target instanceof HTMLElement) {
@@ -144,6 +170,10 @@
     };
 
     const onSortClick = (): void => {
+        if (!isSortingEnabled.value) {
+            return;
+        }
+
         if (sortDirection.value > 0) {
             sortDirection.value = -1;
         }
