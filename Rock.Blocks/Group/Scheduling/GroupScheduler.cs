@@ -154,7 +154,7 @@ namespace Rock.Blocks.Group.Scheduling
 
             box.AppliedFilters = new GroupSchedulerAppliedFiltersBag
             {
-                Filters = GetFilters( rockContext ),
+                Filters = GetDefaultOrUserPreferenceFilters( rockContext ),
                 ScheduleOccurrences = GetScheduleOccurrences( rockContext ),
                 NavigationUrls = GetNavigationUrls()
             };
@@ -166,11 +166,11 @@ namespace Rock.Blocks.Group.Scheduling
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <returns>The filters.</returns>
-        private GroupSchedulerFiltersBag GetFilters( RockContext rockContext )
+        private GroupSchedulerFiltersBag GetDefaultOrUserPreferenceFilters( RockContext rockContext )
         {
             var filters = new GroupSchedulerFiltersBag();
 
-            // TODO (JPH): Hook into user preferences to override defaults, once supported in Obsidian blocks.
+            // TODO (JPH): Override defaults with user preferences, once supported in Obsidian blocks.
 
             // Dev-time defaults:
             filters.Groups = new List<ListItemBag>
@@ -695,11 +695,33 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Validates and applies the provided filters.
+        /// </summary>
+        /// <param name="rockContext">The rock context.</param>
+        /// <param name="filters">The filters to apply.</param>
+        /// <returns>An object containing the validated filters and new list of filtered [group, location, schedule, occurrence date] occurrences.</returns>
+        private GroupSchedulerAppliedFiltersBag ApplyFilters( RockContext rockContext, GroupSchedulerFiltersBag filters )
+        {
+            RefineFilters( rockContext, filters );
+
+            // TODO (JPH): Save selected filters to user preferences, once supported in Obsidian blocks.
+
+            var appliedFilters = new GroupSchedulerAppliedFiltersBag
+            {
+                Filters = filters,
+                ScheduleOccurrences = GetScheduleOccurrences( rockContext ),
+                NavigationUrls = GetNavigationUrls()
+            };
+
+            return appliedFilters;
+        }
+
+        /// <summary>
         /// Gets the resource settings, overriding defaults with any previously-saved user preferences.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <param name="groupId">The group ID for this group scheduler occurrence.</param>
-        /// <returns>The resource settings.</returns>
+        /// <returns>An object containing the available and applied resource settings.</returns>
         private GroupSchedulerResourceSettingsBag GetDefaultOrUserPreferenceResourceSettings( RockContext rockContext, int groupId )
         {
             var enabledResourceListSourceTypes = GetEnabledResourceListSourceTypes( rockContext, groupId );
@@ -710,7 +732,7 @@ namespace Rock.Blocks.Group.Scheduling
                 ResourceListSourceType = enabledResourceListSourceTypes.FirstOrDefault()
             };
 
-            // TODO (JPH): Hook into user preferences to override defaults, once supported in Obsidian blocks.
+            // TODO (JPH): Override defaults with user preferences, once supported in Obsidian blocks.
 
             SetGroupMemberFilterType( resourceSettings );
 
@@ -771,12 +793,12 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Validates and applies the resource settings to user preferences.
+        /// Validates and applies the provided resource settings to user preferences.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
-        /// <param name="settingsToApply">The settings to apply.</param>
-        /// <returns>The resource settings.</returns>
-        private GroupSchedulerResourceSettingsBag ValidateAndApplyResourceSettings( RockContext rockContext, GroupSchedulerApplyResourceSettingsBag settingsToApply )
+        /// <param name="settingsToApply">The resource settings to apply.</param>
+        /// <returns>An object containing the validated and applied + available resource settings.</returns>
+        private GroupSchedulerResourceSettingsBag ApplyResourceSettings( RockContext rockContext, GroupSchedulerApplyResourceSettingsBag settingsToApply )
         {
             var resourceSettings = GetDefaultOrUserPreferenceResourceSettings( rockContext, settingsToApply.GroupId );
 
@@ -793,13 +815,16 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Gets the clone settings, overriding any defaults with user preferences.
+        /// Validates the provided filters and gets the clone settings, overriding any defaults with user preferences.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
-        /// <returns>The clone settings.</returns>
-        private GroupSchedulerCloneSettingsBag GetCloneSettings( RockContext rockContext )
+        /// <param name="filters">The filters containing the groups, locations and schedules currently available.</param>
+        /// <returns>An object containing the available and applied clone settings.</returns>
+        private GroupSchedulerCloneSettingsBag GetDefaultOrUserPreferenceCloneSettings( RockContext rockContext, GroupSchedulerFiltersBag filters )
         {
-            // TODO (JPH): Hook into user preferences to override defaults, once supported in Obsidian blocks.
+            RefineFilters( rockContext, filters );
+
+            // TODO (JPH): Override defaults with user preferences, once supported in Obsidian blocks.
 
             return new GroupSchedulerCloneSettingsBag();
         }
@@ -838,6 +863,74 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Validates the provided filters and auto-schedules occurrences specified within the filters.
+        /// </summary>
+        /// <param name="rockContext">The rock context.</param>
+        /// <param name="filters">The filters containing the occurrences to auto-schedule.</param>
+        /// <returns>An object containing the validated filters and new list of filtered [group, location, schedule, occurrence date] occurrences.</returns>
+        private GroupSchedulerAppliedFiltersBag AutoSchedule( RockContext rockContext, GroupSchedulerFiltersBag filters )
+        {
+            RefineFilters( rockContext, filters );
+
+            var scheduleOccurrences = GetScheduleOccurrences( rockContext );
+            if ( scheduleOccurrences.Any() )
+            {
+                var attendanceOccurrenceIds = scheduleOccurrences
+                    .Select( s => s.AttendanceOccurrenceId )
+                    .ToList();
+
+                var attendanceService = new AttendanceService( rockContext );
+
+                attendanceService.SchedulePersonsAutomaticallyForAttendanceOccurrences( attendanceOccurrenceIds, this.RequestContext.CurrentPerson.PrimaryAlias );
+                rockContext.SaveChanges();
+            }
+
+            var appliedFilters = new GroupSchedulerAppliedFiltersBag
+            {
+                Filters = filters,
+                ScheduleOccurrences = scheduleOccurrences,
+                NavigationUrls = GetNavigationUrls()
+            };
+
+            return appliedFilters;
+        }
+
+        /// <summary>
+        /// Validates the provided filters and sends confirmations to individuals scheduled for occurrences specified within the filters.
+        /// </summary>
+        /// <param name="rockContext">The rock context.</param>
+        /// <param name="filters">The filters containing the groups with individuals who should receive confirmations.</param>
+        /// <returns>An object containing the outcome of the send communications attempt.</returns>
+        private GroupSchedulerSendNowResponseBag SendNow( RockContext rockContext, GroupSchedulerFiltersBag filters )
+        {
+            var response = new GroupSchedulerSendNowResponseBag();
+
+            RefineFilters( rockContext, filters );
+
+            var attendanceOccurrenceIds = GetScheduleOccurrences( rockContext )
+                .Select( s => s.AttendanceOccurrenceId )
+                .ToList();
+
+            if ( attendanceOccurrenceIds.Any() )
+            {
+                var attendanceService = new AttendanceService( rockContext );
+                var sendConfirmationAttendancesQuery = attendanceService.GetPendingAndAutoAcceptScheduledConfirmations()
+                    .Where( a => attendanceOccurrenceIds.Contains( a.OccurrenceId ) )
+                    .Where( a => a.ScheduleConfirmationSent != true );
+
+                var sendMessageResult = attendanceService.SendScheduleConfirmationCommunication( sendConfirmationAttendancesQuery );
+                response.AnyCommunicationsToSend = sendConfirmationAttendancesQuery.Any();
+                rockContext.SaveChanges();
+
+                response.Errors = sendMessageResult.Errors;
+                response.Warnings = sendMessageResult.Warnings;
+                response.CommunicationsSentCount = sendMessageResult.MessagesSent;
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Gets the security grant token that will be used by UI controls on this block to ensure they have the proper permissions.
         /// </summary>
         /// <returns>A string that represents the security grant token.</returns>
@@ -851,8 +944,7 @@ namespace Rock.Blocks.Group.Scheduling
         #region Block Actions
 
         /// <summary>
-        /// Validates and applies the provided filters, then returns the new list of [group, location, schedule, occurrence date] occurrences,
-        /// based on the applied filters.
+        /// Applies the provided filters.
         /// </summary>
         /// <param name="bag">The filters to apply.</param>
         /// <returns>An object containing the validated filters and new list of filtered [group, location, schedule, occurrence date] occurrences.</returns>
@@ -861,23 +953,14 @@ namespace Rock.Blocks.Group.Scheduling
         {
             using ( var rockContext = new RockContext() )
             {
-                RefineFilters( rockContext, bag );
+                var appliedFilters = ApplyFilters( rockContext, bag );
 
-                // TODO (JPH): Save selected filters to user preferences, once supported in Obsidian blocks.
-
-                var results = new GroupSchedulerAppliedFiltersBag
-                {
-                    Filters = bag,
-                    ScheduleOccurrences = GetScheduleOccurrences( rockContext ),
-                    NavigationUrls = GetNavigationUrls()
-                };
-
-                return ActionOk( results );
+                return ActionOk( appliedFilters );
             }
         }
 
         /// <summary>
-        /// Gets the resource settings, overriding defaults with any previously-saved user preferences.
+        /// Gets the resource settings.
         /// </summary>
         /// <param name="groupId">The group ID for this group scheduler occurrence.</param>
         /// <returns>An object containing the available and applied resource settings.</returns>
@@ -893,7 +976,7 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Validates and applies the resource settings to user preferences.
+        /// Applies the provided resource settings.
         /// </summary>
         /// <param name="bag">The resource settings to apply.</param>
         /// <returns>An object containing the validated and applied + available resource settings.</returns>
@@ -902,14 +985,14 @@ namespace Rock.Blocks.Group.Scheduling
         {
             using ( var rockContext = new RockContext() )
             {
-                var resourceSettings = ValidateAndApplyResourceSettings( rockContext, bag );
+                var resourceSettings = ApplyResourceSettings( rockContext, bag );
 
                 return ActionOk( resourceSettings );
             }
         }
 
         /// <summary>
-        /// Validates filters and gets clone settings, overriding defaults with any previously-saved user preferences.
+        /// Gets the clone settings.
         /// </summary>
         /// <param name="bag">The filters containing the groups currently visible.</param>
         /// <returns>An object containing the available and applied clone settings.</returns>
@@ -918,14 +1001,14 @@ namespace Rock.Blocks.Group.Scheduling
         {
             using ( var rockContext = new RockContext() )
             {
-                var cloneSettings = new GroupSchedulerCloneSettingsBag();
+                var cloneSettings = GetDefaultOrUserPreferenceCloneSettings( rockContext, bag );
 
                 return ActionOk( cloneSettings );
             }
         }
 
         /// <summary>
-        /// Attempts to clone the schedules specified within the provided settings.
+        /// Clones the schedules specified within the provided settings.
         /// </summary>
         /// <param name="bag">The clone settings dictating which schedules should be cloned.</param>
         /// <returns>An object containing the outcome of the clone attempt.</returns>
@@ -939,43 +1022,23 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Validates filters and auto-schedules groups specified within the provided filters.
+        /// Auto-schedules occurrences specified within the provided filters.
         /// </summary>
-        /// <param name="bag">The filters containing the groups to auto-schedule.</param>
+        /// <param name="bag">The filters containing the occurrences to auto-schedule.</param>
         /// <returns>An object containing the validated filters and new list of filtered [group, location, schedule, occurrence date] occurrences.</returns>
         [BlockAction]
         public BlockActionResult AutoSchedule( GroupSchedulerFiltersBag bag )
         {
             using ( var rockContext = new RockContext() )
             {
-                RefineFilters( rockContext, bag );
+                var appliedFilters = AutoSchedule( rockContext, bag );
 
-                var scheduleOccurrences = GetScheduleOccurrences( rockContext );
-                if ( scheduleOccurrences.Any() )
-                {
-                    var attendanceOccurrenceIds = scheduleOccurrences
-                        .Select( s => s.AttendanceOccurrenceId )
-                        .ToList();
-
-                    var attendanceService = new AttendanceService( rockContext );
-
-                    attendanceService.SchedulePersonsAutomaticallyForAttendanceOccurrences( attendanceOccurrenceIds, this.RequestContext.CurrentPerson.PrimaryAlias );
-                    rockContext.SaveChanges();
-                }
-
-                var results = new GroupSchedulerAppliedFiltersBag
-                {
-                    Filters = bag,
-                    ScheduleOccurrences = scheduleOccurrences,
-                    NavigationUrls = GetNavigationUrls()
-                };
-
-                return ActionOk( results );
+                return ActionOk( appliedFilters );
             }
         }
 
         /// <summary>
-        /// Validates filters and sends confirmations to individuals scheduled for occurrences within the provided filter groups.
+        /// Sends confirmations to individuals scheduled for occurrences within the provided filters.
         /// </summary>
         /// <param name="bag">The filters containing the groups with individuals who should receive confirmations.</param>
         /// <returns>An object containing the outcome of the send communications attempt.</returns>
@@ -984,29 +1047,7 @@ namespace Rock.Blocks.Group.Scheduling
         {
             using ( var rockContext = new RockContext() )
             {
-                var response = new GroupSchedulerSendNowResponseBag();
-
-                RefineFilters( rockContext, bag );
-
-                var attendanceOccurrenceIds = GetScheduleOccurrences( rockContext )
-                    .Select( s => s.AttendanceOccurrenceId )
-                    .ToList();
-
-                if ( attendanceOccurrenceIds.Any() )
-                {
-                    var attendanceService = new AttendanceService( rockContext );
-                    var sendConfirmationAttendancesQuery = attendanceService.GetPendingAndAutoAcceptScheduledConfirmations()
-                        .Where( a => attendanceOccurrenceIds.Contains( a.OccurrenceId ) )
-                        .Where( a => a.ScheduleConfirmationSent != true );
-
-                    var sendMessageResult = attendanceService.SendScheduleConfirmationCommunication( sendConfirmationAttendancesQuery );
-                    response.AnyCommunicationsToSend = sendConfirmationAttendancesQuery.Any();
-                    rockContext.SaveChanges();
-
-                    response.Errors = sendMessageResult.Errors;
-                    response.Warnings = sendMessageResult.Warnings;
-                    response.CommunicationsSentCount = sendMessageResult.MessagesSent;
-                }
+                var response = SendNow( rockContext, bag );
 
                 return ActionOk( response );
             }
