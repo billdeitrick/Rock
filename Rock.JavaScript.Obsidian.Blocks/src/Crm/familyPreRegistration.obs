@@ -185,10 +185,11 @@
                                     v-if="adult1.attributes != null"
                                     v-model="adult1.attributeValues"
                                     :attributes="adult1.attributes"
+                                    columnBreakpoint="sm"
                                     :displayWithinExistingRow="true"
                                     id="phAttributes1"
                                     isEditMode
-                                    :numberOfColumns="4"
+                                    :numberOfColumns="12 / getColumns(3)"
                                     :showCategoryLabel="true" />
                             </div>
 
@@ -369,10 +370,11 @@
                                         v-if="adult2.attributes != null"
                                         v-model="adult2.attributeValues"
                                         :attributes="adult2.attributes"
+                                        columnBreakpoint="sm"
                                         :displayWithinExistingRow="true"
                                         id="phAttributes2"
                                         isEditMode
-                                        :numberOfColumns="4"
+                                        :numberOfColumns="12 / getColumns(3)"
                                         :showCategoryLabel="true" />
                                 </div>
                             </div>
@@ -395,8 +397,10 @@
                                         v-if="config.familyAttributes"
                                         v-model="familyAttributeValues"
                                         :attributes="config.familyAttributes"
+                                        columnBreakpoint="sm"
                                         id="phFamilyAttributes"
                                         isEditMode
+                                        :numberOfColumns="12 / getColumns(3)"
                                         :showCategoryLabel="false" />
                                 </div>
                             </div>
@@ -404,9 +408,7 @@
                     </Panel>
 
                     <Panel id="pnlChildren" type="default" title="Children">
-                        <PreRegistrationChildren
-                            id="prChildren"
-                            :relationships="config.childRelationshipTypes || []" />
+                        <PreRegistrationChildren :lastName="adult1.lastName" />
                     </Panel>
                 </template>
 
@@ -423,7 +425,7 @@
     import { computed, nextTick, ref } from "vue";
     import PreRegistrationChildren from "./FamilyPreRegistration/preRegistrationChildren.partial.obs";
     import { CreateAccountRequest, PersonRequestBag } from "./FamilyPreRegistration/types.partial";
-    import { convertPersonToPersonRequest, createListItemBagWrapper } from "./FamilyPreRegistration/utils.partial";
+    import { convertPersonToPersonRequest, createListItemBagWrapper, useGetColumnClass, useGetColumns } from "./FamilyPreRegistration/utils.partial";
     import AddressControl from "@Obsidian/Controls/addressControl.obs";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
@@ -457,6 +459,8 @@
     import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
 
     const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
+    const getColumns = useGetColumns(config);
+    const getColumnClass = useGetColumnClass(config);
     const invokeBlockAction = useInvokeBlockAction();
     const http = useHttp();
 
@@ -631,18 +635,6 @@
     //         }
     //     });
     // }
-
-    function getColumnClass(columns: number): string {
-        if ((columns != 3 && columns != 6) || config.columns === 4) {
-            return `col-sm-${columns}`;
-        }
-
-        if (columns == 6) {
-            return `col-sm-${columns}`;
-        }
-
-        return `col-sm-${columns * 2}`;
-    }
 
     function setError(text?: string | null, title?: string | null): void {
         errorTitle.value = title;

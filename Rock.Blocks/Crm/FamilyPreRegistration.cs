@@ -678,6 +678,11 @@ namespace Rock.Blocks.Crm
         private List<Guid> CampusTypesFilter => this.GetAttributeValues( AttributeKey.CampusTypes ).AsGuidList().Where( guid => DefinedValueCache.Get( guid ) != null ).ToList();
 
         /// <summary>
+        /// Gets the child attribute category guids.
+        /// </summary>
+        private List<Guid> ChildAttributeCategoryGuids => this.GetAttributeValues( AttributeKey.ChildAttributeCategories ).AsGuidList();
+
+        /// <summary>
         /// Gets the columns.
         /// </summary>
         private int Columns => this.GetAttributeValue( AttributeKey.Columns ).AsInteger();
@@ -863,12 +868,12 @@ namespace Rock.Blocks.Crm
 
         #region Private Methods
 
-        private List<AttributeCache> GetAdultAttributeCategoryAttributes( RockContext rockContext )
+        private List<AttributeCache> GetAttributeCategoryAttributes( RockContext rockContext, List<Guid> attributeCategoryGuids )
         {
             var attributeService = new AttributeService( rockContext );
             var attributes = new List<AttributeCache>();
 
-            foreach ( var categoryGuid in this.AdultAttributeCategoryGuids )
+            foreach ( var categoryGuid in attributeCategoryGuids )
             {
                 var category = CategoryCache.Get( categoryGuid );
 
@@ -933,9 +938,18 @@ namespace Rock.Blocks.Crm
             ( box.IsAdultEmailOptional, box.IsAdultEmailHidden ) = this.GetFieldProperties( AttributeKey.AdultEmail );
             ( box.IsAdultMaritalStatusOptional, box.IsAdultMaritalStatusHidden) = this.GetFieldProperties( AttributeKey.AdultMaritalStatus );
             ( box.IsAdultDisplayCommunicationPreferenceOptional, box.IsAdultDisplayCommunicationPreferenceHidden) = this.GetFieldProperties( AttributeKey.AdultDisplayCommunicationPreference );
-            (box.IsRaceOptionOptional, box.IsRaceOptionHidden) = this.GetFieldProperties( AttributeKey.RaceOption );
-            (box.IsEthnicityOptionOptional, box.IsEthnicityOptionHidden) = this.GetFieldProperties( AttributeKey.EthnicityOption );
-
+            ( box.IsRaceOptionOptional, box.IsRaceOptionHidden ) = this.GetFieldProperties( AttributeKey.RaceOption );
+            ( box.IsEthnicityOptionOptional, box.IsEthnicityOptionHidden ) = this.GetFieldProperties( AttributeKey.EthnicityOption );
+            ( _, box.IsChildSuffixHidden ) = this.GetFieldProperties( AttributeKey.ChildSuffix );
+            ( box.IsChildGenderOptional, box.IsChildGenderHidden ) = this.GetFieldProperties( AttributeKey.ChildGender );
+            ( box.IsChildBirthDateOptional, box.IsChildBirthDateHidden ) = this.GetFieldProperties( AttributeKey.ChildBirthdate );
+            ( box.IsChildGradeOptional, box.IsChildGradeHidden ) = this.GetFieldProperties( AttributeKey.ChildGrade );
+            ( box.IsChildMobilePhoneOptional, box.IsChildMobilePhoneHidden ) = this.GetFieldProperties( AttributeKey.ChildMobilePhone );
+            ( box.IsChildEmailOptional, box.IsChildEmailHidden ) = this.GetFieldProperties( AttributeKey.ChildEmail );
+            ( _, box.IsChildDisplayCommunicationPreferenceHidden ) = this.GetFieldProperties( AttributeKey.ChildDisplayCommunicationPreference );
+            ( box.IsChildProfilePhotoOptional, box.IsChildProfilePhotoHidden ) = this.GetFieldProperties( AttributeKey.ChildProfilePhoto );
+            ( box.IsChildRaceOptional, box.IsChildRaceHidden ) = this.GetFieldProperties( AttributeKey.ChildRaceOption );
+            ( box.IsChildEthnicityOptional, box.IsChildEthnicityHidden ) = this.GetFieldProperties( AttributeKey.ChildEthnicityOption );
 
             using ( var rockContext = new RockContext() )
             {
@@ -943,20 +957,33 @@ namespace Rock.Blocks.Crm
 
                 var (adult1, adult2, family) = GetCurrentFamilyValues( rockContext, currentPerson );
 
-                var adultAttributes = GetAdultAttributeCategoryAttributes( rockContext );
-                adult1?.LoadAttributes( rockContext );
-                adult2?.LoadAttributes( rockContext );
+                var adultAttributes = GetAttributeCategoryAttributes( rockContext, this.AdultAttributeCategoryGuids );
+                adult1.LoadAttributes( rockContext );
+                adult2.LoadAttributes( rockContext );
 
                 box.Adult1 = GetFamilyPreRegistrationPersonBag( adult1, currentPerson, adultAttributes );
                 box.Adult2 = GetFamilyPreRegistrationPersonBag( adult2, currentPerson, adultAttributes );
 
                 var familyAttributes = GetFamilyAttributes( rockContext, currentPerson );
-                family?.LoadAttributes( rockContext );
-                box.FamilyAttributes = family?.GetPublicAttributesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
-                box.FamilyAttributeValues = family?.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
+                family.LoadAttributes( rockContext );
+                box.FamilyAttributes = family.GetPublicAttributesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
+                box.FamilyAttributeValues = family.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: f => familyAttributes.Any( a => a.Guid == f.Guid ) );
+
+                var mockChild = new Person
+                {
+                    Guid = Guid.NewGuid(),
+                    Gender = Gender.Unknown,
+                    GradeOffset = null
+                };
+                mockChild.LoadAttributes( rockContext );
+                var childAttributes = GetAttributeCategoryAttributes( rockContext, this.ChildAttributeCategoryGuids );
+                box.ChildAttributes = mockChild.GetPublicAttributesForEdit( currentPerson, attributeFilter: f => childAttributes.Any( a => a.Guid == f.Guid ) );
+                box.ChildAttributeValuesTemplate = mockChild.GetPublicAttributeValuesForEdit( currentPerson, attributeFilter: f => childAttributes.Any( a => a.Guid == f.Guid ) );
             }
 
             box.ChildRelationshipTypes = GetChildRelationshipTypes();
+
+
 
             return box;
         }

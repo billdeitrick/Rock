@@ -1,7 +1,7 @@
 <template>
-    <template v-for="child in children">
+    <template v-for="(child, index) in children">
         <PreRegistrationChild
-            :relationships="relationships"
+            :childNumber="index + 1"
             :child="child"
             @remove="onRemoveChild" />
         <hr>
@@ -22,11 +22,14 @@
     import { PersonRequestBag } from "./types.partial";
     import { createPersonRequest } from "./utils.partial";
     import RockButton from "@Obsidian/Controls/rockButton";
-    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+    import { useConfigurationValues } from "@Obsidian/Utility/block";
+    import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
+
+    const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
 
     const props = defineProps({
-        relationships: {
-            type: Object as PropType<ListItemBag[]>,
+        lastName: {
+            type: String as PropType<string>,
             required: true
         }
     });
@@ -39,7 +42,9 @@
      * Event handler for a child being added.
      */
     function onAddChildClicked(): void {
-        children.value.push(createPersonRequest());
+        const child = createPersonRequest();
+        child.lastName = props.lastName;
+        children.value.push(child);
     }
 
     /**
@@ -47,7 +52,6 @@
      */
     function onRemoveChild(child: PersonRequestBag): void {
         const index = children.value.indexOf(child);
-
         if (index !== -1) {
             children.value.splice(index, 1);
         }

@@ -43,6 +43,10 @@ export type FamilyPreRegistrationInitializationBox = {
     /** Filters the campus field by campus types. */
     campusTypesFilter?: Guid[] | null;
 
+    childAttributes?: Record<string, PublicAttributeBag> | null;
+
+    childAttributeValuesTemplate?: Record<string, string> | null;
+
     childRelationshipTypes?: ListItemBag[] | null;
 
     /** The number of columns used to display the form. */
@@ -112,6 +116,42 @@ export type FamilyPreRegistrationInitializationBox = {
      * If the campus field is required and there is only one active campus, then the campus field will not show and the single campus will be selected.
      */
     isCampusOptional: boolean;
+
+    isChildBirthDateHidden: boolean;
+
+    isChildBirthDateOptional: boolean;
+
+    isChildDisplayCommunicationPreferenceHidden: boolean;
+
+    isChildEmailHidden: boolean;
+
+    isChildEmailOptional: boolean;
+
+    isChildEthnicityHidden: boolean;
+
+    isChildEthnicityOptional: boolean;
+
+    isChildGenderHidden: boolean;
+
+    isChildGenderOptional: boolean;
+
+    isChildGradeHidden: boolean;
+
+    isChildGradeOptional: boolean;
+
+    isChildMobilePhoneHidden: boolean;
+
+    isChildMobilePhoneOptional: boolean;
+
+    isChildProfilePhotoHidden: boolean;
+
+    isChildProfilePhotoOptional: boolean;
+
+    isChildRaceHidden: boolean;
+
+    isChildRaceOptional: boolean;
+
+    isChildSuffixHidden: boolean;
 
     isCreateAccountHidden: boolean;
 

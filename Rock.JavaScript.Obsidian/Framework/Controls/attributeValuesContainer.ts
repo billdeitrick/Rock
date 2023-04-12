@@ -80,6 +80,10 @@ export default defineComponent({
         disabled: {
             type: Boolean as PropType<boolean>,
             default: false
+        },
+        columnBreakpoint: {
+            type: String as PropType<"xs" | "sm" | "md" | "lg">,
+            default: "md"
         }
     },
 
@@ -169,7 +173,7 @@ export default defineComponent({
                 numColumns = 12;
             }
 
-            return `col-md-${12 / numColumns}`;
+            return `col-${props.columnBreakpoint}-${12 / numColumns}`;
         });
 
         const onUpdateValue = (key: string, value: string): void => {

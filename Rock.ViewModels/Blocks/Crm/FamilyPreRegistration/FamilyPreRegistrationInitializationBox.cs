@@ -105,5 +105,25 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public bool IsEthnicityOptionOptional { get; set; }
         public bool IsEthnicityOptionHidden { get; set; }
         public List<ListItemBag> ChildRelationshipTypes { get; set; }
+        public bool IsChildSuffixHidden { get; set; }
+        public bool IsChildGenderOptional { get; set; }
+        public bool IsChildGenderHidden { get; set; }
+        public bool IsChildBirthDateHidden { get; set; }
+        public bool IsChildBirthDateOptional { get; set; }
+        public bool IsChildGradeOptional { get; set; }
+        public bool IsChildGradeHidden { get; set; }
+        public bool IsChildMobilePhoneHidden { get; set; }
+        public bool IsChildEmailHidden { get; set; }
+        public bool IsChildDisplayCommunicationPreferenceHidden { get; set; }
+        public bool IsChildProfilePhotoHidden { get; set; }
+        public bool IsChildRaceHidden { get; set; }
+        public bool IsChildEthnicityHidden { get; set; }
+        public bool IsChildMobilePhoneOptional { get; set; }
+        public bool IsChildEmailOptional { get; set; }
+        public bool IsChildProfilePhotoOptional { get; set; }
+        public bool IsChildRaceOptional { get; set; }
+        public bool IsChildEthnicityOptional { get; set; }
+        public Dictionary<string, PublicAttributeBag> ChildAttributes { get; set; }
+        public Dictionary<string, string> ChildAttributeValuesTemplate { get; set; }
     }
 }
