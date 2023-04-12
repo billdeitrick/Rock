@@ -18,8 +18,10 @@
             <div class="d-block flex-shrink-0">
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isSchedulingDisabled"
-                            @click="onCloneSchedulesClick">
+                            @click="onCloneSchedulesClick"
+                            @cloneSchedules="onCloneSchedules">
                     <i class="fa fa-clone"></i> Clone Schedules
+                    <Loading :isLoading="isCloningSchedules" :isSmall="true" class="d-inline-block" />
                 </RockButton>
 
                 <RockButton v-if="rosterUrl"
@@ -62,7 +64,7 @@
                             aria-haspopup="true"
                             aria-expanded="false"
                             :disabled="isSchedulingDisabled">
-                        <Loading :isLoading="isAutoScheduling || isSendingNow" :isSmall="true">
+                        <Loading :isLoading="isCloningSchedules || isAutoScheduling || isSendingNow" :isSmall="true">
                             <i class="fa fa-ellipsis-v"></i>
                         </Loading>
                     </button>
@@ -79,7 +81,8 @@
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
                                     :disabled="isSchedulingDisabled"
-                                    @click="onCloneSchedulesClick">
+                                    @click="onCloneSchedulesClick"
+                                    @cloneSchedules="onCloneSchedules">
                                 <i class="fa fa-clone"></i> Clone Schedules
                             </button>
                         </li>
@@ -126,7 +129,8 @@
                        :appliedFilters="currentlyAppliedFilters"
                        @filtersApplied="onFiltersApplied" />
 
-        <CloneSchedules v-model:isVisible="isCloningSchedules" />
+        <CloneSchedules v-model:isVisible="isSelectingCloneSettings"
+                        :filters="filters" />
 
         <Dialog v-model="isSendNowResponseDialogVisible"
                 :dismissible="true">
@@ -184,6 +188,7 @@
     import { BtnType } from "@Obsidian/Enums/Controls/btnType";
     import { getSecurityGrant, onConfigurationValuesChanged, provideSecurityGrant, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { GroupSchedulerAppliedFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerAppliedFiltersBag";
+    import { GroupSchedulerCloneSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSettingsBag";
     import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
     import { GroupSchedulerInitializationBox } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/GroupSchedulerInitializationBox";
     import { GroupSchedulerOccurrenceBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerOccurrenceBag";
@@ -213,6 +218,7 @@
     const navigationUrls = ref<Record<string, string> | null | undefined>(config.appliedFilters?.navigationUrls);
 
     const isSelectingFilters = ref(false);
+    const isSelectingCloneSettings = ref(false);
     const isCloningSchedules = ref(false);
     const isAutoScheduling = ref(false);
     const isSendingNow = ref(false);
@@ -345,7 +351,11 @@
     });
 
     const isBusy = computed((): boolean => {
-        return isSelectingFilters.value || isCloningSchedules.value || isAutoScheduling.value || isSendingNow.value;
+        return isSelectingFilters.value
+            || isSelectingCloneSettings.value
+            || isCloningSchedules.value
+            || isAutoScheduling.value
+            || isSendingNow.value;
     });
 
     const isSchedulingDisabled = computed((): boolean => {
@@ -458,7 +468,23 @@
             return;
         }
 
+        isSelectingCloneSettings.value = true;
+    }
+
+    /**
+     * Handles the `cloneSchedules` event of the CloneSchedules component.
+     *
+     * @param cloneSettings The settings dictating how schedules should be cloned.
+     */
+    async function onCloneSchedules(cloneSettings: GroupSchedulerCloneSettingsBag): Promise<void> {
+        if (isCloningSchedules.value) {
+            return;
+        }
+
         isCloningSchedules.value = true;
+        blockActionErrorMessage.value = "";
+
+
     }
 
     /**

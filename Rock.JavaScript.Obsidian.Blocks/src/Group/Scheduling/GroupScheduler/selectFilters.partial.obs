@@ -254,7 +254,7 @@
     // Watch for the modal closing without the save button being clicked and revert any changes to internal values.
     watch(isVisible, () => {
         if (isVisible.value) {
-            // Reset this value for the next time this component is presented.
+            // Reset this value each time this component is presented.
             isCanceled.value = true;
         }
         else {

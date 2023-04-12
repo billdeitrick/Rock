@@ -75,19 +75,35 @@ namespace Rock.ViewModels.Blocks.Group.Scheduling.GroupScheduler
         public List<string> SelectedGroups { get; set; }
 
         /// <summary>
-        /// Gets or sets the available and selected locations.
+        /// Gets or sets the available locations.
         /// </summary>
         /// <value>
-        /// The available and selected locations.
+        /// The available locations.
         /// </value>
-        public GroupSchedulerLocationsBag Locations { get; set; }
+        public List<ListItemBag> AvailableLocations { get; set; }
 
         /// <summary>
-        /// Gets or sets the available and selected schedules.
+        /// Gets or sets the selected locations.
         /// </summary>
-        /// <values>
-        /// The available and selected schedules.
-        /// </values>
-        public GroupSchedulerSchedulesBag Schedules { get; set; }
+        /// <value>
+        /// The selected locations.
+        /// </value>
+        public List<string> SelectedLocations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the available schedules.
+        /// </summary>
+        /// <value>
+        /// The available schedules.
+        /// </value>
+        public List<ListItemBag> AvailableSchedules { get; set; }
+
+        /// <summary>
+        /// Gets or sets the selected schedules.
+        /// </summary>
+        /// <value>
+        /// The selected schedules.
+        /// </value>
+        public List<string> SelectedSchedules { get; set; }
     }
 }

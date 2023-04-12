@@ -3,21 +3,57 @@
     <Modal v-model="isVisible"
            title="Clone Schedules"
            saveText="Clone"
-           :saveButtonDisabled="saveButtonDisabled"
+           :saveButtonDisabled="isCloningDisabled"
            @save="onSave">
 
         <NotificationBox :alertType="AlertType.Info">
-            Configure the settings below to clone schedules for a different date.
+            Configure the settings below to clone schedules for a different week.
         </NotificationBox>
 
-        <div class="row">
+        <NotificationBox v-if="loadCloneSettingsErrorMessage" :alertType="AlertType.Warning">
+            {{ loadCloneSettingsErrorMessage }}
+        </NotificationBox>
+
+        <div v-else class="row">
 
             <div class="col-md-6">
-                <h4>Source Settings</h4>
+                <h3>Source Settings</h3>
+
+                <DropDownList v-model="selectedSourceDate"
+                              label="Source Dates"
+                              rules="required"
+                              :items="availableSourceDates"
+                              :disabled="isBusy" />
+
+                <DropDownList v-model="selectedGroups"
+                              label="Groups"
+                              :items="availableGroups"
+                              :multiple="true"
+                              :disabled="isBusy" />
+
+                <DropDownList v-model="selectedLocations"
+                              label="Locations"
+                              :items="availableLocations"
+                              :multiple="true"
+                              :disabled="isBusy" />
+
+                <DropDownList v-model="selectedSchedules"
+                              label="Schedules"
+                              :items="availableSchedules"
+                              :multiple="true"
+                              :disabled="isBusy" />
+
             </div>
 
             <div class="col-md-6">
-                <h4>Destination Settings</h4>
+                <h3>Destination Settings</h3>
+
+                <DropDownList v-model="selectedDestinationDate"
+                              label="Destination Dates"
+                              rules="required"
+                              :items="availableDestinationDates"
+                              :disabled="isBusy" />
+
             </div>
 
         </div>
@@ -31,18 +67,29 @@
     import Modal from "@Obsidian/Controls/modal";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import { AlertType } from "@Obsidian/Enums/Controls/alertType";
+    import { useInvokeBlockAction } from "@Obsidian/Utility/block";
     import { useVModelPassthrough } from "@Obsidian/Utility/component";
     import { GroupSchedulerCloneSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSettingsBag";
+    import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
+    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+
+    const invokeBlockAction = useInvokeBlockAction();
 
     const props = defineProps({
         isVisible: {
             type: Boolean as PropType<boolean>,
             required: true
+        },
+
+        filters: {
+            type: Object as PropType<GroupSchedulerFiltersBag | null | undefined>,
+            required: true
         }
     });
 
     const emit = defineEmits<{
-        (e: "update:isVisible"): void
+        (e: "update:isVisible"): void,
+        (e: "cloneSchedules", cloneSettings: GroupSchedulerCloneSettingsBag): void
     }>();
 
     // #region Values
@@ -54,6 +101,12 @@
 
     const cloneSettings = ref<GroupSchedulerCloneSettingsBag | null>(null);
 
+    const selectedSourceDate = ref<string>("");
+    const selectedDestinationDate = ref<string>("");
+    const selectedGroups = ref<string[]>([]);
+    const selectedLocations = ref<string[]>([]);
+    const selectedSchedules = ref<string[]>([]);
+
     // #endregion
 
     // #region Computed Values
@@ -62,8 +115,30 @@
         return isLoadingCloneSettings.value;
     });
 
-    const saveButtonDisabled = computed((): boolean => {
-        return isBusy.value;
+    const isCloningDisabled = computed((): boolean => {
+        return isBusy.value
+            || !cloneSettings.value
+            || !!loadCloneSettingsErrorMessage.value;
+    });
+
+    const availableSourceDates = computed((): ListItemBag[] => {
+        return cloneSettings.value?.availableSourceDates ?? [];
+    });
+
+    const availableDestinationDates = computed((): ListItemBag[] => {
+        return cloneSettings.value?.availableDestinationDates ?? [];
+    });
+
+    const availableGroups = computed((): ListItemBag[] => {
+        return cloneSettings.value?.availableGroups ?? [];
+    });
+
+    const availableLocations = computed((): ListItemBag[] => {
+        return cloneSettings.value?.availableLocations ?? [];
+    });
+
+    const availableSchedules = computed((): ListItemBag[] => {
+        return cloneSettings.value?.availableSchedules ?? [];
     });
 
     // #endregion
@@ -81,9 +156,20 @@
         isLoadingCloneSettings.value = true;
         loadCloneSettingsErrorMessage.value = "";
 
-        console.log("getting clone settings...");
-
+        const result = await invokeBlockAction<GroupSchedulerCloneSettingsBag>("GetCloneSettings", { bag: props.filters });
         isLoadingCloneSettings.value = false;
+
+        if (!result.isSuccess) {
+            loadCloneSettingsErrorMessage.value = result.errorMessage || "Unknown error while trying to load clone settings.";
+            return;
+        }
+
+        cloneSettings.value = result.data;
+
+        // TODO (JPH): Uncomment the following once user preferences are implemented.
+        // selectedGroups.value = cloneSettings.value?.selectedGroups ?? [];
+        // selectedLocations.value = cloneSettings.value?.selectedLocations ?? [];
+        // selectedSchedules.value = cloneSettings.value?.selectedSchedules ?? [];
     }
 
     // #endregion
@@ -94,6 +180,13 @@
      * Handles the `save` event of the clone schedules modal.
      */
     function onSave(): void {
+        emit("cloneSchedules", {
+            selectedSourceDate: selectedSourceDate.value,
+            selectedDestinationDate: selectedDestinationDate.value,
+            selectedGroups: selectedGroups.value,
+            selectedLocations: selectedLocations.value,
+            selectedSchedules: selectedSchedules.value
+        });
         isVisible.value = false;
     }
 

@@ -111,8 +111,12 @@ namespace Rock.Blocks.Group.Scheduling
         private List<int> _groupIds;
         private List<int> _locationIds;
         private List<int> _scheduleIds;
-        private List<string> _occurrenceDates;
-        private List<GroupLocationSchedule> _groupLocationSchedules;
+
+        private List<DateTime> _occurrenceDates;
+        private List<string> _occurrenceDateStrings;
+
+        private List<GroupLocationSchedule> _unfilteredGroupLocationSchedules;
+        private List<GroupLocationSchedule> _filteredGroupLocationSchedules;
 
         #endregion
 
@@ -347,6 +351,9 @@ namespace Rock.Blocks.Group.Scheduling
         /// <para>
         /// The groups will be updated on the filters object to include only those that are authorized.
         /// </para>
+        /// <para>
+        /// Private _groupIds are set as a result of calling this method.
+        /// </para>
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <param name="filters">The filters whose groups should be loaded and validated.</param>
@@ -388,6 +395,8 @@ namespace Rock.Blocks.Group.Scheduling
                     g.IsAuthorized( Authorization.EDIT, this.RequestContext.CurrentPerson )
                     || g.IsAuthorized( Authorization.SCHEDULE, this.RequestContext.CurrentPerson )
                 )
+                .OrderBy( g => g.Order )
+                .ThenBy( g => g.Name )
                 .ToList();
 
             filters.Groups = groups
@@ -410,6 +419,9 @@ namespace Rock.Blocks.Group.Scheduling
         /// <para>
         /// The locations and schedules will be updated on the filters object.
         /// </para>
+        /// <para>
+        /// Private _unfilteredGroupLocationSchedules and _filteredGroupLocationSchedules are set as a result of calling this method.
+        /// </para>
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <param name="filters">The filters whose locations and schedules should be loaded.</param>
@@ -417,7 +429,8 @@ namespace Rock.Blocks.Group.Scheduling
         {
             if ( _groupIds?.Any() != true )
             {
-                _groupLocationSchedules = null;
+                _unfilteredGroupLocationSchedules = null;
+                _filteredGroupLocationSchedules = null;
                 filters.Locations = null;
                 filters.Schedules = null;
                 return;
@@ -457,6 +470,7 @@ namespace Rock.Blocks.Group.Scheduling
                 {
                     gl.Group,
                     gl.Group.ParentGroup,
+                    GroupLocation = gl,
                     gl.Location,
                     Schedule = s,
                     Config = gl.GroupLocationScheduleConfigs.FirstOrDefault( c => c.ScheduleId == s.Id )
@@ -486,6 +500,7 @@ namespace Rock.Blocks.Group.Scheduling
                 {
                     Group = gls.Group,
                     ParentGroup = gls.ParentGroup,
+                    GroupLocation = gls.GroupLocation,
                     Location = gls.Location,
                     Schedule = gls.Schedule,
                     Config = gls.Config,
@@ -516,6 +531,8 @@ namespace Rock.Blocks.Group.Scheduling
                 }
             }
 
+            _unfilteredGroupLocationSchedules = groupLocationSchedules;
+
             // Refine the complete list of GroupLocationSchedules by the selected locations.
             var selectedLocationGuids = ( filters.Locations?.SelectedLocations ?? new List<ListItemBag>() )
                 .Select( l => l.Value?.AsGuidOrNull() )
@@ -542,34 +559,18 @@ namespace Rock.Blocks.Group.Scheduling
              * Refine down to the intersection of the above two collections.
              * This is the list of GroupLocationSchedules that match all currently-applied filters.
              */
-            _groupLocationSchedules = glsMatchingLocations
+            _filteredGroupLocationSchedules = glsMatchingLocations
                 .Intersect( glsMatchingSchedules )
                 .ToList();
 
             // Determine the new list of available (and selected) locations based on the currently-selected schedules.
-            var availableLocations = glsMatchingSchedules
-                .GroupBy( gls => gls.Location.Id )
-                .Select( grouping => new ListItemBag
-                {
-                    Value = grouping.FirstOrDefault()?.Location?.Guid.ToString(),
-                    Text = grouping.FirstOrDefault()?.Location.ToString( true )
-                } )
-                .ToList();
-
+            var availableLocations = GetAvailableLocations( glsMatchingSchedules );
             var selectedLocations = availableLocations
                 .Where( l => selectedLocationGuids.Any( selected => selected.ToString() == l.Value ) )
                 .ToList();
 
             // Determine the new list of available (and selected) schedules based on the currently-selected locations.
-            var availableSchedules = glsMatchingLocations
-                .GroupBy( gls => gls.Schedule.Id )
-                .Select( grouping => new ListItemBag
-                {
-                    Value = grouping.FirstOrDefault()?.Schedule?.Guid.ToString(),
-                    Text = grouping.FirstOrDefault()?.Schedule?.ToString()
-                } )
-                .ToList();
-
+            var availableSchedules = GetAvailableSchedules( glsMatchingLocations );
             var selectedSchedules = availableSchedules
                 .Where( s => selectedScheduleGuids.Any( selected => selected.ToString() == s.Value ) )
                 .ToList();
@@ -589,20 +590,81 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Gets the available locations as list item bags, from the provided group, location, schedules collection.
+        /// </summary>
+        /// <param name="groupLocationSchedules">The group, location, schedules collection from which to get the available locations.</param>
+        /// <returns>A sorted list of list item bags representing the available locations.</returns>
+        private List<ListItemBag> GetAvailableLocations( List<GroupLocationSchedule> groupLocationSchedules )
+        {
+            return groupLocationSchedules
+                .GroupBy( gls => gls.Location.Id )
+                .Select( grouping => new
+                {
+                    grouping.FirstOrDefault()?.GroupLocation,
+                    grouping.FirstOrDefault()?.Location
+                } )
+                .Where( l => l.GroupLocation != null && l.Location != null )
+                .Select( l => new
+                {
+                    l.GroupLocation.Order,
+                    Value = l.Location.Guid.ToString(),
+                    Text = l.Location.ToString( true )
+                } )
+                .OrderBy( l => l.Order )
+                .ThenBy( l => l.Text )
+                .Select( l => new ListItemBag
+                {
+                    Value = l.Value,
+                    Text = l.Text
+                } )
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets the available schedules as list item bags, from the provided group, location, schedules collection.
+        /// </summary>
+        /// <param name="groupLocationSchedules">The group, location, schedules collection from which to get the available schedules.</param>
+        /// <returns>A sorted list of list item bags representing the available schedules.</returns>
+        private List<ListItemBag> GetAvailableSchedules( List<GroupLocationSchedule> groupLocationSchedules )
+        {
+            return groupLocationSchedules
+                .GroupBy( gls => gls.Schedule.Id )
+                .Select( grouping => grouping.FirstOrDefault()?.Schedule )
+                .Where( schedule => schedule != null )
+                .ToList()
+                .OrderByOrderAndNextScheduledDateTime()
+                .Select( schedule => new ListItemBag
+                {
+                    Value = schedule.Guid.ToString(),
+                    Text = schedule.ToString()
+                } )
+                .ToList();
+        }
+
+        /// <summary>
         /// Gets the list of [group, location, schedule, occurrence date] occurrences, based on the currently-applied filters.
+        /// <para>
+        /// Private _locationIds, _scheduleIds, _occurrenceDates and _occurrenceDateStrings are set as a result of calling this method.
+        /// </para>
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
         /// <returns>The list of [group, location, schedule, occurrence date] occurrences.</returns>
         private List<GroupSchedulerOccurrenceBag> GetScheduleOccurrences( RockContext rockContext )
         {
-            if ( _groupLocationSchedules?.Any() != true )
+            if ( _filteredGroupLocationSchedules?.Any() != true )
             {
+                _locationIds = null;
+                _scheduleIds = null;
+                _occurrenceDates = null;
+                _occurrenceDateStrings = null;
                 return null;
             }
 
+            _occurrenceDates = new List<DateTime>();
+
             EnsureAttendanceOccurrencesExist( rockContext );
 
-            var occurrences = _groupLocationSchedules
+            var occurrences = _filteredGroupLocationSchedules
                 .SelectMany( gls => gls.StartDateTimes, ( gls, startDateTime ) =>
                 {
                     var attendanceOccurrenceId = gls.AttendanceOccurrences
@@ -612,6 +674,11 @@ namespace Rock.Blocks.Group.Scheduling
                             && ao.ScheduleId == gls.Schedule.Id
                             && ao.OccurrenceDate == startDateTime.Date
                         )?.Id ?? 0;
+
+                    if ( attendanceOccurrenceId > 0 && !_occurrenceDates.Contains( startDateTime.Date ) )
+                    {
+                        _occurrenceDates.Add( startDateTime.Date );
+                    }
 
                     return new GroupSchedulerOccurrenceBag
                     {
@@ -643,7 +710,7 @@ namespace Rock.Blocks.Group.Scheduling
 
             _locationIds = occurrences.Select( o => o.LocationId ).Distinct().ToList();
             _scheduleIds = occurrences.Select( o => o.ScheduleId ).Distinct().ToList();
-            _occurrenceDates = occurrences.Select( o => o.OccurrenceDate ).Distinct().ToList();
+            _occurrenceDateStrings = occurrences.Select( o => o.OccurrenceDate ).Distinct().ToList();
 
             return occurrences;
         }
@@ -654,14 +721,14 @@ namespace Rock.Blocks.Group.Scheduling
         /// <param name="rockContext">The rock context.</param>
         private void EnsureAttendanceOccurrencesExist( RockContext rockContext )
         {
-            if ( _groupLocationSchedules?.Any() != true )
+            if ( _filteredGroupLocationSchedules?.Any() != true )
             {
                 return;
             }
 
             var newAttendanceOccurrences = new List<AttendanceOccurrence>();
 
-            foreach ( var gls in _groupLocationSchedules )
+            foreach ( var gls in _filteredGroupLocationSchedules )
             {
                 foreach ( var startDateTime in gls.StartDateTimes )
                 {
@@ -824,9 +891,60 @@ namespace Rock.Blocks.Group.Scheduling
         {
             RefineFilters( rockContext, filters );
 
+            // Populate private _occurrenceDates collection, Etc.
+            GetScheduleOccurrences( rockContext );
+
+            DateTime endOfWeekDate;
+
+            var sourceEndOfWeekDates = new List<DateTime>();
+            foreach ( var occurrenceDate in _occurrenceDates )
+            {
+                endOfWeekDate = occurrenceDate.EndOfWeek( RockDateTime.FirstDayOfWeek );
+                if ( !sourceEndOfWeekDates.Contains( endOfWeekDate ) )
+                {
+                    sourceEndOfWeekDates.Add( endOfWeekDate );
+                }
+            }
+
+            var destinationEndOfWeekDates = new List<DateTime>();
+            endOfWeekDate = RockDateTime.Now.EndOfWeek( RockDateTime.FirstDayOfWeek );
+            for ( int i = 0; i < 12; i++ )
+            {
+                destinationEndOfWeekDates.Add( endOfWeekDate );
+                endOfWeekDate = endOfWeekDate.AddDays( 7 );
+            }
+
+            var cloneSettings = new GroupSchedulerCloneSettingsBag
+            {
+                AvailableSourceDates = GetAvailableCloneDates( sourceEndOfWeekDates ),
+                AvailableDestinationDates = GetAvailableCloneDates( destinationEndOfWeekDates ),
+                AvailableGroups = filters.Groups,
+                AvailableLocations = GetAvailableLocations( _unfilteredGroupLocationSchedules ),
+                AvailableSchedules = GetAvailableSchedules( _unfilteredGroupLocationSchedules )
+            };
+
             // TODO (JPH): Override defaults with user preferences, once supported in Obsidian blocks.
 
-            return new GroupSchedulerCloneSettingsBag();
+            return cloneSettings;
+        }
+
+        /// <summary>
+        /// Gets the available clone dates as list item bags, from the provided "end of week" dates.
+        /// </summary>
+        /// <param name="endOfWeekDates">The "end of week" dates from which to get the available clone dates.</param>
+        /// <returns>A sorted list of list item bags representing the available clone dates.</returns>
+        private List<ListItemBag> GetAvailableCloneDates( List<DateTime> endOfWeekDates )
+        {
+            var dateFormat = "M/d/yyyy";
+
+            return endOfWeekDates
+                .OrderBy( d => d )
+                .Select( d => new ListItemBag
+                {
+                    Value = d.ToISO8601DateString(),
+                    Text = $"{d.StartOfWeek( RockDateTime.FirstDayOfWeek ).ToString( dateFormat )} to {d.ToString( dateFormat )}"
+                } )
+                .ToList();
         }
 
         /// <summary>
@@ -851,9 +969,9 @@ namespace Rock.Blocks.Group.Scheduling
                 queryParams.Add( PageParameterKey.ScheduleIds, _scheduleIds.AsDelimited( "," ) );
             }
 
-            if ( _occurrenceDates?.Count == 1 )
+            if ( _occurrenceDateStrings?.Count == 1 )
             {
-                queryParams.Add( PageParameterKey.OccurrenceDate, _occurrenceDates.First() );
+                queryParams.Add( PageParameterKey.OccurrenceDate, _occurrenceDateStrings.First() );
             }
 
             return new Dictionary<string, string>
@@ -1066,6 +1184,8 @@ namespace Rock.Blocks.Group.Scheduling
             public Rock.Model.Group Group { get; set; }
 
             public Rock.Model.Group ParentGroup { get; set; }
+
+            public GroupLocation GroupLocation { get; set; }
 
             public Location Location { get; set; }
 
