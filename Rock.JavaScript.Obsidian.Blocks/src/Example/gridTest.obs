@@ -1,12 +1,15 @@
 <!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
     <Grid ref="myGrid"
+          :definition="configuration.gridDefinition"
           :data="loadGridData"
           keyField="guid"
           stickyHeader
           tooltipField="attr_TextValue1"
-          entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13">
-        <ReorderColumn @orderChanged="onOrderChanged" />
+          entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13"
+          @addItem="() => {}">
+        <SelectColumn />
+        <!-- <ReorderColumn @orderChanged="onOrderChanged" /> -->
 
         <Column name="name" title="Name" sortValue="{{ row.name.lastName }} {{ row.name.firstName }}" :filter="textValueFilter" quickFilterValue="{{ row.name.firstName }} {{  row.name.lastName }}">
             <template #body="{ row }">
@@ -69,16 +72,6 @@
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
     import Grid, { AttributeColumns, BooleanColumn, Column, DateColumn, dateValueFilter, DeleteColumn, EditColumn, LabelColumn, NumberColumn, numberValueFilter, pickExistingValueFilter, ReorderColumn, SecurityColumn, SelectColumn, textValueFilter } from "@Obsidian/Controls/grid";
-
-    // Putting this here as an example of how to call methods on components.
-    // Such as myGrid.value.reloadItem(item.id);
-    const myGrid = ref<InstanceType<typeof Grid> | null>();
-    setTimeout(() => {
-        if (!myGrid.value) {
-            return;
-        }
-        myGrid.value.doTest();
-    }, 1000);
 
     // #endregion
 

@@ -6,7 +6,6 @@
     import { standardCellProps } from "@Obsidian/Core/Controls/grid";
     import { Ref, computed, toRaw } from "vue";
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const props = defineProps(standardCellProps);
 
     // We are givne the column property in a reactive form. This messes

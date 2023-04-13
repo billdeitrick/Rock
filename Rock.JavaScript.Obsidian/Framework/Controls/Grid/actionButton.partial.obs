@@ -11,6 +11,11 @@
     import { computed, PropType } from "vue";
     import { GridAction } from "@Obsidian/Types/Controls/grid";
 
+    type InternalGridAction = GridAction & {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        __executing?: boolean
+    };
+
     const props = defineProps({
         action: {
             type: Object as PropType<GridAction>,
@@ -25,7 +30,11 @@
     const buttonCssClass = computed((): string => {
         let classes = "btn btn-grid-action";
 
-        if (props.action.executing || props.action.disabled) {
+        if (props.action.buttonCssClass) {
+            classes += ` ${props.action.buttonCssClass}`;
+        }
+
+        if ((props.action as InternalGridAction).__executing || props.action.disabled) {
             classes += " disabled";
         }
 
@@ -37,20 +46,22 @@
     });
 
     const onActionClick = async (): Promise<void> => {
-        if (props.action.handler && !props.action.disabled && !props.action.executing) {
+        const internalAction = props.action as InternalGridAction;
+
+        if (internalAction.handler && !internalAction.disabled && !internalAction.__executing) {
             // This is a special case where we modify the original object.
             // It is only used internally by the Grid so this is safe.
-            props.action.executing = true;
+            internalAction.__executing = true;
 
             try {
-                const result = props.action.handler();
+                const result = internalAction.handler();
 
                 if (isPromise(result)) {
                     await result;
                 }
             }
             finally {
-                props.action.executing = false;
+                internalAction.__executing = false;
             }
         }
     };

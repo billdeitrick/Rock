@@ -15,16 +15,198 @@
 // </copyright>
 //
 
-import { defineComponent, PropType, reactive, ref, Ref, shallowRef, ShallowRef, unref, VNode, watch, WatchStopHandle } from "vue";
+import { defineComponent, PropType, reactive, ref, Ref, shallowRef, ShallowRef, toRaw, unref, VNode, watch, WatchStopHandle } from "vue";
 import { NumberFilterMethod } from "@Obsidian/Enums/Controls/Grid/numberFilterMethod";
 import { DateFilterMethod } from "@Obsidian/Enums/Controls/Grid/dateFilterMethod";
-import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps, StandardHeaderCellProps } from "@Obsidian/Types/Controls/grid";
-import { getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
+import { ColumnFilter, ColumnDefinition, IGridState, StandardFilterProps, StandardCellProps, IGridCache, IGridRowCache, ColumnSort, SortValueFunction, FilterValueFunction, QuickFilterValueFunction, UniqueValueFunction, StandardColumnProps, StandardHeaderCellProps, EntitySetOptions } from "@Obsidian/Types/Controls/grid";
+import { extractText, getVNodeProp, getVNodeProps } from "@Obsidian/Utility/component";
 import { DayOfWeek, RockDateTime } from "@Obsidian/Utility/rockDateTime";
 import { resolveMergeFields } from "@Obsidian/Utility/lava";
 import { deepEqual } from "@Obsidian/Utility/util";
 import { AttributeFieldDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/attributeFieldDefinitionBag";
 import { Guid } from "@Obsidian/Types";
+
+// #region Entity Sets
+
+// grid.entityKeyField
+// grid.personKeyField
+// grid.communicationRecipientKeyFields (array)
+// isBusiness
+// additionalMergeFields
+//
+// grid.getPersonEntitySetBag()
+// grid.getEntitySetBag(additionalMergeFields: string[])
+
+type GridEntitySetItemBag = {
+    entityKey?: string;
+
+    order?: number;
+
+    additionalMergeValues?: Record<string, unknown>;
+};
+
+type GridEntitySetBag = {
+    entityTypeKey?: string;
+
+    items?: GridEntitySetItemBag[];
+};
+
+/**
+ * Gets the entity set bag that can be send to the server to create an entity
+ * set representing the selected items in the grid.
+ *
+ * @param grid The grid state that will be used as the source data.
+ * @param keyFields The fields to use for the entity keys. This is only used when
+ * populating the item entityKey value. It is not used to detect selection state.
+ * If multiple keys are specified then an {@link GridEntitySetItemBag} will be
+ * created for each key.
+ * @param options The options that describe how the entity set should be generated.
+ *
+ * @returns A new instance of {@link GridEntitySetBag} that contains the data.
+ */
+export function getEntitySetBag(grid: IGridState, keyFields: string[], options?: EntitySetOptions): GridEntitySetBag {
+    const selectedKeys = grid.selectedKeys;
+    const entitySetItemLookup: Record<string, GridEntitySetItemBag> = {};
+    let itemOrder = 0;
+    const entitySetBag: GridEntitySetBag = {
+        entityTypeKey: grid.entityTypeGuid
+    };
+
+    entitySetBag.items = [];
+
+    for (const row of grid.getSortedRows()) {
+        const rowKey = grid.getRowKey(row);
+
+        // If we have any selected keys but the row isn't one of them then
+        // skip it.
+        if (selectedKeys.length > 0) {
+            if (!rowKey || !selectedKeys.includes(rowKey)) {
+                continue;
+            }
+        }
+
+        const entityKeyValues: (string | undefined)[] = [];
+        const mergeValues: Record<string, unknown> = {};
+
+        // Search each of the key fields we were told to check and look
+        // for any entity keys.
+        for (const key of keyFields) {
+            const keyValue = row[key];
+
+            if (typeof keyValue === "string" && keyValue !== "") {
+                // For compatibility with legacy grid, check if we can split
+                // the string on the normal seperators.
+
+                const keyValues = keyValue.replace(/[\s|,;]+/, ",").split(",");
+                for (const kv of keyValues) {
+                    if (kv !== "" && !entityKeyValues.includes(kv)) {
+                        entityKeyValues.push(kv);
+                    }
+                }
+            }
+        }
+
+        if (keyFields.length === 0) {
+            // We just want the merge fields, so put in a bogus key.
+            entityKeyValues.push(undefined);
+        }
+
+        // Get any additional merge values requested.
+        for (const mergeKey of (options?.mergeFields ?? [])) {
+            mergeValues[mergeKey] = toRaw(row[mergeKey]);
+        }
+
+        // Get any additional merge column values requested.
+        if (options?.mergeColumns) {
+            for (const mergeItem of options.mergeColumns) {
+                const column = grid.columns.find(c => c.name === mergeItem.value);
+
+                if (column && mergeItem.text) {
+                    const cellProps = {
+                        column,
+                        row,
+                        grid
+                    };
+
+                    mergeValues[mergeItem.text] = extractText(column.format, cellProps);
+                }
+            }
+        }
+
+        // Create (or update) all the entity set item bags for the entity
+        // keys that we found in this row.
+        for (const entityKey of entityKeyValues) {
+            let item = entityKey ? entitySetItemLookup[entityKey] : undefined;
+
+            if (!item) {
+                item = {
+                    entityKey: entityKey,
+                    order: itemOrder++
+                };
+
+                entitySetBag.items.push(item);
+
+                if (entityKey) {
+                    entitySetItemLookup[entityKey] = item;
+                }
+            }
+
+            if (options?.purpose === "communication") {
+                // We do something special when building an entity set
+                // for use in a communication. Each person can only exist
+                // in the set once, but might have different merge values
+                // that came from different rows. So a special key of
+                // "AdditionalFields" is used which is an array that contains
+                // the merge values of each row this entity showed up in.
+                if (!item.additionalMergeValues) {
+                    item.additionalMergeValues = {};
+                }
+
+                let rows = item.additionalMergeValues["AdditionalFields"] as Record<string, unknown>[];
+
+                if (!rows) {
+                    rows = item.additionalMergeValues["AdditionalFields"] = [];
+                }
+
+                rows.push(mergeValues);
+            }
+            else {
+                item.additionalMergeValues = mergeValues;
+            }
+        }
+    }
+
+    return entitySetBag;
+}
+
+// #endregion
+
+// #region Keys
+
+/**
+ * The standard action URLs to use when performing grid actions.
+ */
+export const GridActionUrlKey = {
+    /** The URL to use when sending a communication. */
+    Communicate: "communicate",
+
+    /** The URL to use when merging Person records. */
+    MergePerson: "mergePerson",
+
+    /** The URL to use when merging Business records. */
+    MergeBusiness: "mergeBusiness",
+
+    /** The URL to use when performing a bulk update. */
+    BulkUpdate: "bulkUpdate",
+
+    /** The URL to use when launching a workflow for each record. */
+    LaunchWorkflow: "launchWorkflow",
+
+    /** The URL to use to start a merge template request. */
+    MergeTemplate: "mergeTemplate"
+} as const;
+
+// #endregion
 
 // #region Standard Component Props
 
@@ -1019,6 +1201,10 @@ export class GridState implements IGridState {
         return getRowKey(row, this.itemKey);
     }
 
+    public getSortedRows(): Record<string, unknown>[] {
+        return this.sortRows(this.internalRows.value);
+    }
+
     // #endregion
 
     // #region Private Functions
@@ -1146,20 +1332,20 @@ export class GridState implements IGridState {
     }
 
     /**
-     * Takes the {@link filteredRows} and sorts them according to the information
-     * tracked by the Grid and updates the {@link sortedRows} property.
+     * Sorts the given set of rows.
+     *
+     * @param rows The rows that should be sorted according to the current sorting definition.
+     *
+     * @returns A new array of rows that is properly sorted.
      */
-    private updateSortedRows(): void {
+    private sortRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
         const columnSort = this.columnSort;
 
         // Bail early if we don't have any sorting to perform.
         if (!columnSort) {
-            this.sortedRows.value = this.filteredRows.value;
-
-            return;
+            return [...rows];
         }
 
-        const start = Date.now();
         const column = this.columns.find(c => c.name === columnSort.column);
         const order = columnSort.isDescending ? -1 : 1;
 
@@ -1174,7 +1360,7 @@ export class GridState implements IGridState {
         // performance boost when sorting Lava columns. Even though we have
         // cache we do it this way because we may not have an itemKey which
         // would disable the cache.
-        const rows = this.filteredRows.value.map(r => {
+        const rowsToSort = rows.map(r => {
             let value: string | number | undefined;
 
             if (sortValue) {
@@ -1190,7 +1376,7 @@ export class GridState implements IGridState {
             };
         });
 
-        rows.sort((a, b) => {
+        rowsToSort.sort((a, b) => {
             if (a.value === undefined) {
                 return -order;
             }
@@ -1208,9 +1394,17 @@ export class GridState implements IGridState {
             }
         });
 
-        this.sortedRows.value = rows.map(r => r.row);
+        return rowsToSort.map(r => r.row);
+    }
 
-        console.log(`sortedRows took ${Date.now() - start}ms.`);
+    /**
+     * Takes the {@link filteredRows} and sorts them according to the information
+     * tracked by the Grid and updates the {@link sortedRows} property.
+     */
+    private updateSortedRows(): void {
+        const start = Date.now();
+        this.sortedRows.value = this.sortRows(this.filteredRows.value);
+        console.log(`updatedSortedRows took ${Date.now() - start}ms.`);
     }
 
     // #endregion

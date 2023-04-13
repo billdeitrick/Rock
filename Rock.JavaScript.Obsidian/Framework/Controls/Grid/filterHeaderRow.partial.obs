@@ -11,7 +11,7 @@
                         <i class="fa fa-search"></i>
                     </button>
 
-                    <div :style="searchBoxStyle">
+                    <div class="grid-quick-filter-search" :style="searchBoxStyle">
                         <TextBox v-model="filterValue" placeholder="Filter" />
                     </div>
                 </div>
@@ -63,9 +63,7 @@
 
     const searchBoxStyle = computed(() => {
         return {
-            width: `${isSearchVisible.value ? 100 : 0}%`,
-            overflow: "hidden",
-            transition: "width 0.3s ease"
+            width: `${isSearchVisible.value ? 100 : 0}%`
         };
     });
 

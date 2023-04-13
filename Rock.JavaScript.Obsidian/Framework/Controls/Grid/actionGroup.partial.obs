@@ -1,11 +1,11 @@
 <template>
     <div class="grid-actions">
-        <ActionButton v-for="action in props.gridActions" :action="action" />
+        <ActionButton v-for="action in gridActions" :action="action" />
     </div>
 </template>
 
 <script setup lang="ts">
-    import { PropType } from "vue";
+    import { PropType, computed } from "vue";
     import { GridAction } from "@Obsidian/Types/Controls/grid";
     import ActionButton from "./actionButton.partial.obs";
 
@@ -14,5 +14,9 @@
             type: Array as PropType<GridAction[]>,
             default: []
         }
+    });
+
+    const gridActions = computed((): GridAction[] => {
+        return [...props.gridActions].reverse();
     });
 </script>

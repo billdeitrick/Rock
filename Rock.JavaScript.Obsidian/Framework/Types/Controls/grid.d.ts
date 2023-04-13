@@ -15,8 +15,30 @@
 // </copyright>
 //
 
-import { Component, PropType, Ref, ShallowRef, VNode } from "vue";
+import { Component, PropType, Ref, ShallowRef } from "vue";
 import { Guid } from "..";
+import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+
+/** The purpose of the entity set. This activates special logic. */
+export type EntitySetPurpose = "export" | "communication";
+
+/**
+ * The options to use when generating the entity set bag for a grid.
+ */
+export type EntitySetOptions = {
+    /** Any additional fields that should be placed in the item merge fields. */
+    mergeFields?: string[];
+
+    /**
+     * Any column whose values should be placed in the item merge fields.
+     * The list item bag value is the name of the column. The text value is
+     * the name of the merge field property to store the value into. The
+     * formatted value of the column is used.
+     */
+    mergeColumns?: ListItemBag[];
+
+    purpose?: EntitySetPurpose;
+};
 
 // #region Caching
 
@@ -353,7 +375,7 @@ type StandardColumnProps = {
      * with a template that defines the body content.
      */
     format: {
-        type: PropType<VNode>,
+        type: PropType<Component>,
         required: false
     },
 
@@ -363,7 +385,7 @@ type StandardColumnProps = {
      * with a template that defines the header content.
      */
     headerTemplate: {
-        type: PropType<VNode>,
+        type: PropType<Component>,
         required: false
     }
 };
@@ -448,14 +470,17 @@ export type GridAction = {
      */
     iconCssClass?: string;
 
+    /**
+     * Additional CSS classes to add to the button. This is primarily used
+     * to mark certain buttons as danger or success.
+     */
+    buttonCssClass?: string;
+
     /** The callback function that will handle the action. */
     handler?: GridActionFunction;
 
     /** If true then the action will be disabled and not respond to clicks. */
     disabled?: boolean;
-
-    /** True if the action is currently executing. */
-    executing: boolean;
 };
 
 /**
@@ -475,14 +500,14 @@ export type ColumnDefinition = {
      * Defines the content that will be used in the header cell. This will
      * override any title value provided.
      */
-    headerTemplate?: VNode | Component;
+    headerTemplate?: Component;
 
     /**
      * Formats the value for display in the cell. Should return HTML safe
      * content, meaning if you intend to display the < character you need
      * to HTML encode it as &lt;.
      */
-    format: VNode | Component;
+    format: Component;
 
     /** Gets the value to use when filtering on the quick filter. */
     quickFilterValue: QuickFilterValueFunction;
@@ -614,4 +639,13 @@ export interface IGridState {
      * @returns The unique key of the row or `undefined` if it could not be determined.
      */
     getRowKey(row: Record<string, unknown>): string | undefined;
+
+    /**
+     * Gets all rows in the grid and sorts them according to the current
+     * sorting rules. The {@link sortedRows} property only contains the rows
+     * that match the filter. But this function will return all rows.
+     *
+     * @returns An array of all rows in the grid that has been sorted.
+     */
+    getSortedRows(): Record<string, unknown>[];
 }

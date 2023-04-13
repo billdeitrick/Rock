@@ -195,8 +195,12 @@ table.table-obsidian th.grid-filter .grid-title {
 
 table.table-obsidian th.grid-filter .grid-quick-filter {
     display: flex;
-    max-width: 480px;
-    flex: 1 0;
+}
+
+table.table-obsidian th.grid-filter .grid-quick-filter .grid-quick-filter-search {
+    max-width: 240px;
+    overflow: hidden;
+    transition: width 0.3s ease;
 }
 
 table.table-obsidian th.grid-filter .grid-actions {
@@ -221,15 +225,17 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
-    import { computed, PropType, ref, useSlots, watch } from "vue";
+    import { computed, PropType, ref,  useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { getColumnDefinitions, GridState } from "@Obsidian/Core/Controls/grid";
+    import { getColumnDefinitions, getEntitySetBag, GridActionUrlKey, GridState } from "@Obsidian/Core/Controls/grid";
     import { DragSource as vDragSource, DragTarget as vDragTarget, IDragSourceOptions, useDragReorder } from "@Obsidian/Directives/dragDrop";
     import { ColumnSort, GridAction, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
+    import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
     import { Guid } from "@Obsidian/Types";
     import { isPromise } from "@Obsidian/Utility/promiseUtils";
+    import { useHttp } from "@Obsidian/Utility/http";
 
     /*
      * 8/17/2022 - DSH
@@ -245,6 +251,11 @@ table.table-obsidian th.grid-error > .alert {
         data: {
             type: [Object, Function] as PropType<GridDataBag | (() => GridDataBag | Promise<GridDataBag>)>,
             default: []
+        },
+
+        definition: {
+            type: Object as PropType<GridDefinitionBag>,
+            required: false
         },
 
         /**
@@ -297,20 +308,23 @@ table.table-obsidian th.grid-error > .alert {
         entityTypeGuid: {
             type: String as PropType<Guid>,
             required: false
+        },
+
+        /**
+         * The function to call in response to the add button being clicked.
+         */
+        onAddItem: {
+            type: Function as PropType<(() => void | Promise<void>)>,
+            required: false
         }
     });
 
-    function doTest(): void {
-        console.log("test");
-    }
-
-    defineExpose({ doTest });
-
     const slots = useSlots();
+    const http = useHttp();
 
-    const gridState = getGridState();
+    const gridState = createGridState();
 
-    const gridActions = ref<GridAction[]>([]);
+    const customGridActions = ref<GridAction[]>([]);
     const currentPage = ref(1);
     const pageSize = ref(50);
     const pageSizes = [50, 500, 5000];
@@ -330,7 +344,95 @@ table.table-obsidian th.grid-error > .alert {
         return visibleColumnDefinitions.value.length;
     });
 
-    function getGridState(): GridState {
+    const gridActions = computed((): GridAction[] => {
+        const actions: GridAction[] = [];
+
+        // Append the add action.
+        if (props.onAddItem) {
+            actions.push({
+                handler: props.onAddItem,
+                iconCssClass: "fa fa-plus-circle fa-fw",
+                buttonCssClass: "btn-add",
+                tooltip: "Add a new item."
+            });
+        }
+
+        if (props.entityTypeGuid) {
+            if (props.definition?.actionUrls?.[GridActionUrlKey.MergeTemplate]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.MergeTemplate];
+
+                // If MergeTemplateAsPerson then just simple EntitySetItems
+                // Else GetEntitySetFromGrid()
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-files-o fa-fw",
+                    tooltip: "Merge Records into Merge Template"
+                });
+            }
+
+            // GetEntitySetFromGrid()
+            if (props.definition?.actionUrls?.[GridActionUrlKey.LaunchWorkflow]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.LaunchWorkflow];
+
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-cog fa-fw",
+                    tooltip: "Launch Workflow"
+                });
+            }
+
+            // Simple EntitySetItems.
+            if (props.definition?.actionUrls?.[GridActionUrlKey.BulkUpdate]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.BulkUpdate];
+
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-truck fa-fw",
+                    tooltip: "Bulk Update"
+                });
+            }
+
+            // Simple EntitySetItems.
+            if (props.definition?.actionUrls?.[GridActionUrlKey.MergePerson]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.MergePerson];
+
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-users fa-fw",
+                    tooltip: "Merge Person Records"
+                });
+            }
+
+            // Simple EntitySetItems.
+            if (props.definition?.actionUrls?.[GridActionUrlKey.MergeBusiness]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.MergeBusiness];
+
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-sign-in-alt fa-fw",
+                    tooltip: "Merge Business Records"
+                });
+            }
+
+            // ???
+            if (props.definition?.actionUrls?.[GridActionUrlKey.Communicate]) {
+                const url = props.definition.actionUrls[GridActionUrlKey.Communicate];
+
+                actions.push({
+                    handler: async () => await createEntitySetAndRedirect(url),
+                    iconCssClass: "fa fa-comment fa-fw",
+                    tooltip: "Communicate"
+                });
+            }
+        }
+
+        // Append the custom actions.
+        actions.push(...customGridActions.value);
+
+        return actions;
+    });
+
+    function createGridState(): GridState {
         const state = new GridState(
             getColumnDefinitions(slots["default"]?.() ?? []),
             props.liveUpdates ?? false,
@@ -394,7 +496,7 @@ table.table-obsidian th.grid-error > .alert {
                             await result;
                         }
 
-                        return result;
+                        return result !== false;
                     }
                     finally {
                         dropOperationInProgress.value = false;
@@ -407,6 +509,21 @@ table.table-obsidian th.grid-error > .alert {
         }
 
         loadingData.value = false;
+    }
+
+    async function createEntitySetAndRedirect(url: string): Promise<void> {
+        const keyFields = props.keyField ? [props.keyField] : [];
+        const options = {
+            mergeFields: gridState.columns.map(c => c.field).filter(f => f !== undefined),
+            mergeColumns: [
+                {
+                    value: "name",
+                    text: "Name"
+                }
+            ]
+        };
+        console.log(getEntitySetBag(gridState, keyFields, options));
+        return;
     }
 
     async function onActionClick(): Promise<void> {
@@ -436,20 +553,6 @@ table.table-obsidian th.grid-error > .alert {
         updateVisibleRows();
         updatePageCount();
         updatePagerMessage();
-    });
-
-    gridActions.value.push({
-        executing: false,
-        handler: onActionClick,
-        iconCssClass: "fa fa-question",
-        tooltip: "This gives you help."
-    });
-
-    gridActions.value.push({
-        executing: false,
-        handler: onActionClick,
-        iconCssClass: "fa fa-plus",
-        tooltip: "Add a new item."
     });
 
     updateGridData();
