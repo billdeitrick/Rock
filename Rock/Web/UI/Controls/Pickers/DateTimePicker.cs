@@ -302,6 +302,11 @@ namespace Rock.Web.UI.Controls
                     _date.Text = value.Value.ToShortDateString();
                     _time.Text = value.Value.ToShortTimeString();
                 }
+                else
+                {
+                    _date.Text = string.Empty;
+                    _time.Text = string.Empty;
+                }
             }
         }
 
