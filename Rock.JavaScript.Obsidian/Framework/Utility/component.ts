@@ -14,7 +14,7 @@
 // limitations under the License.
 // </copyright>
 
-import { AsyncComponentLoader, Component, ComponentPublicInstance, defineAsyncComponent as vueDefineAsyncComponent, ExtractPropTypes, PropType, reactive, ref, Ref, VNode, watch, WatchOptions } from "vue";
+import { AsyncComponentLoader, Component, ComponentPublicInstance, defineAsyncComponent as vueDefineAsyncComponent, ExtractPropTypes, PropType, reactive, ref, Ref, VNode, watch, WatchOptions, render, isVNode, createVNode } from "vue";
 import { deepEqual } from "./util";
 import { useSuspense } from "./suspense";
 import { newGuid } from "./guid";
@@ -417,6 +417,7 @@ export function propertyRef<T>(value: T, propertyName: string): ExtendedRef<T> {
  *
  * @param node The node whose property value is being requested.
  * @param propName The name of the property whose value is being requested.
+ *
  * @returns The value of the property or `undefined` if it was not set.
  */
 export function getVNodeProp<T>(node: VNode, propName: string): T | undefined {
@@ -445,6 +446,7 @@ export function getVNodeProp<T>(node: VNode, propName: string): T | undefined {
  * to override those default values.
  *
  * @param node The node whose property values are being requested.
+ *
  * @returns An object that contains all props and values for the node.
  */
 export function getVNodeProps(node: VNode): Record<string, unknown> {
@@ -471,6 +473,58 @@ export function getVNodeProps(node: VNode): Record<string, unknown> {
     }
 
     return props;
+}
+
+/**
+ * Renders the node into an off-screen div and then extracts the text content
+ * by way of the innerText property of the div.
+ *
+ * @param node The node or component to be rendered.
+ * @param props The properties to be passed to the component when it is mounted.
+ *
+ * @returns The text content of the node after it has rendered.
+ */
+export function extractText(node: VNode | Component, props?: Record<string, unknown>): string {
+    const el = document.createElement("div");
+
+    // Create a new virtual node with the specified properties.
+    const vnode = createVNode(node, props);
+
+    // Mount the node in our off-screen container.
+    render(vnode, el);
+
+    const text = el.innerText;
+
+    // Unmount it.
+    render(null, el);
+
+    return text;
+}
+
+/**
+ * Renders the node into an off-screen div and then extracts the HTML content
+ * by way of the innerHTML property of the div.
+ *
+ * @param node The node or component to be rendered.
+ * @param props The properties to be passed to the component when it is mounted.
+ *
+ * @returns The HTML content of the node after it has rendered.
+ */
+export function extractHtml(node: VNode | Component, props?: Record<string, unknown>): string {
+    const el = document.createElement("div");
+
+    // Create a new virtual node with the specified properties.
+    const vnode = createVNode(node, props);
+
+    // Mount the node in our off-screen container.
+    render(vnode, el);
+
+    const html = el.innerHTML;
+
+    // Unmount it.
+    render(null, el);
+
+    return html;
 }
 
 // #endregion
