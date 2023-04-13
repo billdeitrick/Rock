@@ -33,7 +33,7 @@ namespace Rock.Field.Types
     /// <summary>
     /// Stored as NoteType.Guid
     /// </summary>
-    [RockPlatformSupport( Utility.RockPlatform.WebForms )]
+    [RockPlatformSupport( Utility.RockPlatform.WebForms, Utility.RockPlatform.Obsidian )]
     [Rock.SystemGuid.FieldTypeGuid( Rock.SystemGuid.FieldType.NOTE_TYPE )]
     public class NoteTypeFieldType : FieldType, IEntityFieldType, IEntityReferenceFieldType
     {
