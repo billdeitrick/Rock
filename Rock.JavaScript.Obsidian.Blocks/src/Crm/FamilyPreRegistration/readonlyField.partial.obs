@@ -1,0 +1,25 @@
+<template>
+    <div class="form-group static-control">
+        <RockLabel>{{ label }}</RockLabel>
+        <div class="control-wrapper">
+            <div class="form-control-static">{{ modelValue }}</div>
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { PropType } from "vue";
+    import RockLabel from "@Obsidian/Controls/rockLabel";
+
+    const props = defineProps({
+        modelValue: {
+            type: String as PropType<string>,
+            required: false
+        },
+
+        label: {
+            type: String as PropType<string>,
+            required: false
+        }
+    });
+</script>

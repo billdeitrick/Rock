@@ -37,13 +37,17 @@ export type FamilyPreRegistrationPersonBag = {
 
     email?: string | null;
 
-    ethnicityGuid?: Guid | null;
+    ethnicityDefinedValueGuid?: Guid | null;
+
+    familyRoleGuid?: Guid | null;
 
     firstName?: string | null;
 
     gender: number;
 
     gradeDefinedValueGuid?: Guid | null;
+
+    guid?: Guid | null;
 
     isFirstNameReadOnly: boolean;
 
@@ -59,7 +63,7 @@ export type FamilyPreRegistrationPersonBag = {
 
     profilePhotoGuid?: Guid | null;
 
-    raceGuid?: Guid | null;
+    raceDefinedValueGuid?: Guid | null;
 
     suffixDefinedValueGuid?: Guid | null;
 };

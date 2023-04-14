@@ -31,6 +31,8 @@ export type PersonRequestBag = RequiredProperties<
     | "attributeValues"
 >;
 
+export type ChildRequestBag = RequiredProperties<PersonRequestBag, "familyRoleGuid">;
+
 export type CreateAccountRequest = RequiredProperties<
     FamilyPreRegistrationCreateAccountRequestBag,
     "username"

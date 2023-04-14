@@ -2,8 +2,14 @@
 <!-- TODO JMH remove id attributes? -->
 <template>
     <div ID="upnlContent">
-        <NotificationBox v-if="errorText" id="nbError" alertType="danger" :heading="errorTitle ?? undefined">{{ errorText }}</NotificationBox>
-        <RockForm>
+        <div v-if="errors.length" ref="errorNotificationBox">
+            <NotificationBox id="nbError" alertType="validation" :heading="errorTitle ?? undefined">
+                <ul>
+                    <li v-for="error in errors">{{ error }}</li>
+                </ul>
+            </NotificationBox>
+        </div>
+        <RockForm @submit="onFormSubmitted">
             <Panel type="block" title="Family Pre-Registration">
                 <template #default>
                     <Panel id="pnlVisit" title="Visit Information">
@@ -21,6 +27,7 @@
                                  />
                             <div v-if="!config.isPlannedVisitDatePanelHidden" class="col-md-5" id="pnlPlannedDate">
                                 <DatePicker
+                                    v-model="plannedVisitDate"
                                     id="dpPlannedDate"
                                     :disallowPastDateSelection="true"
                                     label="Planned Visit Date"
@@ -30,7 +37,7 @@
                                 <div class="row">
                                     <div class="col-sm-6">
                                         <DropDownList
-                                            v-model="selectedScheduleGuids"
+                                            v-model="plannedVisitDate"
                                             id="ddlScheduleDate"
                                             :items="scheduleDateItems"
                                             label="Planned Visit Date"
@@ -39,7 +46,7 @@
                                     </div>
                                     <div class="col-sm-6">
                                         <DropDownList
-                                            v-model="selectedTimeGuids"
+                                            v-model="scheduleGuid"
                                             id="ddlScheduleTime"
                                             :items="scheduleTimeItems"
                                             label="Planned Visit Time"
@@ -67,15 +74,11 @@
                                     id="tbRockFullName"
                                     placeholder="Please enter name (Required)" />
 
-                                <NotificationBox
-                                    id="nbRockFullName"
-                                    alertType="validation" />
-
                                 <div :class="getColumnClass(3)">
-                                    <template v-if="adult1.isFirstNameReadOnly">
-                                        <RockLabel>First Name</RockLabel>
-                                        <div>{{ adult1.firstName }}</div>
-                                    </template>
+                                    <ReadonlyField
+                                        v-if="adult1.isFirstNameReadOnly"
+                                        label="First Name"
+                                        :modelValue="adult1.firstName" />
                                     <TextBox v-else
                                         v-model="adult1.firstName"
                                         id="tbFirstName1"
@@ -83,10 +86,10 @@
                                         :rules="[atLeastOneAdultFirstNameRule, adult1FirstNameRule]" />
                                 </div>
                                 <div :class="getColumnClass(3)">
-                                    <template v-if="adult1.isLastNameReadOnly">
-                                        <RockLabel>Last Name</RockLabel>
-                                        <div>{{ adult1.lastName }}</div>
-                                    </template>
+                                    <ReadonlyField
+                                        v-if="adult1.isLastNameReadOnly"
+                                        label="Last Name"
+                                        :modelValue="adult1.lastName" />
                                     <TextBox v-else
                                         v-model="adult1.lastName"
                                         id="tbLastName1"
@@ -95,17 +98,18 @@
                                 </div>
                                 <div v-if="!config.isAdultGenderHidden" id="pnlGender1" :class="getColumnClass(3)">
                                     <GenderDropDownList
-                                        v-model="adult1.gender"
+                                        v-model="adult1.genderStringValue"
                                         id="ddlGender1"
                                         label="Gender"
                                         :rules="isAdult1Entered && !config.isAdultGenderOptional ? 'required' : []" />
                                 </div>
                                 <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
-                                        v-model="adult1SuffixListItemBag"
+                                        v-model="adult1.suffixListItemBag"
                                         :definedTypeGuid="DefinedType.PersonSuffix"
                                         id="dvpSuffix1"
                                         label="Suffix"
+                                        lazyMode="lazy"
                                         :rules="isAdult1Entered && !config.isAdultSuffixOptional ? 'required' : []"
                                         :showBlankItem="true" />
                                 </div>
@@ -118,10 +122,11 @@
                                 </div>
                                 <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus1" :class="getColumnClass(3)">
                                     <DefinedValuePicker
-                                        v-model="adult1MaritalStatusDefinedValueGuid"
+                                        v-model="adult1.maritalStatusListItemBag"
                                         :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                         id="dvpMaritalStatus1"
                                         label="Marital Status"
+                                        lazyMode="lazy"
                                         :rules="isAdult1Entered && !config.isAdultMaritalStatusOptional ? 'required': ''"
                                         :showBlankItem="true" />
                                 </div>
@@ -142,7 +147,7 @@
                                 </div>
                                 <div id="pnlCommunicationPreference1" :class="getColumnClass(6)">
                                     <RadioButtonList
-                                        v-model="adult1CommunicationPreferenceId"
+                                        v-model="adult1.communicationPreferenceStringValue"
                                         :horizontal="true"
                                         id="rblCommunicationPreference1"
                                         :items="[
@@ -155,7 +160,7 @@
                                 <div id="pnlRace1" :class="getColumnClass(3)">
                                     <RacePicker
                                         v-if="!config.isRaceOptionHidden"
-                                        v-model="adult1RaceListItemBag"
+                                        v-model="adult1.raceListItemBag"
                                         id="rpRace1"
                                         :rules="isAdult1Entered && !config.isRaceOptionOptional ? 'required' : []"
                                         :showBlankItem="true" />
@@ -163,7 +168,7 @@
                                 <div id="pnlEthnicity1" :class="getColumnClass(3)">
                                     <EthnicityPicker
                                         v-if="!config.isEthnicityOptionHidden"
-                                        v-model="adult1EthnicityListItemBag"
+                                        v-model="adult1.ethnicityListItemBag"
                                         id="epEthnicity1"
                                         :rules="isAdult1Entered && !config.isEthnicityOptionOptional ? 'required' : []"
                                         :showBlankItem="true" />
@@ -173,7 +178,7 @@
                             <div class="row">
                                 <div v-if="!config.isAdultProfilePhotoHidden" id="pnlProfileImage1" class="col-sm-6">
                                     <ImageUploader
-                                        v-model="adult1ProfileImageListItemBag"
+                                        v-model="adult1.profileImageListItemBag"
                                         id="imgProfile1"
                                         label="Profile Photo"
                                         :rules="isAdult1Entered && !config.isAdultProfilePhotoOptional ? 'required' : ''" />
@@ -211,10 +216,11 @@
                                                         <dt></dt>
                                                         <dd>
                                                             <NotificationBox
-                                                                v-if="isUsernameInUse"
-                                                                id="availabilityMessage"
-                                                                alertType="warning">The username you selected is already in use.
-                                                            </NotificationBox>
+                                                                v-if="isUsernameAvailable"
+                                                                alertType="success">The selected username is available.</NotificationBox>
+                                                            <NotificationBox
+                                                                v-else-if="isUsernameAvailable === false"
+                                                                alertType="warning">The username you selected is already in use.</NotificationBox>
                                                         </dd>
                                                     </dl>
                                                 </div>
@@ -257,10 +263,10 @@
 
                                 <div class="row">
                                     <div :class="getColumnClass(3)">
-                                        <template v-if="adult2.isFirstNameReadOnly">
-                                            <RockLabel>First Name</RockLabel>
-                                            <div>{{ adult2.firstName }}</div>
-                                        </template>
+                                        <ReadonlyField
+                                            v-if="adult2.isFirstNameReadOnly"
+                                            label="First Name"
+                                            :modelValue="adult2.firstName" />
                                         <TextBox v-else
                                             v-model="adult2.firstName"
                                             id="tbFirstName2"
@@ -268,10 +274,10 @@
                                             :rules="[atLeastOneAdultFirstNameRule, adult2FirstNameRule]" />
                                         </div>
                                     <div :class="getColumnClass(3)">
-                                        <template v-if="adult2.isLastNameReadOnly">
-                                            <RockLabel>Last Name</RockLabel>
-                                            <div>{{ adult2.lastName }}</div>
-                                        </template>
+                                        <ReadonlyField
+                                            v-if="adult2.isLastNameReadOnly"
+                                            label="Last Name"
+                                            :modelValue="adult2.lastName" />
                                         <TextBox v-else
                                             v-model="adult2.lastName"
                                             id="tbLastName2"
@@ -280,17 +286,18 @@
                                         </div>
                                     <div v-if="!config.isAdultGenderHidden" id="pnlGender2" :class="getColumnClass(3)">
                                         <GenderDropDownList
-                                            v-model="adult2.gender"
+                                            v-model="adult2.genderStringValue"
                                             id="ddlGender2"
                                             label="Gender"
                                             :rules="isAdult2Entered && !config.isAdultGenderOptional ? 'required' : []" />
                                     </div>
                                     <div v-if="!config.isAdultSuffixHidden" id="pnlSuffix2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
-                                            v-model="adult2SuffixListItemBag"
+                                            v-model="adult2.suffixListItemBag"
                                             :definedTypeGuid="DefinedType.PersonSuffix"
                                             id="dvpSuffix2"
                                             label="Suffix"
+                                            lazyMode="lazy"
                                             :rules="isAdult2Entered && !config.isAdultSuffixOptional ? 'required' : []"
                                             :showBlankItem="true" />
                                     </div>
@@ -303,10 +310,11 @@
                                     </div>
                                     <div v-if="!config.isAdultMaritalStatusHidden" id="pnlMaritalStatus2" :class="getColumnClass(3)">
                                         <DefinedValuePicker
-                                            v-model="adult2MaritalStatusDefinedValueGuid"
+                                            v-model="adult2.maritalStatusListItemBag"
                                             :definedTypeGuid="DefinedType.PersonMaritalStatus"
                                             id="dvpMaritalStatus2"
                                             label="Marital Status"
+                                            lazyMode="lazy"
                                             :rules="isAdult2Entered && !config.isAdultMaritalStatusOptional ? 'required': ''"
                                             :showBlankItem="true" />
                                     </div>
@@ -327,7 +335,7 @@
                                     </div>
                                     <div id="pnlCommunicationPreference2" :class="getColumnClass(6)">
                                         <RadioButtonList
-                                            v-model="adult2CommunicationPreferenceId"
+                                            v-model="adult2.communicationPreferenceStringValue"
                                             :horizontal="true"
                                             id="rblCommunicationPreference2"
                                             :items="[
@@ -340,7 +348,7 @@
                                     <div id="pnlRace2" :class="getColumnClass(3)">
                                         <RacePicker
                                             v-if="!config.isRaceOptionHidden"
-                                            v-model="adult2RaceListItemBag"
+                                            v-model="adult2.raceListItemBag"
                                             id="rpRace2"
                                             :rules="isAdult2Entered && !config.isRaceOptionOptional ? 'required' : []"
                                             :showBlankItem="true" />
@@ -348,7 +356,7 @@
                                     <div id="pnlEthnicity2" :class="getColumnClass(3)">
                                         <EthnicityPicker
                                             v-if="!config.isEthnicityOptionHidden"
-                                            v-model="adult2EthnicityListItemBag"
+                                            v-model="adult2.ethnicityListItemBag"
                                             id="epEthnicity2"
                                             :rules="isAdult2Entered && !config.isEthnicityOptionOptional ? 'required' : []"
                                             :showBlankItem="true" />
@@ -358,7 +366,7 @@
                                 <div class="row">
                                     <div v-if="!config.isAdultProfilePhotoHidden" id="pnlProfileImage2" class="col-sm-6">
                                         <ImageUploader
-                                            v-model="adult2ProfileImageListItemBag"
+                                            v-model="adult2.profileImageListItemBag"
                                             id="imgProfile2"
                                             label="Profile Photo"
                                             :rules="isAdult2Entered && !config.isAdultProfilePhotoOptional ? 'required' : ''" />
@@ -408,12 +416,16 @@
                     </Panel>
 
                     <Panel id="pnlChildren" type="default" title="Children">
-                        <PreRegistrationChildren :lastName="adult1.lastName" />
+                        <PreRegistrationChildren
+                            v-model="children"
+                            :lastName="adult1.lastName"
+                            @addChild="onAddChild($event)"
+                            @removeChild="onRemoveChild($event)" />
                     </Panel>
                 </template>
 
                 <template #footerActions>
-                    <RockButton btnType="primary" id="lbSave" type="submit" @click="onSaveClicked">Save</RockButton>
+                    <RockButton btnType="primary" id="lbSave" type="submit">Save</RockButton>
                     <RockButton btnType="link" id="lbCancel" @click="onClearClicked">Clear</RockButton>
                 </template>
             </Panel>
@@ -424,8 +436,9 @@
 <script setup lang="ts">
     import { computed, nextTick, ref } from "vue";
     import PreRegistrationChildren from "./FamilyPreRegistration/preRegistrationChildren.partial.obs";
-    import { CreateAccountRequest, PersonRequestBag } from "./FamilyPreRegistration/types.partial";
-    import { convertPersonToPersonRequest, createListItemBagWrapper, useGetColumnClass, useGetColumns } from "./FamilyPreRegistration/utils.partial";
+    import { ChildRequestBag, CreateAccountRequest, PersonRequestBag } from "./FamilyPreRegistration/types.partial";
+    import ReadonlyField from "./FamilyPreRegistration/readonlyField.partial.obs";
+    import { convertPersonToChildRequest, convertPersonToPersonRequest, createEditablePerson, useGetColumnClass, useGetColumns } from "./FamilyPreRegistration/utils.partial";
     import AddressControl from "@Obsidian/Controls/addressControl.obs";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
@@ -444,7 +457,6 @@
     import RadioButtonList from "@Obsidian/Controls/radioButtonList";
     import RockButton from "@Obsidian/Controls/rockButton";
     import RockForm from "@Obsidian/Controls/rockForm";
-    import RockLabel from "@Obsidian/Controls/rockLabel";
     import TextBox from "@Obsidian/Controls/textBox";
     import { CommunicationPreference } from "@Obsidian/Enums/Blocks/Crm/FamilyPreRegistration/communicationPreference";
     import { DefinedType } from "@Obsidian/SystemGuids/definedType";
@@ -455,6 +467,8 @@
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
     import { FamilyPreRegistrationGetScheduleDatesRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesRequestBag";
     import { FamilyPreRegistrationGetScheduleDatesResponseBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesResponseBag";
+    import { FamilyPreRegistrationSaveRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationSaveRequestBag";
+    import { FamilyPreRegistrationSaveResponseBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationSaveResponseBag";
     import { FamilyPreRegistrationScheduleDateBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationScheduleDateBag";
     import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
 
@@ -466,57 +480,32 @@
 
     //#region Values
 
+    const errorNotificationBox = ref<Element | undefined>();
     const errorTitle = ref<string | null | undefined>();
-    const errorText = ref<string | null | undefined>(config.errorMessage);
+    const errors = ref<string[]>(config.errorMessage ? [config.errorMessage] : []);
     const internalCampusListItemBag = ref<ListItemBag | null | undefined>(config.defaultCampusGuid ? { value: config.defaultCampusGuid } : undefined);
-    const selectedScheduleGuids = ref<string | string[]>([]);
-    const selectedTimeGuids = ref<string | string[]>([]);
+    const plannedVisitDate = ref<string>("");
+    const scheduleGuid = ref<string>("");
     const scheduleDateItems = ref<FamilyPreRegistrationScheduleDateBag[]>([]);
-    const isUsernameInUse = ref<boolean>(false);
+    const isUsernameAvailable = ref<boolean | null | undefined>();
     const confirmPassword = ref<string>("");
     const address = ref<AddressControlBag | undefined>();
     const fullName = ref<string>("");
-    const adult1 = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult1));
-    const adult2 = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult2));
+    const adult1Request = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult1));
+    const adult1 = createEditablePerson(adult1Request);
+    const adult2Request = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult2));
+    const adult2 = createEditablePerson(adult2Request);
+    const children = ref<ChildRequestBag[]>(config.children?.map(person => convertPersonToChildRequest(person)) ?? []);
     const createAccount = ref<CreateAccountRequest>({
         username: "",
         password: ""
     });
     const familyAttributeValues = ref<Record<string, string>>(config.familyAttributeValues || {});
 
-    //#endregion
-
     //#region Computed Values
 
-    const isAdult1Entered = computed<boolean>(() => !!adult1.value.firstName.trim());
-    const adult1ProfileImageListItemBag = createListItemBagWrapper(adult1, "profilePhotoGuid");
-    const adult1SuffixListItemBag = createListItemBagWrapper(adult1, "suffixDefinedValueGuid");
-    const adult1MaritalStatusDefinedValueGuid = createListItemBagWrapper(adult1, "maritalStatusDefinedValueGuid");
-    const adult1RaceListItemBag =  createListItemBagWrapper(adult1, "raceGuid");
-    const adult1EthnicityListItemBag = createListItemBagWrapper(adult1, "ethnicityGuid");
-    const adult1CommunicationPreferenceId = computed<string>({
-        get() {
-            return adult1.value.communicationPreference?.toString();
-        },
-        set(newValue: string) {
-            adult1.value.communicationPreference = CommunicationPreference[newValue];
-        }
-    });
-
-    const isAdult2Entered = computed<boolean>(() => !!adult2.value.firstName.trim());
-    const adult2ProfileImageListItemBag = createListItemBagWrapper(adult2, "profilePhotoGuid");
-    const adult2SuffixListItemBag = createListItemBagWrapper(adult2, "suffixDefinedValueGuid");
-    const adult2MaritalStatusDefinedValueGuid = createListItemBagWrapper(adult2, "maritalStatusDefinedValueGuid");
-    const adult2RaceListItemBag =  createListItemBagWrapper(adult2, "raceGuid");
-    const adult2EthnicityListItemBag = createListItemBagWrapper(adult2, "ethnicityGuid");
-    const adult2CommunicationPreferenceId = computed<string>({
-        get() {
-            return adult2.value.communicationPreference?.toString();
-        },
-        set(newValue: string) {
-            adult2.value.communicationPreference = CommunicationPreference[newValue];
-        }
-    });
+    const isAdult1Entered = computed<boolean>(() => !!adult1.firstName.trim());
+    const isAdult2Entered = computed<boolean>(() => !!adult2.firstName.trim());
 
     const campusListItemBag = computed<ListItemBag | null | undefined>({
         get(): ListItemBag | null | undefined {
@@ -534,7 +523,7 @@
     });
 
     const scheduleTimeItems = computed<ListItemBag[]>(() => {
-        const scheduleDateItem = scheduleDateItems.value.find(s => s.value === selectedScheduleGuids.value);
+        const scheduleDateItem = scheduleDateItems.value.find(s => s.value === plannedVisitDate.value);
 
         return scheduleDateItem?.scheduleTimes ?? [];
     });
@@ -543,14 +532,53 @@
 
     //#region Event Handlers
 
+    /**
+     * Event handler for a child being added.
+     */
+    async function onAddChild(child: ChildRequestBag): Promise<void> {
+        children.value.push(child);
+    }
+
+    /**
+     * Event handler for a child being removed.
+     */
+    function onRemoveChild(child: ChildRequestBag): void {
+        const index = children.value.indexOf(child);
+        if (index !== -1) {
+            children.value.splice(index, 1);
+        }
+    }
+
     async function onClearClicked(): Promise<void> {
         // TODO JMH Clear (the form?)
     }
 
-    async function onSaveClicked(): Promise<void> {
+    async function onFormSubmitted(): Promise<void> {
+        const bag: FamilyPreRegistrationSaveRequestBag = {
+            address: address.value,
+            adult1: isAdult1Entered.value ? adult1Request.value : undefined,
+            adult2: isAdult2Entered.value ? adult2Request.value : undefined,
+            campusGuid: internalCampusListItemBag.value?.value || null,
+            children: children.value,
+            createAccount: createAccount.value,
+            familyAttributeValues: familyAttributeValues.value,
+            familyGuid: config.familyGuid,
+            fullName: fullName.value,
+            plannedVisitDate: plannedVisitDate.value,
+            scheduleGuid: scheduleGuid.value
+        };
+
+        const result = await invokeBlockAction<FamilyPreRegistrationSaveResponseBag>("Save", { bag });
+
+        if (result?.data) {
+            if (result.data.errors?.length) {
+                setErrors("Please correct the following:", ...result.data.errors);
+            }
+        }
+
         // TODO JMH Save the family pre-registration.
-        console.log("adult1: ", JSON.stringify(adult1.value, null, 4));
-        console.log("adult2: ", JSON.stringify(adult2.value, null, 4));
+        console.log("adult1: ", JSON.stringify(adult1, null, 4));
+        console.log("adult2: ", JSON.stringify(adult2, null, 4));
     }
 
     //#endregion
@@ -558,8 +586,8 @@
     //#region Functions
 
     function atLeastOneAdultFirstNameRule(): ValidationResult {
-        const adult1FirstName = adult1.value.firstName?.trim();
-        const adult2FirstName = adult2.value.firstName?.trim();
+        const adult1FirstName = adult1.firstName?.trim();
+        const adult2FirstName = adult2.firstName?.trim();
 
         if (!adult1FirstName && !adult2FirstName) {
             return "is invalid. The name of at least one adult needs to be entered.";
@@ -569,8 +597,8 @@
     }
 
     function adult1FirstNameRule(): ValidationResult {
-        const adult1FirstName = adult1.value.firstName?.trim();
-        const adult1LastName = adult1.value.lastName?.trim();
+        const adult1FirstName = adult1.firstName?.trim();
+        const adult1LastName = adult1.lastName?.trim();
 
         if (!adult1FirstName && adult1LastName) {
             return "is invalid. First and Last Name are required.";
@@ -580,8 +608,8 @@
     }
 
     function adult1LastNameRule(): ValidationResult {
-        const adult1FirstName = adult1.value.firstName?.trim();
-        const adult1LastName = adult1.value.lastName?.trim();
+        const adult1FirstName = adult1.firstName?.trim();
+        const adult1LastName = adult1.lastName?.trim();
 
         if (adult1FirstName && !adult1LastName) {
             return "is invalid. First and Last Name are required.";
@@ -591,8 +619,8 @@
     }
 
     function adult2FirstNameRule(): ValidationResult {
-        const adult2FirstName = adult2.value.firstName?.trim();
-        const adult2LastName = adult2.value.lastName?.trim();
+        const adult2FirstName = adult2.firstName?.trim();
+        const adult2LastName = adult2.lastName?.trim();
 
         if (!adult2FirstName && adult2LastName) {
             return "is invalid. First and Last Name are required.";
@@ -602,8 +630,8 @@
     }
 
     function adult2LastNameRule(): ValidationResult {
-        const adult2FirstName = adult2.value.firstName?.trim();
-        const adult2LastName = adult2.value.lastName?.trim();
+        const adult2FirstName = adult2.firstName?.trim();
+        const adult2LastName = adult2.lastName?.trim();
 
         if (adult2FirstName && !adult2LastName) {
             return "is invalid. First and Last Name are required.";
@@ -618,11 +646,11 @@
      async function checkUsernameAvailability(): Promise<void> {
         const username = createAccount.value.username;
         if (!username) {
-            isUsernameInUse.value = false;
+            isUsernameAvailable.value = null;
         }
         else {
             const response = await http.get<boolean>("/api/userlogins/available", { username });
-            isUsernameInUse.value = !response.data;
+            isUsernameAvailable.value = !!response.data;
         }
     }
 
@@ -636,9 +664,21 @@
     //     });
     // }
 
-    function setError(text?: string | null, title?: string | null): void {
+    function clearErrors(): void {
+        errorTitle.value = undefined;
+        errors.value = [];
+    }
+
+    function setErrors(title: string | null, ...errorMessages: string[]): void {
         errorTitle.value = title;
-        errorText.value = text;
+        errors.value = errorMessages;
+
+        nextTick(() => {
+            const errorBox = errorNotificationBox.value;
+            if (errorBox && typeof errorBox["scrollIntoView"] === "function") {
+                errorBox.scrollIntoView();
+            }
+        });
     }
 
     async function updateScheduleDateControl(): Promise<void> {
@@ -652,10 +692,13 @@
             campusGuid: campusListItemBag.value?.value
         };
 
+        clearErrors();
         const result = await invokeBlockAction<FamilyPreRegistrationGetScheduleDatesResponseBag>("GetScheduleDates", { bag });
 
         if (result?.data) {
-            setError(result.data.errorText, result.data.errorTitle);
+            if (result.data.errorText) {
+                setErrors(result.data.errorTitle || null, result.data.errorText);
+            }
 
             if ([true, false].some(b => b === result.data?.isPlannedDatePanelHidden)) {
                 config.isPlannedVisitDatePanelHidden = !!result.data.isPlannedDatePanelHidden;
@@ -668,7 +711,7 @@
             scheduleDateItems.value = result.data.scheduleDates ?? [];
         }
         else if (result?.errorMessage) {
-            setError(result.errorMessage);
+            setErrors(null, result.errorMessage);
         }
     }
 

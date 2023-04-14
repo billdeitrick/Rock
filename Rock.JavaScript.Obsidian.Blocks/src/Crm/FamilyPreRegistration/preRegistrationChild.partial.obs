@@ -15,7 +15,7 @@
     <div class="row">
         <div :class="getColumnClass(6)">
             <DropDownList
-                v-model="relationshipGuid"
+                v-model="child.familyRoleGuid"
                 :items="config.childRelationshipTypes ?? undefined"
                 label="Relationship to Adult"
                 rules="required"
@@ -26,10 +26,10 @@
 
     <div class="row clearfix">
         <div :class="getColumnClass(3)">
-            <template v-if="child.isFirstNameReadOnly">
-                <RockLabel>First Name</RockLabel>
-                <div>{{ child.firstName }}</div>
-            </template>
+            <ReadonlyField
+                v-if="child.isFirstNameReadOnly"
+                label="First Name"
+                :modelValue="child.firstName" />
             <TextBox v-else
                 v-model="child.firstName"
                 label="First Name"
@@ -37,10 +37,10 @@
         </div>
 
         <div :class="getColumnClass(3)">
-            <template v-if="child.isLastNameReadOnly">
-                <RockLabel>Last Name</RockLabel>
-                <div>{{ child.lastName }}</div>
-            </template>
+            <ReadonlyField
+                v-if="child.isLastNameReadOnly"
+                label="Last Name"
+                :modelValue="child.lastName" />
             <TextBox v-else
                 v-model="child.lastName"
                 label="Last Name"
@@ -49,16 +49,17 @@
 
         <div v-if="!config.isChildGenderHidden" :class="getColumnClass(3)">
             <GenderDropDownList
-                v-model="child.gender"
+                v-model="child.genderStringValue"
                 label="Gender"
                 :rules="!config.isChildGenderOptional ? 'required' : ''" />
         </div>
 
         <div v-if="!config.isChildSuffixHidden" :class="getColumnClass(3)">
             <DefinedValuePicker
-                v-model="childSuffixDefinedValueGuid"
+                v-model="child.suffixListItemBag"
                 :definedTypeGuid="DefinedType.PersonSuffix"
                 label="Suffix"
+                lazyMode="lazy"
                 :showBlankItem="true" />
         </div>
 
@@ -70,10 +71,11 @@
         </div>
 
         <div v-if="!config.isChildGradeHidden" :class="getColumnClass(3)">
-            <DefinedValuePicker
-                v-model="childGradeDefinedValueGuid"
-                :definedTypeGuid="DefinedType.SchoolGrades"
+            <GradePicker
+                v-model="child.gradeListItemBag"
                 label="Grade"
+                lazyMode="lazy"
+                :useGuidAsValue="true"
                 :rules="!config.isChildGradeOptional ? 'required' : ''"
                 :showBlankItem="true" />
         </div>
@@ -95,7 +97,7 @@
 
         <div v-if="!config.isChildDisplayCommunicationPreferenceHidden" :class="getColumnClass(6)">
             <RadioButtonList
-                v-model="childCommunicationPreferenceId"
+                v-model="child.communicationPreferenceStringValue"
                 :horizontal="true"
                 :items="[
                     { text: 'Email', value: CommunicationPreference.Email.toString() },
@@ -106,14 +108,14 @@
 
         <div v-if="!config.isChildRaceHidden" :class="getColumnClass(3)">
             <RacePicker
-                v-model="childRaceListItemBag"
+                v-model="child.raceListItemBag"
                 :rules="!config.isChildRaceOptional ? 'required' : ''"
                 :showBlankItem="true" />
         </div>
 
         <div v-if="!config.isChildEthnicityHidden" :class="getColumnClass(3)">
             <EthnicityPicker
-                v-model="childEthnicityListItemBag"
+                v-model="child.ethnicityListItemBag"
                 :rules="!config.isChildEthnicityOptional ? 'required' : ''"
                 :showBlankItem="true" />
         </div>
@@ -121,7 +123,7 @@
     <div v-if="!config.isChildProfilePhotoHidden" class="row">
         <div :class="getColumnClass(6)">
             <ImageUploader
-                v-model="childProfileImageListItemBag"
+                v-model="child.profileImageListItemBag"
                 label="Profile Photo" />
         </div>
         <div :class="getColumnClass(6)"></div><!-- filler/blocker column -->
@@ -149,8 +151,9 @@
 
 <script setup lang="ts">
     import { PropType, computed, ref, watch } from "vue";
-    import { PersonRequestBag } from "./types.partial";
-    import { createListItemBagWrapper, getNumberAsOrdinalString, useGetColumnClass, useGetColumns } from "./utils.partial";
+    import ReadonlyField from "./readonlyField.partial.obs";
+    import { ChildRequestBag } from "./types.partial";
+    import { createEditablePerson, getNumberAsOrdinalString, useGetColumnClass, useGetColumns } from "./utils.partial";
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer";
     import BirthdayPicker from "@Obsidian/Controls/birthdayPicker";
     import DefinedValuePicker from "@Obsidian/Controls/definedValuePicker.obs";
@@ -158,6 +161,7 @@
     import EmailBox from "@Obsidian/Controls/emailBox";
     import EthnicityPicker from "@Obsidian/Controls/ethnicityPicker.obs";
     import GenderDropDownList from "@Obsidian/Controls/genderDropDownList";
+    import GradePicker from "@Obsidian/Controls/gradePicker";
     import ImageUploader from "@Obsidian/Controls/imageUploader";
     import PhoneNumberBox from "@Obsidian/Controls/phoneNumberBox.obs";
     import RacePicker from "@Obsidian/Controls/racePicker.obs";
@@ -180,37 +184,24 @@
         },
 
         child: {
-            type: Object as PropType<PersonRequestBag>,
+            type: Object as PropType<ChildRequestBag>,
             required: true
         }
     });
 
     const emit = defineEmits<{
-        (e: "remove", value: PersonRequestBag): void
+        (e: "remove", value: ChildRequestBag): void
     }>();
 
     //#region Values
 
-    const relationshipGuid = ref<string>("");
-    const child = ref<PersonRequestBag>(props.child);
+    const childRequest = ref<ChildRequestBag>(props.child);
+    const child = createEditablePerson(childRequest);
 
     //#endregion
 
     //#region Computed Values
 
-    const childSuffixDefinedValueGuid = createListItemBagWrapper(child, "suffixDefinedValueGuid");
-    const childGradeDefinedValueGuid = createListItemBagWrapper(child, "gradeDefinedValueGuid");
-    const childRaceListItemBag =  createListItemBagWrapper(child, "raceGuid");
-    const childEthnicityListItemBag = createListItemBagWrapper(child, "ethnicityGuid");
-    const childProfileImageListItemBag = createListItemBagWrapper(child, "profilePhotoGuid");
-    const childCommunicationPreferenceId = computed<string>({
-        get() {
-            return child.value.communicationPreference?.toString();
-        },
-        set(newValue: string) {
-            child.value.communicationPreference = CommunicationPreference[newValue];
-        }
-    });
     const caption = computed<string>(() => {
         return `${getNumberAsOrdinalString(props.childNumber)} Child`;
     });
@@ -220,7 +211,7 @@
     //#region Watchers
 
     watch(() => props.child, () => {
-        child.value = props.child;
+        childRequest.value = props.child;
     });
 
     //#endregion

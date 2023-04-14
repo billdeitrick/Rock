@@ -26,6 +26,8 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
 {
     public class FamilyPreRegistrationPersonBag
     {
+        public Guid Guid { get; set; }
+
         public string FirstName { get; set; }
 
         public string LastName { get; set; }
@@ -44,9 +46,9 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
 
         public CommunicationPreference CommunicationPreference { get; set; }
 
-        public Guid? RaceGuid { get; set; }
+        public Guid? RaceDefinedValueGuid { get; set; }
 
-        public Guid? EthnicityGuid { get; set; }
+        public Guid? EthnicityDefinedValueGuid { get; set; }
 
         public Dictionary<string, PublicAttributeBag> Attributes { get; set; }
 
@@ -57,5 +59,6 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public bool IsLastNameReadOnly { get; set; }
         public Guid? MaritalStatusDefinedValueGuid { get; set; }
         public Guid? GradeDefinedValueGuid { get; set; }
+        public Guid? FamilyRoleGuid { get; set; }
     }
 }

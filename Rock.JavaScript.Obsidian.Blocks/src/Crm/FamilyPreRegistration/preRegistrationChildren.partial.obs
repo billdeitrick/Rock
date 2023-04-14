@@ -1,9 +1,9 @@
 <template>
-    <template v-for="(child, index) in children">
+    <template v-for="(child, index) in modelValue">
         <PreRegistrationChild
-            :childNumber="index + 1"
+            :childNumber="index + 9999991"
             :child="child"
-            @remove="onRemoveChild" />
+            @remove="$emit('removeChild', child)" />
         <hr>
     </template>
     <RockButton
@@ -17,45 +17,53 @@
 </template>
 
 <script setup lang="ts">
-    import { PropType, ref } from "vue";
+    import { PropType } from "vue";
     import PreRegistrationChild from "./preRegistrationChild.partial.obs";
-    import { PersonRequestBag } from "./types.partial";
-    import { createPersonRequest } from "./utils.partial";
+    import { ChildRequestBag } from "./types.partial";
     import RockButton from "@Obsidian/Controls/rockButton";
-    import { useConfigurationValues } from "@Obsidian/Utility/block";
-    import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
+    import { convertPersonToChildRequest } from "./utils.partial";
+    import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
+    import { useInvokeBlockAction } from "@Obsidian/Utility/block";
 
-    const config = useConfigurationValues<FamilyPreRegistrationInitializationBox>();
+    const invokeBlockAction = useInvokeBlockAction();
 
     const props = defineProps({
+        modelValue: {
+            type: Object as PropType<ChildRequestBag[]>,
+            required: true,
+        },
+
         lastName: {
             type: String as PropType<string>,
             required: true
         }
     });
 
-    const children = ref<PersonRequestBag[]>([]);
+    const emit = defineEmits<{
+        (e: "addChild", child: ChildRequestBag): void,
+        (e: "removeChild", child: ChildRequestBag): void
+    }>();
 
     //#region Event Handlers
 
     /**
      * Event handler for a child being added.
      */
-    function onAddChildClicked(): void {
-        const child = createPersonRequest();
-        child.lastName = props.lastName;
-        children.value.push(child);
-    }
+    async function onAddChildClicked(): Promise<void> {
+        const result = await invokeBlockAction<FamilyPreRegistrationPersonBag>("GetNewChild");
 
-    /**
-     * Event handler for a child being removed.
-     */
-    function onRemoveChild(child: PersonRequestBag): void {
-        const index = children.value.indexOf(child);
-        if (index !== -1) {
-            children.value.splice(index, 1);
+        if (result?.isSuccess && result.data) {
+            const child = convertPersonToChildRequest(result.data);
+            child.lastName = props.lastName;
+
+            emit("addChild", child);
+        }
+        else {
+            // TODO JMH error bubble up to parent or display here.
+            console.error(result?.errorMessage);
         }
     }
 
     //#endregion
+
 </script>

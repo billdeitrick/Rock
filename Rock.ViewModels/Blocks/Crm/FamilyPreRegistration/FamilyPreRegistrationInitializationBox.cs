@@ -125,5 +125,7 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public bool IsChildEthnicityOptional { get; set; }
         public Dictionary<string, PublicAttributeBag> ChildAttributes { get; set; }
         public Dictionary<string, string> ChildAttributeValuesTemplate { get; set; }
+        public List<FamilyPreRegistrationPersonBag> Children { get; set; }
+        public Guid FamilyGuid { get; set; }
     }
 }

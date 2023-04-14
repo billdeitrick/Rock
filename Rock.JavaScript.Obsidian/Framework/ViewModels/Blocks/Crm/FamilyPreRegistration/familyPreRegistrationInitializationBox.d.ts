@@ -49,6 +49,8 @@ export type FamilyPreRegistrationInitializationBox = {
 
     childRelationshipTypes?: ListItemBag[] | null;
 
+    children?: FamilyPreRegistrationPersonBag[] | null;
+
     /** The number of columns used to display the form. */
     columns: number;
 
@@ -68,6 +70,8 @@ export type FamilyPreRegistrationInitializationBox = {
     familyAttributes?: Record<string, PublicAttributeBag> | null;
 
     familyAttributeValues?: Record<string, string> | null;
+
+    familyGuid?: Guid | null;
 
     isAddressHidden: boolean;
 

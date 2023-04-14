@@ -1,10 +1,10 @@
-import { PersonRequestBag } from "./types.partial";
+import { ChildRequestBag, PersonRequestBag } from "./types.partial";
 import { CommunicationPreference } from "@Obsidian/Enums/Blocks/Crm/FamilyPreRegistration/communicationPreference";
 import { Gender } from "@Obsidian/Enums/Crm/gender";
 import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
 import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
-import { InjectionKey, Ref, WritableComputedRef, computed } from "vue";
+import { InjectionKey, Ref, WritableComputedRef, computed, reactive, toRefs } from "vue";
 
 export function convertPersonToPersonRequest(person: FamilyPreRegistrationPersonBag | null | undefined): PersonRequestBag {
     const defaults = createPersonRequest();
@@ -27,11 +27,75 @@ export function convertPersonToPersonRequest(person: FamilyPreRegistrationPerson
     };
 }
 
+export function convertPersonToChildRequest(person: FamilyPreRegistrationPersonBag | null | undefined): ChildRequestBag {
+    const request = convertPersonToPersonRequest(person);
+    const defaults = createChildRequest();
+
+    return {
+        // Copy values from person bag.
+        ...request,
+        familyRoleGuid: request.familyRoleGuid || defaults.familyRoleGuid
+    };
+}
+
 export function createPersonRequest(): PersonRequestBag {
     return {
         attributeValues: {},
         communicationPreference: CommunicationPreference.None,
         email: "",
+        firstName: "",
+        gender: Gender.Unknown,
+        isFirstNameReadOnly: false,
+        isLastNameReadOnly: false,
+        lastName: "",
+        mobilePhone: "",
+        mobilePhoneCountryCode: ""
+    };
+}
+
+export function createEditablePerson(person: Ref<PersonRequestBag>): PersonRequestBag & {
+    communicationPreferenceStringValue: string,
+    ethnicityListItemBag: ListItemBag,
+    genderStringValue: string,
+    gradeListItemBag: ListItemBag,
+    maritalStatusListItemBag: ListItemBag,
+    profileImageListItemBag: ListItemBag,
+    raceListItemBag: ListItemBag,
+    suffixListItemBag: ListItemBag,
+} {
+    return reactive({
+        ...toRefs(person.value),
+        communicationPreferenceStringValue: computed<string>({
+            get() {
+                return person.value.communicationPreference?.toString();
+            },
+            set(newValue: string) {
+                person.value.communicationPreference = CommunicationPreference[newValue];
+            }
+        }),
+        ethnicityListItemBag: createListItemBagWrapper(person, "ethnicityDefinedValueGuid"),
+        genderStringValue: computed<string>({
+            get() {
+                return person.value.gender.toString();
+            },
+            set(newValue: string) {
+                person.value.gender = Number(newValue);
+            }
+        }),
+        gradeListItemBag: createListItemBagWrapper(person, "gradeDefinedValueGuid", true),
+        maritalStatusListItemBag: createListItemBagWrapper(person, "maritalStatusDefinedValueGuid"),
+        profileImageListItemBag: createListItemBagWrapper(person, "profilePhotoGuid"),
+        raceListItemBag: createListItemBagWrapper(person, "raceDefinedValueGuid"),
+        suffixListItemBag: createListItemBagWrapper(person, "suffixDefinedValueGuid"),
+    });
+}
+
+export function createChildRequest(): ChildRequestBag {
+    return {
+        attributeValues: {},
+        communicationPreference: CommunicationPreference.None,
+        email: "",
+        familyRoleGuid: "",
         firstName: "",
         gender: Gender.Unknown,
         isFirstNameReadOnly: false,
