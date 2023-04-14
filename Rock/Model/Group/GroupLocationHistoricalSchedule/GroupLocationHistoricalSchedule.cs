@@ -29,7 +29,7 @@ namespace Rock.Model
     [RockDomain( "Group" )]
     [Table( "GroupLocationHistoricalSchedule" )]
     [DataContract]
-    [Obsolete( "Group Location Historical Schedule is not used and is not reflected in the UI.  Consider using 'History' entity instead.", false )]
+    [Obsolete( "Group Location Historical Schedule is not used and is not reflected in the UI.  Consider using 'History' entity instead." )]
     [RockObsolete( "1.16" )]
     [Rock.SystemGuid.EntityTypeGuid( "3BC646E4-CA5E-47D6-BC6D-4BBFAAEDAD8B" )]
     public class GroupLocationHistoricalSchedule : Entity<GroupLocationHistoricalSchedule>
@@ -102,6 +102,8 @@ namespace Rock.Model
     /// <summary>
     /// Configuration class.
     /// </summary>
+    [Obsolete( "Group Location Historical Schedule is not used and is not reflected in the UI.  Consider using 'History' entity instead.", false )]
+    [RockObsolete( "1.16" )]
     public partial class GroupLocationHistoricalScheduleConfiguration : EntityTypeConfiguration<GroupLocationHistoricalSchedule>
     {
         /// <summary>
