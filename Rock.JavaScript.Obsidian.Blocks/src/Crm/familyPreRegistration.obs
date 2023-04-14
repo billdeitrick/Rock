@@ -9,7 +9,9 @@
                 </ul>
             </NotificationBox>
         </div>
-        <RockForm @submit="onFormSubmitted">
+        <span ref="formErrorsScrollTarget"></span>
+        <RockForm @submit="onFormSubmitted"
+            @visibleValidationChanged="onVisibleValidationChanged">
             <Panel type="block" title="Family Pre-Registration">
                 <template #default>
                     <Panel id="pnlVisit" title="Visit Information">
@@ -425,7 +427,7 @@
                 </template>
 
                 <template #footerActions>
-                    <RockButton btnType="primary" id="lbSave" type="submit">Save</RockButton>
+                    <RockButton btnType="primary" id="lbSave" type="submit" @click="shouldScrollToFormErrors = true">Save</RockButton>
                     <RockButton btnType="link" id="lbCancel" @click="onClearClicked">Clear</RockButton>
                 </template>
             </Panel>
@@ -461,9 +463,10 @@
     import { CommunicationPreference } from "@Obsidian/Enums/Blocks/Crm/FamilyPreRegistration/communicationPreference";
     import { DefinedType } from "@Obsidian/SystemGuids/definedType";
     import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
+    import { FormError } from "@Obsidian/Utility/form";
     import { useHttp } from "@Obsidian/Utility/http";
-    import { ValidationResult } from "@Obsidian/ValidationRules";
     import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+    import { ValidationResult } from "@Obsidian/ValidationRules";
     import { FamilyPreRegistrationInitializationBox } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationInitializationBox";
     import { FamilyPreRegistrationGetScheduleDatesRequestBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesRequestBag";
     import { FamilyPreRegistrationGetScheduleDatesResponseBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationGetScheduleDatesResponseBag";
@@ -481,6 +484,8 @@
     //#region Values
 
     const errorNotificationBox = ref<Element | undefined>();
+    const formErrorsScrollTarget = ref<Element | undefined>();
+    const shouldScrollToFormErrors = ref<boolean>(false);
     const errorTitle = ref<string | null | undefined>();
     const errors = ref<string[]>(config.errorMessage ? [config.errorMessage] : []);
     const internalCampusListItemBag = ref<ListItemBag | null | undefined>(config.defaultCampusGuid ? { value: config.defaultCampusGuid } : undefined);
@@ -583,6 +588,19 @@
         }
     }
 
+    /**
+     * Event handler for the visible form validation being changed.
+     */
+    function onVisibleValidationChanged(errors: FormError[]): void {
+            // If there are any errors, then scroll them into view if we should.
+        if (errors?.length && shouldScrollToFormErrors.value) {
+            scrollIntoView(formErrorsScrollTarget.value);
+
+            // Reset the should scroll state until we should scroll again.
+            shouldScrollToFormErrors.value = false;
+        }
+    }
+
     //#endregion
 
     //#region Functions
@@ -671,16 +689,24 @@
         errors.value = [];
     }
 
+    function scrollIntoView(element: Element | undefined): void {
+        if (!element) {
+            // Nothing to scroll to.
+            return;
+        }
+
+        nextTick(() => {
+            if (element && typeof element["scrollIntoView"] === "function") {
+                element.scrollIntoView();
+            }
+        });
+    }
+
     function setErrors(title: string | null, ...errorMessages: string[]): void {
         errorTitle.value = title;
         errors.value = errorMessages;
 
-        nextTick(() => {
-            const errorBox = errorNotificationBox.value;
-            if (errorBox && typeof errorBox["scrollIntoView"] === "function") {
-                errorBox.scrollIntoView();
-            }
-        });
+        scrollIntoView(errorNotificationBox.value);
     }
 
     async function updateScheduleDateControl(): Promise<void> {
