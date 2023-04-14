@@ -21,7 +21,6 @@
 // </copyright>
 //
 
-import { Guid } from "@Obsidian/Types";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
@@ -32,44 +31,14 @@ export type StreakBag = {
     /** Gets or sets the attribute values. */
     attributeValues?: Record<string, string> | null;
 
-    /** Gets or sets the created by person alias. */
-    createdByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the created by person alias identifier. */
-    createdByPersonAliasId?: number | null;
-
-    /** Gets or sets the created date time. */
-    createdDateTime?: string | null;
-
-    /** The current number of non excluded occurrences attended in a row */
-    currentStreakCount: number;
-
-    /** The date that the current streak began */
-    currentStreakStartDate?: string | null;
-
-    /** The number of engagements on occurrences */
-    engagementCount: number;
-
     /**
      * Gets or sets the System.DateTime when the person was enrolled in the streak type.
      * This is not the Streak Type start date.
      */
     enrollmentDate?: string | null;
 
-    /** Gets or sets an optional Guid foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignGuid?: Guid | null;
-
-    /** Gets or sets an optional int foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignId?: number | null;
-
-    /** Gets or sets an optional string foreign identifier.  This can be used for importing or syncing data to a foreign system */
-    foreignKey?: string | null;
-
     /** Gets or sets the identifier key of this entity. */
     idKey?: string | null;
-
-    /** Gets or sets the System.DateTime when the person deactivated their Streak. If null, the Streak is active. */
-    inactiveDateTime?: string | null;
 
     /** Gets or sets the IsActive. */
     isActive: boolean;
@@ -77,32 +46,8 @@ export type StreakBag = {
     /** Gets or sets the Rock.Model.Location. */
     location?: ListItemBag | null;
 
-    /** Gets or sets the Rock.Model.Location identifier by which the person's exclusions will be sourced. */
-    locationId?: number | null;
-
-    /** The longest number of non excluded occurrences attended in a row */
-    longestStreakCount: number;
-
-    /** The date the longest streak ended */
-    longestStreakEndDate?: string | null;
-
-    /** The date the longest streak began */
-    longestStreakStartDate?: string | null;
-
-    /** Gets or sets the modified by person alias. */
-    modifiedByPersonAlias?: ListItemBag | null;
-
-    /** Gets or sets the modified by person alias identifier. */
-    modifiedByPersonAliasId?: number | null;
-
-    /** Gets or sets the modified date time. */
-    modifiedDateTime?: string | null;
-
     /** Gets or sets the Rock.Model.PersonAlias. */
     personAlias?: ListItemBag | null;
-
-    /** Gets or sets the Rock.Model.PersonAlias identifier. */
-    personAliasId: number;
 
     /** Gets or sets the Rock.Model.StreakType. */
     streakType?: ListItemBag | null;

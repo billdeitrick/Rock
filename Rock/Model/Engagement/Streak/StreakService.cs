@@ -137,7 +137,7 @@ namespace Rock.Model
         /// <returns>
         ///   <c>true</c> if this instance can delete the specified item; otherwise, <c>false</c>.
         /// </returns>
-        public bool CanDelete( Streak item, out string errorMessage, Person currentPerson )
+        public bool CanDelete( Streak item, Person currentPerson, out string errorMessage )
         {
             // persons with no administrator priviledge should not be allowed to delete streak detail
             if ( !item.IsAuthorized( Rock.Security.Authorization.ADMINISTRATE, currentPerson ) )

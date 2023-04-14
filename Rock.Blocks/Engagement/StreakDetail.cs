@@ -208,7 +208,6 @@ namespace Rock.Blocks.Engagement
                 PersonAlias = entity.PersonAlias.ToListItemBag(),
                 CurrentStreakCount = entity.CurrentStreakCount,
                 CurrentStreakStartDate = entity.CurrentStreakStartDate,
-                EngagementCount = entity.EngagementCount,
                 IsActive = entity.IsActive,
                 LongestStreakCount = entity.LongestStreakCount,
                 LongestStreakEndDate = entity.LongestStreakEndDate,
@@ -516,7 +515,7 @@ namespace Rock.Blocks.Engagement
                     return actionError;
                 }
 
-                if ( !entityService.CanDelete( entity, out var errorMessage, RequestContext.CurrentPerson ) )
+                if ( !entityService.CanDelete( entity, RequestContext.CurrentPerson, out var errorMessage ) )
                 {
                     return ActionBadRequest( errorMessage );
                 }

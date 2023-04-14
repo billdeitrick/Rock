@@ -19,11 +19,9 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity.ModelConfiguration;
 using System.Runtime.Serialization;
-using AngleSharp.Dom;
 using Newtonsoft.Json;
 using Rock.Data;
 using Rock.Utility;
-using Rock.ViewModels.Utility;
 
 namespace Rock.Model
 {

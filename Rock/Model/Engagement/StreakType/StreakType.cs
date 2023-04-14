@@ -180,15 +180,10 @@ namespace Rock.Model
 
         #endregion Navigation Properties
 
-        /// <summary>
-        /// Converts the StreakType to an instance of <see cref="ListItemBag"/>
-        /// Motive for creating the instance method to override the extension method ToListItemBag:
-        /// The extension method failed to provide the correct name when converting a cached streak type to a list bag item
-        /// </summary>
-        /// <returns>The <see cref="StreakType"/> as an instance of <see cref="ListItemBag"/></returns>
-        public ListItemBag ToListItemBag()
+        /// <inheritdoc/>
+        public override string ToString()
         {
-            return new ListItemBag { Text = Name, Value = Guid.ToString() };
+            return Name;
         }
     }
 }

@@ -70,30 +70,10 @@
     // inform the server which incoming values have valid data in them.
     const validProperties = [
         "attributeValues",
-        "createdByPersonAlias",
-        "createdByPersonAliasId",
-        "createdDateTime",
-        "currentStreakCount",
-        "currentStreakStartDate",
-        "engagementCount",
         "enrollmentDate",
-        "foreignGuid",
-        "foreignId",
-        "foreignKey",
-        "inactiveDateTime",
-        "isActive",
         "location",
-        "locationId",
-        "longestStreakCount",
-        "longestStreakEndDate",
-        "longestStreakStartDate",
-        "modifiedByPersonAlias",
-        "modifiedByPersonAliasId",
-        "modifiedDateTime",
         "personAlias",
-        "personAliasId",
         "streakType",
-        "streakTypeId"
     ];
 
     const refreshAttributesDebounce = debounce(() => refreshDetailAttributes(streakEditBag, validProperties, invokeBlockAction), undefined, true);
