@@ -23,6 +23,7 @@ using Rock.Blocks;
 using Rock.Model;
 using Rock.ViewModels.Core.Grid;
 using Rock.Web.Cache;
+using Rock.Web.UI;
 
 namespace Rock.Obsidian.UI
 {
@@ -170,10 +171,20 @@ namespace Rock.Obsidian.UI
                             pageRef.Parameters.AddOrReplace( "CommunicationId", "{EntitySetId}" );
                             communicationUrl = pageRef.BuildUrl();
                         }
+                        else
+                        {
+                            communicationUrl = null;
+                        }
                     }
                 }
 
-                definition.ActionUrls.AddOrIgnore( GridActionUrlKey.Communicate, communicationUrl );
+                if ( communicationUrl.IsNotNullOrWhiteSpace() )
+                {
+                    definition.ActionUrls.AddOrIgnore( GridActionUrlKey.Communicate, communicationUrl );
+                }
+
+                // TODO: Find a way to get the page for the route and determine
+                // if the current person can view the page.
                 definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergePerson, "/PersonMerge/{EntitySetId}" );
                 definition.ActionUrls.AddOrIgnore( GridActionUrlKey.MergeBusiness, "/BusinessMerge/{EntitySetId}" );
                 definition.ActionUrls.AddOrIgnore( GridActionUrlKey.BulkUpdate, "/BulkUpdate/{EntitySetId}" );
@@ -183,5 +194,47 @@ namespace Rock.Obsidian.UI
 
             return builder;
         }
+
+        //private static bool IsAuthorizedForRoute( string route, Person currentPerson )
+        //{
+        //    try
+        //    {
+        //        // cast the page as a Rock Page
+        //        var rockPage = Page as RockPage;
+        //        if ( rockPage != null )
+        //        {
+        //            // If the route contains a parameter
+        //            if ( route.Contains( "{0}" ) )
+        //            {
+        //                // replace it with a fake param
+        //                route = string.Format( route, 1 );
+        //            }
+
+        //            // Get a uri
+        //            Uri uri = new Uri( rockPage.ResolveRockUrlIncludeRoot( route ) );
+        //            if ( uri != null )
+        //            {
+        //                // Find a page ref based on the uri
+        //                var pageRef = new Rock.Web.PageReference( uri, Page.Request.ApplicationPath );
+        //                if ( pageRef.IsValid )
+        //                {
+        //                    // if a valid pageref was found, check the security of the page
+        //                    var page = PageCache.Get( pageRef.PageId );
+        //                    if ( page != null )
+        //                    {
+        //                        return page.IsAuthorized( Rock.Security.Authorization.VIEW, rockPage.CurrentPerson );
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch ( Exception ex )
+        //    {
+        //        Rock.Model.ExceptionLogService.LogException( ex, Context );
+        //        // Log and move on...
+        //    }
+
+        //    return false;
+        //}
     }
 }

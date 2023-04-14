@@ -20,12 +20,18 @@ import { Guid } from "..";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 
 /** The purpose of the entity set. This activates special logic. */
-export type EntitySetPurpose = "export" | "communication";
+export type EntitySetPurpose = "communication" | "export";
 
 /**
  * The options to use when generating the entity set bag for a grid.
  */
 export type EntitySetOptions = {
+    /**
+     * Forces the entity type to a different value then what is configured
+     * on the grid. Useful when creating a set of persons from group members.
+     */
+    entityTypeGuid?: Guid;
+
     /** Any additional fields that should be placed in the item merge fields. */
     mergeFields?: string[];
 
@@ -37,6 +43,21 @@ export type EntitySetOptions = {
      */
     mergeColumns?: ListItemBag[];
 
+    /**
+     * A function that will be called to provide additional custom merge
+     * values to the entity set item.
+     *
+     * @param row The row that will provide additional field information.
+     * @param grid The grid that is performing the operation.
+     *
+     * @returns An object that will be appended to the merge values.
+     */
+    additionalMergeFieldsFactory?: (row: Record<string, unknown>, grid: IGridState) => Record<string, unknown>;
+
+    /**
+     * The specialized purpose of this entity set. This is used to provide
+     * additional context to the process about how to generate the data.
+     */
     purpose?: EntitySetPurpose;
 };
 

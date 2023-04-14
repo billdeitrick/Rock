@@ -51,6 +51,14 @@ type GridEntitySetBag = {
     items?: GridEntitySetItemBag[];
 };
 
+export type GridCommunicationBag = {
+    additionalMergeFields?: string[];
+
+    fromUrl?: string;
+
+    recipients?: GridEntitySetItemBag[];
+};
+
 /**
  * Gets the entity set bag that can be send to the server to create an entity
  * set representing the selected items in the grid.
@@ -69,7 +77,7 @@ export function getEntitySetBag(grid: IGridState, keyFields: string[], options?:
     const entitySetItemLookup: Record<string, GridEntitySetItemBag> = {};
     let itemOrder = 0;
     const entitySetBag: GridEntitySetBag = {
-        entityTypeKey: grid.entityTypeGuid
+        entityTypeKey: options?.entityTypeGuid ?? grid.entityTypeGuid
     };
 
     entitySetBag.items = [];
@@ -93,7 +101,10 @@ export function getEntitySetBag(grid: IGridState, keyFields: string[], options?:
         for (const key of keyFields) {
             const keyValue = row[key];
 
-            if (typeof keyValue === "string" && keyValue !== "") {
+            if (typeof keyValue === "number" && keyValue !== 0) {
+                entityKeyValues.push(keyValue.toString());
+            }
+            else if (typeof keyValue === "string" && keyValue !== "") {
                 // For compatibility with legacy grid, check if we can split
                 // the string on the normal seperators.
 
@@ -133,6 +144,15 @@ export function getEntitySetBag(grid: IGridState, keyFields: string[], options?:
             }
         }
 
+        // Get any custom merge values that should be added.
+        if (options?.additionalMergeFieldsFactory) {
+            const additionalValues = options.additionalMergeFieldsFactory(row, grid);
+
+            for (const key of Object.keys(additionalValues)) {
+                mergeValues[key] = additionalValues[key];
+            }
+        }
+
         // Create (or update) all the entity set item bags for the entity
         // keys that we found in this row.
         for (const entityKey of entityKeyValues) {
@@ -141,7 +161,8 @@ export function getEntitySetBag(grid: IGridState, keyFields: string[], options?:
             if (!item) {
                 item = {
                     entityKey: entityKey,
-                    order: itemOrder++
+                    order: itemOrder++,
+                    additionalMergeValues: {...mergeValues}
                 };
 
                 entitySetBag.items.push(item);
@@ -168,10 +189,7 @@ export function getEntitySetBag(grid: IGridState, keyFields: string[], options?:
                     rows = item.additionalMergeValues["AdditionalFields"] = [];
                 }
 
-                rows.push(mergeValues);
-            }
-            else {
-                item.additionalMergeValues = mergeValues;
+                rows.push({...mergeValues});
             }
         }
     }

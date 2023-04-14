@@ -4,6 +4,8 @@
           :definition="configuration.gridDefinition"
           :data="loadGridData"
           keyField="guid"
+          personKeyField="personId"
+          :communicationRecipientPersonKeyFields="['personId']"
           stickyHeader
           tooltipField="attr_TextValue1"
           entityTypeGuid="F13C8FD2-7702-4C79-A6A9-86440DD5DE13"

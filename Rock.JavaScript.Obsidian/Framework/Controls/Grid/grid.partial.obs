@@ -225,17 +225,21 @@ table.table-obsidian th.grid-error > .alert {
     import DataRows from "./dataRows.partial.obs";
     import FilterHeaderRow from "./filterHeaderRow.partial.obs";
     import PagerRow from "./pagerRow.partial.obs";
-    import { computed, PropType, ref,  useSlots, watch } from "vue";
+    import { computed, PropType, ref, useSlots, watch } from "vue";
     import { asFormattedString } from "@Obsidian/Utility/numberUtils";
     import { pluralConditional } from "@Obsidian/Utility/stringUtils";
-    import { getColumnDefinitions, getEntitySetBag, GridActionUrlKey, GridState } from "@Obsidian/Core/Controls/grid";
+    import { getColumnDefinitions, getEntitySetBag, GridActionUrlKey, GridState, GridCommunicationBag } from "@Obsidian/Core/Controls/grid";
     import { DragSource as vDragSource, DragTarget as vDragTarget, IDragSourceOptions, useDragReorder } from "@Obsidian/Directives/dragDrop";
-    import { ColumnSort, GridAction, ColumnDefinition } from "@Obsidian/Types/Controls/grid";
+    import { ColumnSort, GridAction, ColumnDefinition, EntitySetOptions } from "@Obsidian/Types/Controls/grid";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { GridDefinitionBag } from "@Obsidian/ViewModels/Core/Grid/gridDefinitionBag";
     import { Guid } from "@Obsidian/Types";
     import { isPromise } from "@Obsidian/Utility/promiseUtils";
-    import { useHttp } from "@Obsidian/Utility/http";
+    import { useInvokeBlockAction } from "@Obsidian/Utility/block";
+    import { makeUrlRedirectSafe } from "@Obsidian/Utility/url";
+    import { EntityType } from "@Obsidian/SystemGuids/entityType";
+    import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
+    import { alert } from "@Obsidian/Utility/dialogs";
 
     /*
      * 8/17/2022 - DSH
@@ -259,12 +263,31 @@ table.table-obsidian th.grid-error > .alert {
         },
 
         /**
-         * Identifies the key that will be used to uniquely identify each
+         * Identifies the field that will be used to uniquely identify each
          * row. This is not required but many advanced features of the grid
          * require this to function.
          */
         keyField: {
             type: String as PropType<string>,
+            required: false
+        },
+
+        /**
+         * Identifies the field that will contain the person key. If the grid
+         * does not represent Person records then leave this unset.
+         */
+        personKeyField: {
+            type: String as PropType<string>,
+            required: false
+        },
+
+        /**
+         * Specifies the fields to be used to identify communication recipients
+         * when using the communicate action. This will take precedence over
+         * the personKeyField if both are set.
+         */
+        communicationRecipientPersonKeyFields: {
+            type: Array as PropType<string[]>,
             required: false
         },
 
@@ -311,6 +334,91 @@ table.table-obsidian th.grid-error > .alert {
         },
 
         /**
+         * If `true`, then any Person operations will instead be Business
+         * operations.
+         */
+        personAsBusiness: {
+            type: Boolean as PropType<boolean>,
+            default: false
+        },
+
+        /**
+         * If `true`, then the merge template operation will operate as if
+         * the records are Person records. If they are not then it will not
+         * work correctly. This required that personKeyField also be set.
+         */
+        mergeTemplateAsPerson: {
+            type: Boolean as PropType<boolean>,
+            default: false
+        },
+
+        /**
+         * Determines if the bulk update action will be available. If not
+         * explicitly set then it will default to enabled if the personKeyField
+         * property has been set.
+         */
+        showBulkUpdate: {
+            type: Boolean as PropType<boolean | undefined>,
+            default: undefined
+        },
+
+        /**
+         * Determines if the merge person/business action will be available. If not
+         * explicitly set then it will default to enabled if the personKeyField
+         * property has been set.
+         */
+        showPersonMerge: {
+            type: Boolean as PropType<boolean | undefined>,
+            default: undefined
+        },
+
+        /**
+         * Determines if the launch workflow action will be available. If not
+         * explicitly set then it will default to enabled if the entityTypeGuid
+         * and keyField properties have been set.
+         */
+        showLaunchWorkflow: {
+            type: Boolean as PropType<boolean | undefined>,
+            default: undefined
+        },
+
+        /**
+         * Determines if the communicate action will be available. If not
+         * explicitly set then it will default to enabled if either the
+         * personKeyField or communicationRecipientPersonKeyFields properties
+         * have been set.
+         */
+         showCommunicate: {
+            type: Boolean as PropType<boolean | undefined>,
+            default: undefined
+        },
+
+        /**
+         * Determines if the merge template action will be available. If not
+         * explicitly set then it will default to being shown. In the future
+         * this default state might change.
+         */
+        showMergeTemplate: {
+            type: Boolean as PropType<boolean | undefined>,
+            default: undefined
+        },
+
+        /**
+         * Determines if the export action will be available. If not explicitly
+         * set then it will default to being shown. In the future this default
+         * state might change.
+         */
+        showExport: {
+            type: Boolean as PropType<boolean>,
+            required: false
+        },
+
+        communicationMergeFields: {
+            type: Array as PropType<string[]>,
+            required: false
+        },
+
+        /**
          * The function to call in response to the add button being clicked.
          */
         onAddItem: {
@@ -320,7 +428,7 @@ table.table-obsidian th.grid-error > .alert {
     });
 
     const slots = useSlots();
-    const http = useHttp();
+    const invokeBlockAction = useInvokeBlockAction();
 
     const gridState = createGridState();
 
@@ -344,6 +452,110 @@ table.table-obsidian th.grid-error > .alert {
         return visibleColumnDefinitions.value.length;
     });
 
+    const personKeyField = computed((): string | undefined => {
+        return props.personKeyField ?? props.keyField;
+    });
+
+    const showMergeTemplate = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.MergeTemplate]) {
+            return false;
+        }
+
+        return props.showMergeTemplate !== false;
+    });
+
+    const showExport = computed((): boolean => {
+        return props.showExport !== false;
+    });
+
+    const showLaunchWorkflow = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.LaunchWorkflow]) {
+            return false;
+        }
+
+        if (props.showLaunchWorkflow) {
+            return true;
+        }
+        else if (props.showLaunchWorkflow === false) {
+            return false;
+        }
+        else {
+            return !!props.keyField && !!props.entityTypeGuid;
+        }
+    });
+
+    const showBulkUpdate = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.BulkUpdate]) {
+            return false;
+        }
+
+        if (props.showBulkUpdate) {
+            return true;
+        }
+        else if (props.showBulkUpdate === false) {
+            return false;
+        }
+        else {
+            return !!props.personKeyField && !!props.entityTypeGuid;
+        }
+    });
+
+    const showMergePerson = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.MergePerson]) {
+            return false;
+        }
+
+        if (props.personAsBusiness) {
+            return false;
+        }
+
+        if (props.showPersonMerge) {
+            return true;
+        }
+        else if (props.showPersonMerge === false) {
+            return false;
+        }
+        else {
+            return !!props.personKeyField;
+        }
+    });
+
+    const showMergeBusiness = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.MergeBusiness]) {
+            return false;
+        }
+
+        if (!props.personAsBusiness) {
+            return false;
+        }
+
+        if (props.showPersonMerge) {
+            return true;
+        }
+        else if (props.showPersonMerge === false) {
+            return false;
+        }
+        else {
+            return !!props.personKeyField;
+        }
+    });
+
+    const showCommunicate = computed((): boolean => {
+        if (!props.definition?.actionUrls?.[GridActionUrlKey.Communicate]) {
+            return false;
+        }
+
+        if (props.showCommunicate) {
+            return true;
+        }
+        else if (props.showCommunicate === false) {
+            return false;
+        }
+        else {
+            return !!props.personKeyField || (props.communicationRecipientPersonKeyFields ?? []).length > 0;
+        }
+    });
+
     const gridActions = computed((): GridAction[] => {
         const actions: GridAction[] = [];
 
@@ -357,73 +569,58 @@ table.table-obsidian th.grid-error > .alert {
             });
         }
 
-        if (props.entityTypeGuid) {
-            if (props.definition?.actionUrls?.[GridActionUrlKey.MergeTemplate]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.MergeTemplate];
+        // Add the action for Merge Records.
+        if (showMergeTemplate.value) {
+            actions.push({
+                handler: async () => await onMergeTemplate(),
+                iconCssClass: "fa fa-files-o fa-fw",
+                tooltip: "Merge Records into Merge Template"
+            });
+        }
 
-                // If MergeTemplateAsPerson then just simple EntitySetItems
-                // Else GetEntitySetFromGrid()
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-files-o fa-fw",
-                    tooltip: "Merge Records into Merge Template"
-                });
-            }
+        // Add the action for Launch Workflow.
+        if (showLaunchWorkflow.value) {
+            actions.push({
+                handler: async () => await onLaunchWorkflow(),
+                iconCssClass: "fa fa-cog fa-fw",
+                tooltip: "Launch Workflow"
+            });
+        }
 
-            // GetEntitySetFromGrid()
-            if (props.definition?.actionUrls?.[GridActionUrlKey.LaunchWorkflow]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.LaunchWorkflow];
+        // Add the action for Bulk Update.
+        if (showBulkUpdate.value) {
+            actions.push({
+                handler: async () => await onBulkUpdate(),
+                iconCssClass: "fa fa-truck fa-fw",
+                tooltip: "Bulk Update"
+            });
+        }
 
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-cog fa-fw",
-                    tooltip: "Launch Workflow"
-                });
-            }
+        // Add the action for Merge Person Records.
+        if (showMergePerson.value) {
+            actions.push({
+                handler: async () => await onPersonMerge(),
+                iconCssClass: "fa fa-users fa-fw",
+                tooltip: "Merge Person Records"
+            });
+        }
 
-            // Simple EntitySetItems.
-            if (props.definition?.actionUrls?.[GridActionUrlKey.BulkUpdate]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.BulkUpdate];
+        // Add the action for Merge Business Records.
+        if (showMergeBusiness.value) {
+            actions.push({
+                handler: async () => await onPersonMerge(),
+                iconCssClass: "fa fa-sign-in-alt fa-fw",
+                tooltip: "Merge Business Records"
+            });
+        }
 
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-truck fa-fw",
-                    tooltip: "Bulk Update"
-                });
-            }
-
-            // Simple EntitySetItems.
-            if (props.definition?.actionUrls?.[GridActionUrlKey.MergePerson]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.MergePerson];
-
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-users fa-fw",
-                    tooltip: "Merge Person Records"
-                });
-            }
-
-            // Simple EntitySetItems.
-            if (props.definition?.actionUrls?.[GridActionUrlKey.MergeBusiness]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.MergeBusiness];
-
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-sign-in-alt fa-fw",
-                    tooltip: "Merge Business Records"
-                });
-            }
-
-            // ???
-            if (props.definition?.actionUrls?.[GridActionUrlKey.Communicate]) {
-                const url = props.definition.actionUrls[GridActionUrlKey.Communicate];
-
-                actions.push({
-                    handler: async () => await createEntitySetAndRedirect(url),
-                    iconCssClass: "fa fa-comment fa-fw",
-                    tooltip: "Communicate"
-                });
-            }
+        // Add the action for Communicate.
+        if (showCommunicate.value) {
+            actions.push({
+                handler: async () => await onCommunicate(),
+                iconCssClass: "fa fa-comment fa-fw",
+                tooltip: "Communicate"
+            });
         }
 
         // Append the custom actions.
@@ -476,60 +673,179 @@ table.table-obsidian th.grid-error > .alert {
             }
         }
 
-        if (reorderColumn && !gridErrorMessage.value) {
-            if (reorderColumn && !props.keyField) {
-                throw new Error("Re-ordering rows requires each row has a unique key.");
-            }
-
-            const dropOperationInProgress = ref(false);
-            reorderColumn.data.dropOperationInProgress = dropOperationInProgress;
-
-            dragOptions.value = useDragReorder(visibleRows, async (item, beforeItem) => {
-                if (typeof reorderColumn.props.onOrderChanged === "function") {
-                    const fn = reorderColumn.props.onOrderChanged as (item: Record<string, unknown>, beforeItem: Record<string, unknown> | null, order: number) => void | Promise<void> | boolean | Promise<boolean>;
-
-                    dropOperationInProgress.value = true;
-                    try {
-                        const result = fn(item, beforeItem, visibleRows.value.indexOf(item));
-
-                        if (isPromise(result)) {
-                            await result;
-                        }
-
-                        return result !== false;
-                    }
-                    finally {
-                        dropOperationInProgress.value = false;
-                    }
-                }
-                else {
-                    return true;
-                }
-            });
+        if (!gridErrorMessage.value) {
+            setupManualOrdering();
         }
 
         loadingData.value = false;
     }
 
-    async function createEntitySetAndRedirect(url: string): Promise<void> {
-        const keyFields = props.keyField ? [props.keyField] : [];
-        const options = {
-            mergeFields: gridState.columns.map(c => c.field).filter(f => f !== undefined),
-            mergeColumns: [
-                {
-                    value: "name",
-                    text: "Name"
+    function setupManualOrdering(): void {
+        if (!reorderColumn) {
+            dragOptions.value = undefined;
+            return;
+        }
+
+        if (reorderColumn && !props.keyField) {
+            throw new Error("Re-ordering rows requires each row has a unique key.");
+        }
+
+        const dropOperationInProgress = ref(false);
+        reorderColumn.data.dropOperationInProgress = dropOperationInProgress;
+
+        dragOptions.value = useDragReorder(visibleRows, async (item, beforeItem) => {
+            if (typeof reorderColumn.props.onOrderChanged === "function") {
+                const fn = reorderColumn.props.onOrderChanged as (item: Record<string, unknown>, beforeItem: Record<string, unknown> | null, order: number) => void | Promise<void> | boolean | Promise<boolean>;
+
+                dropOperationInProgress.value = true;
+                try {
+                    const result = fn(item, beforeItem, visibleRows.value.indexOf(item));
+
+                    if (isPromise(result)) {
+                        await result;
+                    }
+
+                    return result !== false;
                 }
-            ]
-        };
-        console.log(getEntitySetBag(gridState, keyFields, options));
-        return;
+                finally {
+                    dropOperationInProgress.value = false;
+                }
+            }
+            else {
+                return true;
+            }
+        });
     }
 
-    async function onActionClick(): Promise<void> {
-        console.log(gridState.selectedKeys);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        gridState.selectedKeys.splice(0, gridState.selectedKeys.length);
+    async function onBulkUpdate(): Promise<void> {
+        const url = props.definition?.actionUrls?.[GridActionUrlKey.BulkUpdate];
+
+        if (!personKeyField.value || !url) {
+            return;
+        }
+
+        const options: EntitySetOptions = {
+            entityTypeGuid: EntityType.Person
+        };
+
+        await createEntitySetAndRedirect([personKeyField.value], url, options);
+    }
+
+    async function onPersonMerge(): Promise<void> {
+        let url: string | undefined;
+
+        if (props.personAsBusiness) {
+            url = props.definition?.actionUrls?.[GridActionUrlKey.MergeBusiness];
+        }
+        else {
+            url = props.definition?.actionUrls?.[GridActionUrlKey.MergePerson];
+        }
+
+        if (!personKeyField.value || !url) {
+            return;
+        }
+
+        await createEntitySetAndRedirect([personKeyField.value], url, undefined);
+    }
+
+    async function onMergeTemplate(): Promise<void> {
+        const url = props.definition?.actionUrls?.[GridActionUrlKey.MergeTemplate];
+
+        if (!props.keyField || !url) {
+            return;
+        }
+
+        let mergeColumns: ListItemBag[] | undefined;
+
+        if (props.mergeTemplateAsPerson && personKeyField.value) {
+            await createEntitySetAndRedirect([personKeyField.value], url, undefined);
+        }
+        else {
+            // Find all columns that aren't special columns and include them in
+            // the additional merge fields.
+            mergeColumns = gridState.columns
+                .filter(c => !c.name.startsWith("__"))
+                .map(c => ({
+                    value: c.name,
+                    text: `${c.name[0].toUpperCase()}${c.name.substring(1)}`
+                }));
+
+            const options: EntitySetOptions = {
+                mergeColumns
+            };
+
+            await createEntitySetAndRedirect([props.keyField], url, options);
+        }
+    }
+
+    async function onLaunchWorkflow(): Promise<void> {
+        const url = props.definition?.actionUrls?.[GridActionUrlKey.LaunchWorkflow];
+
+        if (!props.keyField || !url) {
+            return;
+        }
+
+        await createEntitySetAndRedirect([props.keyField], url, undefined);
+    }
+
+    async function onCommunicate(): Promise<void> {
+        const url = props.definition?.actionUrls?.[GridActionUrlKey.Communicate];
+        let keyFields: string[] = [];
+
+        if (props.communicationRecipientPersonKeyFields) {
+            keyFields = props.communicationRecipientPersonKeyFields;
+        }
+        else if (props.personKeyField) {
+            keyFields = [props.personKeyField];
+        }
+
+        if (keyFields.length === 0 || !url) {
+            return;
+        }
+        if (!props.keyField || !url) {
+            return;
+        }
+
+        const options: EntitySetOptions = {
+            additionalMergeFieldsFactory: undefined,
+            purpose: "communication"
+        };
+
+        const entitySet = getEntitySetBag(gridState, keyFields, options);
+
+        const communicationBag: GridCommunicationBag = {
+            recipients: entitySet.items
+        };
+
+        // Get the unique values.
+        const communicationMergeFields = ["GroupId", "GroupType_Name"];
+        const mergeFields = communicationMergeFields.filter((v, i, a) => a.indexOf(v) === i);
+
+        if (props.communicationRecipientPersonKeyFields) {
+            communicationBag.additionalMergeFields = [`AdditionalMergeFields|${mergeFields.join("^")}`];
+        }
+        else {
+            communicationBag.additionalMergeFields = mergeFields;
+        }
+
+        console.log(communicationBag);
+    }
+
+    async function createEntitySetAndRedirect(keyFields: string[], url: string, options: EntitySetOptions | undefined): Promise<void> {
+        const entitySet = getEntitySetBag(gridState, keyFields, options);
+        const args = {
+            entitySet
+        };
+
+        const result = await invokeBlockAction<Guid>("CreateEntitySet", args);
+
+        if (!result.isSuccess || !result.data) {
+            return await alert(result.errorMessage || "Unable to create entity set.");
+        }
+
+        const finalUrl = makeUrlRedirectSafe(url.replace("{EntitySetId}", `${result.data}`));
+
+        window.location.href = finalUrl;
     }
 
     watch([quickFilterValue, columnFilterValues], () => {

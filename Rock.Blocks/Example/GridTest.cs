@@ -94,6 +94,93 @@ namespace Rock.Blocks.Example
             }
         }
 
+        [BlockAction]
+        public BlockActionResult CreateEntitySet( GridEntitySetBag entitySet )
+        {
+            if ( entitySet == null )
+            {
+                return ActionBadRequest( "No entity set data was provided." );
+            }
+
+            var entityType = entitySet.EntityTypeKey.IsNotNullOrWhiteSpace()
+                ? EntityTypeCache.Get( entitySet.EntityTypeKey, false )
+                : null;
+
+            var rockEntitySet = new EntitySet()
+            {
+                EntityTypeId = entityType?.Id,
+                ExpireDateTime = RockDateTime.Now.AddMinutes( 5 )
+            };
+
+            var entitySetItems = new List<EntitySetItem>();
+
+            using ( var rockContext = new RockContext() )
+            {
+                if ( entityType != null )
+                {
+                    var entityKeys = entitySet.Items.Select( i => i.EntityKey ).ToList();
+                    var entityIdLookup = Rock.Reflection.GetEntityIdsForEntityType( entityType, entityKeys, true, rockContext );
+
+                    foreach ( var item in entitySet.Items )
+                    {
+                        if ( !entityIdLookup.TryGetValue( item.EntityKey, out var entityId ) )
+                        {
+                            continue;
+                        }
+
+                        entitySetItems.Add( new EntitySetItem
+                        {
+                            EntityId = entityId,
+                            AdditionalMergeValues = item.AdditionalMergeValues
+                        } );
+                    }
+                }
+                else
+                {
+                    entitySetItems.AddRange( entitySet.Items.Select( i => new EntitySetItem
+                    {
+                        EntityId = 0,
+                        AdditionalMergeValues = i.AdditionalMergeValues
+                    } ) );
+                }
+
+                if ( !entitySetItems.Any() )
+                {
+                    return ActionBadRequest( "No entities were found to create the set." );
+                }
+
+                var entitySetService = new EntitySetService( rockContext );
+                entitySetService.Add( rockEntitySet );
+                rockContext.SaveChanges();
+
+                entitySetItems.ForEach( a =>
+                {
+                    a.EntitySetId = rockEntitySet.Id;
+                } );
+
+                rockContext.BulkInsert( entitySetItems );
+
+                // Todo: Change to IdKey.
+                return ActionOk( rockEntitySet.Id.ToString() );
+            }
+        }
+
+        public class GridEntitySetBag
+        {
+            public string EntityTypeKey { get; set; }
+
+            public List<GridEntitySetItemBag> Items { get; set; }
+        }
+
+        public class GridEntitySetItemBag
+        {
+            public string EntityKey { get; set; }
+
+            public int Order { get; set; }
+
+            public Dictionary<string, object> AdditionalMergeValues { get; set; }
+        }
+
         private List<AttributeCache> GetGridAttributes()
         {
             var entityTypeId = EntityTypeCache.GetId<PrayerRequest>().Value;
@@ -110,6 +197,7 @@ namespace Rock.Blocks.Example
             return new GridBuilder<PrayerRequest>()
                 .UseWithBlock( this )
                 .AddField( "guid", pr => pr.Guid.ToString() )
+                .AddField( "personId", pr => pr.RequestedByPersonAlias?.PersonId )
                 .AddField( "name", pr => new { pr.FirstName, pr.LastName } )
                 .AddTextField( "email", pr => pr.Email )
                 .AddDateTimeField( "enteredDateTime", pr => pr.EnteredDateTime )
