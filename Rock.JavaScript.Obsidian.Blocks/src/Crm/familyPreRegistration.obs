@@ -568,6 +568,8 @@
             scheduleGuid: scheduleGuid.value
         };
 
+        clearErrors();
+
         const result = await invokeBlockAction<FamilyPreRegistrationSaveResponseBag>("Save", { bag });
 
         if (result?.data) {
