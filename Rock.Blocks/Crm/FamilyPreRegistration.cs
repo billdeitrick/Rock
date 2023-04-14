@@ -176,11 +176,12 @@ namespace Rock.Blocks.Crm
     [CodeEditorField(
         "Redirect URL",
         Key = AttributeKey.RedirectURL,
+        DefaultValue = "/FamilyPreRegistrationSuccess?FamilyId={{ Family.Id }}&Parents={{ ParentIds }}&Children={{ ChildIds }}&When={{ PlannedVisitDate }}",
         Description = BlockAttributeDescription.RedirectURL,
         EditorMode = CodeEditorMode.Lava,
         EditorTheme = CodeEditorTheme.Rock,
         EditorHeight = 200,
-        IsRequired = true,
+        IsRequired = false,
         Order = 16 )]
 
     [CustomDropdownListField(
@@ -1463,7 +1464,6 @@ namespace Rock.Blocks.Crm
 
                 // TODO JMH Make the workflow... work.
                 //List<Guid> workflows = GetAttributeValue( AttributeKey.WorkflowTypes ).SplitDelimitedValues().AsGuidList();
-                //string redirectUrl = GetAttributeValue( AttributeKey.RedirectURL );
                 //if ( workflows.Any() || redirectUrl.IsNotNullOrWhiteSpace() )
                 //{
                 //    var family = groupService.Get( primaryFamily.Id );
@@ -1501,27 +1501,39 @@ namespace Rock.Blocks.Crm
                 //        }
                 //    }
 
-                //    if ( redirectUrl.IsNotNullOrWhiteSpace() )
-                //    {
-                //        var relatedPersonIds = newRelationships.Select( r => r.Key ).ToList();
-                //        var relatedChildren = personService.Queryable().Where( p => relatedPersonIds.Contains( p.Id ) ).ToList();
+                var redirectUrlLavaTemplate = GetAttributeValue( AttributeKey.RedirectURL );
+                string redirectUrl = null;
+                if ( redirectUrlLavaTemplate.IsNotNullOrWhiteSpace() )
+                {
+                    var family = groupService.Get( primaryFamily.Id );
+                    var schedule = bag.ScheduleGuid.HasValue ? new ScheduleService( rockContext ).Get( bag.ScheduleGuid.Value ) : null;
+                    var relatedPersonIds = newRelationships.Select( r => r.Key ).ToList();
+                    var relatedChildren = personService.Queryable().Where( p => relatedPersonIds.Contains( p.Id ) ).ToList();
 
-                //        var mergeFields = Rock.Lava.LavaHelper.GetCommonMergeFields( this.RockPage, this.CurrentPerson );
-                //        mergeFields.Add( "Family", family );
-                //        mergeFields.Add( "RelatedChildren", relatedChildren );
-                //        mergeFields.Add( "Schedule", schedule );
-                //        foreach ( var keyval in parameters )
-                //        {
-                //            mergeFields.Add( keyval.Key, keyval.Value );
-                //        }
+                    // Create parameters
+                    var parameters = new Dictionary<string, string>
+                    {
+                        { "ParentIds", adultIds.AsDelimited( "," ) },
+                        { "ChildIds", childIds.AsDelimited( "," ) }
+                    };
 
-                //        var url = ResolveUrl( redirectUrl.ResolveMergeFields( mergeFields ) );
+                    var mergeFields = this.RequestContext.GetCommonMergeFields();
+                    mergeFields.Add( "Family", family );
+                    mergeFields.Add( "RelatedChildren", relatedChildren );
+                    mergeFields.Add( "Schedule", schedule );
+                    foreach ( var keyval in parameters )
+                    {
+                        mergeFields.Add( keyval.Key, keyval.Value );
+                    }
 
-                //        Response.Redirect( url, false );
-                //        Context.ApplicationInstance.CompleteRequest();
-                //    }
-                //}
-                return ActionOk();
+                    // Using ResolveRockUrl to strip any leading "~" character from the user-entered URL lava template.
+                    redirectUrl = this.RequestContext.ResolveRockUrl( redirectUrlLavaTemplate.ResolveMergeFields( mergeFields ) );
+                }
+
+                return ActionOk( new FamilyPreRegistrationSaveResponseBag
+                {
+                    RedirectUrl = redirectUrl
+                } );
             }
         }
 

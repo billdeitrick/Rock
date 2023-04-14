@@ -25,4 +25,7 @@
 export type FamilyPreRegistrationSaveResponseBag = {
     /** The errors, if any. */
     errors?: string[] | null;
+
+    /** The URL to redirect to upon successful save. */
+    redirectUrl?: string | null;
 };

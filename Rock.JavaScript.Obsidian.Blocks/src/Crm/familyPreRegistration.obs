@@ -574,11 +574,11 @@
             if (result.data.errors?.length) {
                 setErrors("Please correct the following:", ...result.data.errors);
             }
-        }
 
-        // TODO JMH Save the family pre-registration.
-        console.log("adult1: ", JSON.stringify(adult1, null, 4));
-        console.log("adult2: ", JSON.stringify(adult2, null, 4));
+            if (result.data.redirectUrl) {
+                location.href = result.data.redirectUrl;
+            }
+        }
     }
 
     //#endregion

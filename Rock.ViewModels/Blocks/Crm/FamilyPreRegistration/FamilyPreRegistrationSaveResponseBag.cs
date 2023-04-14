@@ -28,5 +28,10 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         /// The errors, if any.
         /// </summary>
         public List<string> Errors { get; set; }
+
+        /// <summary>
+        /// The URL to redirect to upon successful save.
+        /// </summary>
+        public string RedirectUrl { get; set; }
     }
 }
