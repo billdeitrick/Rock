@@ -23,9 +23,11 @@ using System.Linq.Expressions;
 using System.Web.UI;
 #endif
 using Rock.Attribute;
+using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
 using Rock.Reporting;
+using Rock.ViewModels.Utility;
 using Rock.Web.Cache;
 using Rock.Web.UI.Controls;
 
@@ -67,6 +69,22 @@ namespace Rock.Field.Types
             }
 
             return formattedValue;
+        }
+
+        /// <inheritdoc/>
+        public virtual string GetPublicEditValue( string privateValue, Dictionary<string, string> privateConfigurationValues )
+        {
+            var guid = privateValue.AsGuid();
+            using ( var rockContext = new RockContext() )
+            {
+                ListItemBag personAlias = new PersonAliasService( rockContext ).Queryable()
+
+                    .AsNoTracking()
+                                    .Where( a => a.Guid.Equals( guid ) )
+                                    .FirstOrDefault()
+                                    .ToListItemBag();
+                return personAlias.ToString();
+            }
         }
 
         /// <summary>

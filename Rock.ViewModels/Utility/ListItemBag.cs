@@ -46,5 +46,10 @@ namespace Rock.ViewModels.Utility
         /// </value>
         /// <remarks>Categories are only supported on certain UI controls.</remarks>
         public string Category { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{ \"value\": \"{Value}\", \"text\": \"{Text}\", \"category\": {Category ?? "\"null\""} }}";
+        }
     }
 }

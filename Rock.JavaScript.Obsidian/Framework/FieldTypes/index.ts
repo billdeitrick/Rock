@@ -107,6 +107,9 @@ registerFieldType(FieldTypeGuids.NoteTypes, new NoteTypesField());
 import { PhoneNumberFieldType } from "./phoneNumberField.partial";
 registerFieldType(FieldTypeGuids.PhoneNumber, new PhoneNumberFieldType());
 
+import { PersonFieldType } from "./personField.partial";
+registerFieldType(FieldTypeGuids.Person, new PersonFieldType());
+
 import { RatingFieldType } from "./ratingField.partial";
 registerFieldType(FieldTypeGuids.Rating, new RatingFieldType());
 
