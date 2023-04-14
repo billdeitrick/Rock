@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Rock.ViewModels.Controls;
 using Rock.ViewModels.Utility;
 
 namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
@@ -127,5 +128,6 @@ namespace Rock.ViewModels.Blocks.Crm.FamilyPreRegistration
         public Dictionary<string, string> ChildAttributeValuesTemplate { get; set; }
         public List<FamilyPreRegistrationPersonBag> Children { get; set; }
         public Guid FamilyGuid { get; set; }
+        public AddressControlBag Address { get; set; }
     }
 }

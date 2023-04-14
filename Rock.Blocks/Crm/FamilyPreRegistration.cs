@@ -1969,6 +1969,36 @@ namespace Rock.Blocks.Crm
                 var childAttributes = GetAttributeCategoryAttributes( rockContext, this.ChildAttributeCategoryGuids );
                 box.ChildAttributes = mockChild.GetPublicAttributesForEdit( currentPerson, attributeFilter: f => childAttributes.Any( a => a.Guid == f.Guid ) );
                 box.Children = children.Select( child => GetFamilyPreRegistrationPersonBag( child.Person, child.FamilyRoleGuid, currentPerson, childAttributes ) ).ToList();
+
+                // Only load the home address if the Address field is shown.
+                if ( this.IsFamilyUpdateAllowedForCurrentPerson && currentPerson != null && family != null )
+                {
+                    // Set the campus from the family.
+                    box.DefaultCampusGuid = family.CampusId.HasValue ? CampusCache.GetGuid( family.CampusId.Value ) : null;
+
+                    // Set the address from the family.
+                    var homeLocationTypeId = DefinedValueCache.GetId( Rock.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_HOME.AsGuid() );
+                    if ( homeLocationTypeId.HasValue )
+                    {
+                        var location = family.GroupLocations
+                            .Where( l =>
+                                l.GroupLocationTypeValueId.HasValue &&
+                                l.GroupLocationTypeValueId.Value == homeLocationTypeId )
+                            .Select( l => l.Location )
+                            .FirstOrDefault();
+                        box.Address = new AddressControlBag
+                        {
+                            City = location?.City,
+                            Country = location?.Country,
+                            State = location?.State,
+                            Locality = location?.County,
+                            PostalCode = location?.PostalCode,
+                            Street1 = location?.Street1,
+                            Street2 = location?.Street2,
+                        };
+                        location.ToViewModel( currentPerson );
+                    }
+                }
             }
 
             return box;

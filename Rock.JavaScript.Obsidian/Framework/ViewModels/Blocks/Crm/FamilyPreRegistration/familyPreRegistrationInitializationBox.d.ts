@@ -23,11 +23,14 @@
 
 import { Guid } from "@Obsidian/Types";
 import { FamilyPreRegistrationPersonBag } from "@Obsidian/ViewModels/Blocks/Crm/FamilyPreRegistration/familyPreRegistrationPersonBag";
+import { AddressControlBag } from "@Obsidian/ViewModels/Controls/addressControlBag";
 import { ListItemBag } from "@Obsidian/ViewModels/Utility/listItemBag";
 import { PublicAttributeBag } from "@Obsidian/ViewModels/Utility/publicAttributeBag";
 
 /** The box that contains all the initialization information for the Family Pre-Registration block. */
 export type FamilyPreRegistrationInitializationBox = {
+    address?: AddressControlBag | null;
+
     /** Gets or sets the adult 1 information . */
     adult1?: FamilyPreRegistrationPersonBag | null;
 

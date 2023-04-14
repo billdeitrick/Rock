@@ -489,7 +489,7 @@
     const scheduleDateItems = ref<FamilyPreRegistrationScheduleDateBag[]>([]);
     const isUsernameAvailable = ref<boolean | null | undefined>();
     const confirmPassword = ref<string>("");
-    const address = ref<AddressControlBag | undefined>();
+    const address = ref<AddressControlBag | undefined>(config.address ?? undefined);
     const fullName = ref<string>("");
     const adult1Request = ref<PersonRequestBag>(convertPersonToPersonRequest(config.adult1));
     const adult1 = createEditablePerson(adult1Request);
