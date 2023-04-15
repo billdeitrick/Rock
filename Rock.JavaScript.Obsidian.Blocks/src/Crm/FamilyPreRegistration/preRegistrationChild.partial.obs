@@ -3,6 +3,7 @@
         btnSize="xs"
         btnType="danger"
         class="pull-right"
+        :disabled="disabled"
         :isSquare="true"
         @click="$emit('remove', child)">
         <i class="fa fa-times"></i>
@@ -16,6 +17,7 @@
         <div :class="getColumnClass(6)">
             <DropDownList
                 v-model="child.familyRoleGuid"
+                :disabled="disabled"
                 :items="config.childRelationshipTypes ?? undefined"
                 label="Relationship to Adult"
                 rules="required"
@@ -32,6 +34,7 @@
                 :modelValue="child.firstName" />
             <TextBox v-else
                 v-model="child.firstName"
+                :disabled="disabled"
                 label="First Name"
                 rules="required" />
         </div>
@@ -43,6 +46,7 @@
                 :modelValue="child.lastName" />
             <TextBox v-else
                 v-model="child.lastName"
+                :disabled="disabled"
                 label="Last Name"
                 rules="required" />
         </div>
@@ -50,6 +54,7 @@
         <div v-if="!config.isChildGenderHidden" :class="getColumnClass(3)">
             <GenderDropDownList
                 v-model="child.genderStringValue"
+                :disabled="disabled"
                 label="Gender"
                 :rules="!config.isChildGenderOptional ? 'required' : ''" />
         </div>
@@ -58,6 +63,7 @@
             <DefinedValuePicker
                 v-model="child.suffixListItemBag"
                 :definedTypeGuid="DefinedType.PersonSuffix"
+                :disabled="disabled"
                 label="Suffix"
                 lazyMode="lazy"
                 :showBlankItem="true" />
@@ -66,6 +72,7 @@
         <div v-if="!config.isChildBirthDateHidden" :class="getColumnClass(6)">
             <BirthdayPicker
                 v-model="child.birthDate"
+                :disabled="disabled"
                 label="Birth Date"
                 :rules="!config.isChildBirthDateOptional ? 'required' : ''" />
         </div>
@@ -73,6 +80,7 @@
         <div v-if="!config.isChildGradeHidden" :class="getColumnClass(3)">
             <GradePicker
                 v-model="child.gradeListItemBag"
+                :disabled="disabled"
                 label="Grade"
                 lazyMode="lazy"
                 :useGuidAsValue="true"
@@ -84,6 +92,7 @@
             <PhoneNumberBox
                 v-model="child.mobilePhone"
                 v-model:countryCode="child.mobilePhoneCountryCode"
+                :disabled="disabled"
                 label="Mobile Phone"
                 :rules="!config.isChildMobilePhoneOptional ? 'required' : ''" />
         </div>
@@ -91,6 +100,7 @@
         <div v-if="!config.isChildEmailHidden" :class="getColumnClass(6)">
             <EmailBox
                 v-model="child.email"
+                :disabled="disabled"
                 label="Email"
                 :rules="!config.isChildEmailOptional ? 'required' : ''" />
         </div>
@@ -98,6 +108,7 @@
         <div v-if="!config.isChildDisplayCommunicationPreferenceHidden" :class="getColumnClass(6)">
             <RadioButtonList
                 v-model="child.communicationPreferenceStringValue"
+                :disabled="disabled"
                 :horizontal="true"
                 :items="[
                     { text: 'Email', value: CommunicationPreference.Email.toString() },
@@ -109,6 +120,7 @@
         <div v-if="!config.isChildRaceHidden" :class="getColumnClass(3)">
             <RacePicker
                 v-model="child.raceListItemBag"
+                :disabled="disabled"
                 :rules="!config.isChildRaceOptional ? 'required' : ''"
                 :showBlankItem="true" />
         </div>
@@ -116,6 +128,7 @@
         <div v-if="!config.isChildEthnicityHidden" :class="getColumnClass(3)">
             <EthnicityPicker
                 v-model="child.ethnicityListItemBag"
+                :disabled="disabled"
                 :rules="!config.isChildEthnicityOptional ? 'required' : ''"
                 :showBlankItem="true" />
         </div>
@@ -124,6 +137,7 @@
         <div :class="getColumnClass(6)">
             <ImageUploader
                 v-model="child.profileImageListItemBag"
+                :disabled="disabled"
                 label="Profile Photo" />
         </div>
         <div :class="getColumnClass(6)"></div><!-- filler/blocker column -->
@@ -186,6 +200,11 @@
         child: {
             type: Object as PropType<ChildRequestBag>,
             required: true
+        },
+
+        disabled: {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     });
 

@@ -82,7 +82,7 @@ export function createEditablePerson(person: Ref<PersonRequestBag>): PersonReque
                 person.value.gender = Number(newValue);
             }
         }),
-        gradeListItemBag: createListItemBagWrapper(person, "gradeDefinedValueGuid", true),
+        gradeListItemBag: createListItemBagWrapper(person, "gradeDefinedValueGuid"),
         maritalStatusListItemBag: createListItemBagWrapper(person, "maritalStatusDefinedValueGuid"),
         profileImageListItemBag: createListItemBagWrapper(person, "profilePhotoGuid"),
         raceListItemBag: createListItemBagWrapper(person, "raceDefinedValueGuid"),
@@ -125,7 +125,7 @@ export function createListItemBagWrapper<
                 }
             }
             catch (e) {
-                console.error("TODO JMH Should we show error here?", e);
+                // TODO JMH Should we show error here?"
             }
         }
     });

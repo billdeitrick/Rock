@@ -3,6 +3,7 @@
         <PreRegistrationChild
             :childNumber="index + 9999991"
             :child="child"
+            :disabled="disabled"
             @remove="$emit('removeChild', child)" />
         <hr>
     </template>
@@ -10,6 +11,7 @@
         btnSize="xs"
         btnType="default"
         class="add pull-right"
+        :disabled="disabled"
         @click="onAddChildClicked">
         <i class="fa fa-user"></i>
         <span> Add Child</span>
@@ -36,6 +38,11 @@
         lastName: {
             type: String as PropType<string>,
             required: true
+        },
+
+        disabled: {
+            type: Boolean as PropType<boolean>,
+            default: false
         }
     });
 
