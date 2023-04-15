@@ -18,8 +18,7 @@
             <div class="d-block flex-shrink-0">
                 <RockButton :btnSize="BtnSize.ExtraSmall"
                             :disabled="isSchedulingDisabled"
-                            @click="onCloneSchedulesClick"
-                            @cloneSchedules="onCloneSchedules">
+                            @click="onCloneSchedulesClick">
                     <i class="fa fa-clone"></i> Clone Schedules
                     <Loading :isLoading="isCloningSchedules" :isSmall="true" class="d-inline-block" />
                 </RockButton>
@@ -81,8 +80,7 @@
                             <button type="button"
                                     class="dropdown-item btn-link text-nowrap"
                                     :disabled="isSchedulingDisabled"
-                                    @click="onCloneSchedulesClick"
-                                    @cloneSchedules="onCloneSchedules">
+                                    @click="onCloneSchedulesClick">
                                 <i class="fa fa-clone"></i> Clone Schedules
                             </button>
                         </li>
@@ -130,7 +128,33 @@
                        @filtersApplied="onFiltersApplied" />
 
         <CloneSchedules v-model:isVisible="isSelectingCloneSettings"
-                        :filters="filters" />
+                        :filters="filters"
+                        @cloneSchedules="onCloneSchedules" />
+
+        <Dialog v-model="isCloneSchedulesResponseDialogVisible"
+                :dismissible="true">
+            <template #header>
+                Information
+            </template>
+            <template #default>
+
+                <p v-if="cloneSchedulesResponse?.anyOccurrencesToClone === false">
+                    There were no schedule occurrences to clone.
+                </p>
+
+                <p v-else-if="clonedSchedulesMessage">
+                    {{ clonedSchedulesMessage }}
+                </p>
+
+                <p v-if="cloneSchedulesResponse?.skippedResourcesExplanation">
+                    {{ cloneSchedulesResponse.skippedResourcesExplanation }}
+                </p>
+
+            </template>
+            <template #footer>
+                <RockButton @click="isCloneSchedulesResponseDialogVisible = false" :btnType="BtnType.Primary">OK</RockButton>
+            </template>
+        </Dialog>
 
         <Dialog v-model="isSendNowResponseDialogVisible"
                 :dismissible="true">
@@ -160,6 +184,7 @@
                 <p v-if="sendNowResponse?.anyCommunicationsToSend === false">
                     Everybody has already been sent a confirmation. No additional confirmations sent.
                 </p>
+
                 <p v-else-if="sentConfirmationsMessage">
                     {{ sentConfirmationsMessage }}
                 </p>
@@ -177,7 +202,7 @@
     import CloneSchedules from "./GroupScheduler/cloneSchedules.partial.obs";
     import OccurrenceDate from "./GroupScheduler/occurrenceDate.partial.obs";
     import SelectFilters from "./GroupScheduler/selectFilters.partial.obs";
-    import { NavigationUrlKey, ReloadScheduleOccurrences } from "./GroupScheduler/types.partial";
+    import { NavigationUrlKey, ReloadGroupScheduler } from "./GroupScheduler/types.partial";
     import Alert from "@Obsidian/Controls/alert.obs";
     import Dialog from "@Obsidian/Controls/dialog";
     import Loading from "@Obsidian/Controls/loading";
@@ -188,6 +213,7 @@
     import { BtnType } from "@Obsidian/Enums/Controls/btnType";
     import { getSecurityGrant, onConfigurationValuesChanged, provideSecurityGrant, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { GroupSchedulerAppliedFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerAppliedFiltersBag";
+    import { GroupSchedulerCloneSchedulesResponseBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSchedulesResponseBag";
     import { GroupSchedulerCloneSettingsBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerCloneSettingsBag";
     import { GroupSchedulerFiltersBag } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/groupSchedulerFiltersBag";
     import { GroupSchedulerInitializationBox } from "@Obsidian/ViewModels/Blocks/Group/Scheduling/GroupScheduler/GroupSchedulerInitializationBox";
@@ -218,14 +244,19 @@
     const navigationUrls = ref<Record<string, string> | null | undefined>(config.appliedFilters?.navigationUrls);
 
     const isSelectingFilters = ref(false);
+
     const isSelectingCloneSettings = ref(false);
     const isCloningSchedules = ref(false);
+    const cloneSchedulesResponse = ref<GroupSchedulerCloneSchedulesResponseBag | null>(null);
+    const isCloneSchedulesResponseDialogVisible = ref(false);
+
     const isAutoScheduling = ref(false);
+
     const isSendingNow = ref(false);
     const sendNowResponse = ref<GroupSchedulerSendNowResponseBag | null>(null);
     const isSendNowResponseDialogVisible = ref(false);
 
-    const reloadScheduleOccurrences = ref(false);
+    const reloadGroupScheduler = ref(false);
 
     // #endregion
 
@@ -326,6 +357,13 @@
         });
 
         return uniqueScheduleIds.length > 0;
+    });
+
+    const clonedSchedulesMessage = computed((): string | null => {
+        const count = cloneSchedulesResponse.value?.occurrencesClonedCount ?? 0;
+        return count
+            ? `Successfully cloned ${count} schedule occurrence${(count > 1 ? "s" : "")}.`
+            : null;
     });
 
     const rosterUrl = computed((): string | null => {
@@ -445,6 +483,17 @@
         });
     }
 
+    /**
+     * Instructs any listening descendant components to reload themselves.
+     */
+    function reloadScheduler(): void {
+        reloadGroupScheduler.value = true;
+
+        nextTick(() => {
+            reloadGroupScheduler.value = false;
+        });
+    }
+
     // #endregion
 
     // #region Event Handlers
@@ -484,7 +533,18 @@
         isCloningSchedules.value = true;
         blockActionErrorMessage.value = "";
 
+        const result = await invokeBlockAction<GroupSchedulerCloneSchedulesResponseBag>("CloneSchedules", { bag: cloneSettings });
+        isCloningSchedules.value = false;
 
+        if (!result.isSuccess) {
+            blockActionErrorMessage.value = result.errorMessage || "Unknown error while trying to clone schedules.";
+            return;
+        }
+
+        cloneSchedulesResponse.value = result.data ?? null;
+        isCloneSchedulesResponseDialogVisible.value = true;
+
+        reloadScheduler();
     }
 
     /**
@@ -521,11 +581,7 @@
         scheduleOccurrences.value = result.data?.scheduleOccurrences;
         navigationUrls.value = result.data?.navigationUrls;
 
-        reloadScheduleOccurrences.value = true;
-
-        nextTick(() => {
-            reloadScheduleOccurrences.value = false;
-        });
+        reloadScheduler();
     }
 
     /**
@@ -605,7 +661,7 @@
 
     // #endregion
 
-    provide(ReloadScheduleOccurrences, reloadScheduleOccurrences);
+    provide(ReloadGroupScheduler, reloadGroupScheduler);
     provideSecurityGrant(securityGrant);
 
     onConfigurationValuesChanged(reloadBlock);

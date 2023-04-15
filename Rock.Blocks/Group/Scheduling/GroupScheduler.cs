@@ -762,6 +762,39 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
+        /// Gets the navigation URLs required for the page to operate.
+        /// </summary>
+        /// <returns>A dictionary of key names and URL values.</returns>
+        private Dictionary<string, string> GetNavigationUrls()
+        {
+            var queryParams = new Dictionary<string, string>();
+            if ( _groupIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.GroupIds, _groupIds.AsDelimited( "," ) );
+            }
+
+            if ( _locationIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.LocationIds, _locationIds.AsDelimited( "," ) );
+            }
+
+            if ( _scheduleIds?.Any() == true )
+            {
+                queryParams.Add( PageParameterKey.ScheduleIds, _scheduleIds.AsDelimited( "," ) );
+            }
+
+            if ( _occurrenceDateStrings?.Count == 1 )
+            {
+                queryParams.Add( PageParameterKey.OccurrenceDate, _occurrenceDateStrings.First() );
+            }
+
+            return new Dictionary<string, string>
+            {
+                [NavigationUrlKey.RosterPage] = this.GetLinkedPageUrl( AttributeKey.RosterPage, queryParams )
+            };
+        }
+
+        /// <summary>
         /// Validates and applies the provided filters.
         /// </summary>
         /// <param name="rockContext">The rock context.</param>
@@ -948,36 +981,137 @@ namespace Rock.Blocks.Group.Scheduling
         }
 
         /// <summary>
-        /// Gets the navigation URLs required for the page to operate.
+        /// Validates the provided clone settings, saves them to user preferences and clones the schedules specified within the settings.
         /// </summary>
-        /// <returns>A dictionary of key names and URL values.</returns>
-        private Dictionary<string, string> GetNavigationUrls()
+        /// <param name="rockContext">The rock context.</param>
+        /// <param name="cloneSettings">The clone settings dictating which schedules should be cloned.</param>
+        /// <returns>An object containing the outcome of the clone schedules attempt.</returns>
+        private GroupSchedulerCloneSchedulesResponseBag CloneSchedules( RockContext rockContext, GroupSchedulerCloneSettingsBag cloneSettings )
         {
-            var queryParams = new Dictionary<string, string>();
-            if ( _groupIds?.Any() == true )
+            /*
+             * We'll transpose the provided clone settings to filters objects in order to leverage the same private helpers that are used when
+             * populating the Group Scheduler for the UI. This way, we can make use of permissions checks, Etc., that are already performed
+             * in those scenarios.
+             *  1) Create a filters object to represent the source week's date range + selected groups, locations and schedules; run this
+             *     object through the private helpers to strip out any unauthorized groups + any group, location, schedule combos that don't
+             *     actually exist within the source week.
+             *  2) Modify the filters object to represent the destination week's date range + source set of group, location, schedule combos;
+             *     run this object through the private helpers to further strip out any group, location, schedule combos that might not be
+             *     relevant for the destination week, then create any missing AttendanceOccurrence records for the remaining occurrences.
+             *  3) Clone the relevant Attendance records for each source-to-destination occurrence.
+             */
+            var response = new GroupSchedulerCloneSchedulesResponseBag();
+
+            if ( cloneSettings.SelectedGroups?.Any() != true || cloneSettings.SelectedDestinationDate == cloneSettings.SelectedSourceDate )
             {
-                queryParams.Add( PageParameterKey.GroupIds, _groupIds.AsDelimited( "," ) );
+                return response;
             }
 
-            if ( _locationIds?.Any() == true )
-            {
-                queryParams.Add( PageParameterKey.LocationIds, _locationIds.AsDelimited( "," ) );
-            }
+            var groups = cloneSettings.SelectedGroups
+                .Select( g => new ListItemBag { Value = g } )
+                .ToList();
 
-            if ( _scheduleIds?.Any() == true )
-            {
-                queryParams.Add( PageParameterKey.ScheduleIds, _scheduleIds.AsDelimited( "," ) );
-            }
+            var locations = ( cloneSettings.SelectedLocations ?? new List<string>() )
+                .Select( l => new ListItemBag { Value = l } )
+                .ToList();
 
-            if ( _occurrenceDateStrings?.Count == 1 )
-            {
-                queryParams.Add( PageParameterKey.OccurrenceDate, _occurrenceDateStrings.First() );
-            }
+            var schedules = ( cloneSettings.SelectedSchedules ?? new List<string>() )
+                .Select( s => new ListItemBag { Value = s } )
+                .ToList();
 
-            return new Dictionary<string, string>
+            var filters = new GroupSchedulerFiltersBag
             {
-                [NavigationUrlKey.RosterPage] = this.GetLinkedPageUrl( AttributeKey.RosterPage, queryParams )
+                Groups = groups,
+                Locations = new GroupSchedulerLocationsBag { SelectedLocations = locations },
+                Schedules = new GroupSchedulerSchedulesBag { SelectedSchedules = schedules },
+                DateRange = new SlidingDateRangeBag
+                {
+                    RangeType = SlidingDateRangeType.DateRange,
+                    LowerDate = cloneSettings.SelectedSourceDate.StartOfWeek( RockDateTime.FirstDayOfWeek ),
+                    UpperDate = cloneSettings.SelectedSourceDate.EndOfWeek( RockDateTime.FirstDayOfWeek )
+                }
             };
+
+            RefineFilters( rockContext, filters );
+            if ( filters.Groups?.Any() != true )
+            {
+                // The individual is not authorized to schedule any of the groups that were provided.
+                return response;
+            }
+
+            var sourceOccurrences = GetScheduleOccurrences( rockContext );
+            if ( sourceOccurrences?.Any() != true )
+            {
+                // There weren't any occurrences that match the source filters.
+                return response;
+            }
+
+            /*
+             * We have at least one source schedule occurrence to clone. Move on to step 2 in order to strip out any group, location,
+             * schedule combos that aren't relevant for the destination week + create any missing AttendanceOccurrence records for the
+             * occurrences that remain.
+             */
+            filters.DateRange = new SlidingDateRangeBag
+            {
+                RangeType = SlidingDateRangeType.DateRange,
+                LowerDate = cloneSettings.SelectedDestinationDate.StartOfWeek( RockDateTime.FirstDayOfWeek ),
+                UpperDate = cloneSettings.SelectedDestinationDate.EndOfWeek( RockDateTime.FirstDayOfWeek )
+            };
+
+            RefineFilters( rockContext, filters );
+
+            var destinationOccurrences = GetScheduleOccurrences( rockContext );
+            if ( destinationOccurrences?.Any() != true )
+            {
+                // There weren't any occurrences that match the destination filters.
+                return response;
+            }
+
+            // We now have our source and destination occurrences; for each source with a matching destination, attempt to clone the scheduled resources.
+            var anyOccurrencesToClone = false;
+            var blackoutSkippedCount = 0;
+            var conflictSkippedCount = 0;
+            var overCapacitySkippedCount = 0;
+
+            var attendanceService = new AttendanceService( rockContext );
+            var daysDifference = ( cloneSettings.SelectedDestinationDate - cloneSettings.SelectedSourceDate ).Days;
+
+            foreach ( var source in sourceOccurrences )
+            {
+                var destination = destinationOccurrences.FirstOrDefault( d =>
+                    d.GroupId == source.GroupId
+                    && d.LocationId == source.LocationId
+                    && d.ScheduleId == source.ScheduleId
+                    && d.OccurrenceDateTime == source.OccurrenceDateTime.AddDays( daysDifference )
+                );
+
+                if ( destination == null )
+                {
+                    // There is no matching destination occurrence for this source occurrence.
+                    continue;
+                }
+
+                anyOccurrencesToClone = true;
+
+                var result = attendanceService.CloneScheduledPeople(
+                    source.AttendanceOccurrenceId,
+                    destination.AttendanceOccurrenceId,
+                    this.RequestContext.CurrentPerson.PrimaryAlias
+                );
+
+                if ( result.ClonedCount > 0 )
+                {
+                    response.OccurrencesClonedCount++;
+                }
+
+                blackoutSkippedCount += result.BlackoutSkippedCount;
+                conflictSkippedCount += result.ConflictSkippedCount;
+                overCapacitySkippedCount += result.OverCapacitySkippedCount;
+            }
+
+            response.AnyOccurrencesToClone = anyOccurrencesToClone;
+
+            return response;
         }
 
         /// <summary>
@@ -1131,13 +1265,15 @@ namespace Rock.Blocks.Group.Scheduling
         /// Clones the schedules specified within the provided settings.
         /// </summary>
         /// <param name="bag">The clone settings dictating which schedules should be cloned.</param>
-        /// <returns>An object containing the outcome of the clone attempt.</returns>
+        /// <returns>An object containing the outcome of the clone schedules attempt.</returns>
         [BlockAction]
         public BlockActionResult CloneSchedules( GroupSchedulerCloneSettingsBag bag )
         {
             using ( var rockContext = new RockContext() )
             {
-                return ActionOk();
+                var response = CloneSchedules( rockContext, bag );
+
+                return ActionOk( response );
             }
         }
 

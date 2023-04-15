@@ -61,6 +61,7 @@
     <Compile Include="Blocks\Group\GroupAttendanceDetail\GroupAttendanceDetailAttendanceBag.cs" />
     <Compile Include="Blocks\Group\GroupAttendanceDetail\GroupAttendanceDetailInitializationBox.cs" />
     <Compile Include="Blocks\Group\Scheduling\GroupScheduler\GroupSchedulerAppliedFiltersBag.cs" />
+    <Compile Include="Blocks\Group\Scheduling\GroupScheduler\GroupSchedulerCloneSchedulesResponseBag.cs" />
     <Compile Include="Blocks\Group\Scheduling\GroupScheduler\GroupSchedulerCloneSettingsBag.cs" />
     <Compile Include="Blocks\Group\Scheduling\GroupScheduler\GroupSchedulerFiltersBag.cs" />
     <Compile Include="Blocks\Group\Scheduling\GroupScheduler\GroupSchedulerInitializationBox.cs" />

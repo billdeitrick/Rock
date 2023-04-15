@@ -51,7 +51,7 @@
     import ProgressBar from "./progressBar.partial.obs";
     import ScheduledResource from "./scheduledResource.partial.obs";
     import SelectIndividuals from "./selectIndividuals.partial.obs";
-    import { IScheduleProgress, ISchedulerResourceAttend, ReloadScheduleOccurrences } from "./types.partial";
+    import { IScheduleProgress, ISchedulerResourceAttend, ReloadGroupScheduler } from "./types.partial";
     import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
     import RockButton from "@Obsidian/Controls/rockButton";
     import { AlertType } from "@Obsidian/Enums/Controls/alertType";
@@ -82,7 +82,7 @@
 
     const resources = ref<ISchedulerResourceAttend[]>([]);
 
-    const reloadScheduleOccurrences = inject(ReloadScheduleOccurrences, ref(false));
+    const reloadScheduleOccurrences = inject(ReloadGroupScheduler, ref(false));
 
     // #endregion
 

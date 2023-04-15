@@ -235,7 +235,7 @@ export interface IRemainingResourceSpots {
 /**
  * The provide/inject keys used within the group scheduler components.
  */
-export const ReloadScheduleOccurrences: InjectionKey<Ref<boolean>> = Symbol("reload-schedule-occurrences");
+export const ReloadGroupScheduler: InjectionKey<Ref<boolean>> = Symbol("reload-group-scheduler");
 
 /**
  * The available progress states for a group scheduler occurrence.

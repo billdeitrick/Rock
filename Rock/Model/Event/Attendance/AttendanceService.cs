@@ -23,7 +23,7 @@ using System.Data.Entity.SqlServer;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-
+using Rock.Attribute;
 using Rock.BulkImport;
 using Rock.Chart;
 using Rock.Communication;
@@ -2660,6 +2660,76 @@ namespace Rock.Model
             public DateTime LastScheduledDate { get; internal set; }
         }
 
+        /// <summary>
+        /// Clones scheduled people from a source attendance occurrence to a destination attendance occurrence. Cloning will be performed as follows
+        /// <list type="bullet">
+        /// <item>The source occurrence's people will be scheduled for the destination occurrence in addition to any people who might already be scheduled for the destination occurrence.</item>
+        /// <item>The destination occurrence will only be scheduled up to its max capacity, if defined.</item>
+        /// <item>If a source occurrence person has a blackout date or conflict within the destination occurrence, they will not be scheduled for the destination occurrence.</item>
+        /// </list>
+        /// </summary>
+        /// <param name="sourceAttendanceOccurrenceId">The source attendance occurrence Id, from which scheduled people should be cloned.</param>
+        /// <param name="destinationAttendanceOccurrenceId">The destination attendance occurrence Id, to which people should be cloned.</param>
+        /// <param name="scheduledByPersonAlias">The person alias of the person performing scheduling.</param>
+        /// <returns>An object containing the outcome of the clone attempt.</returns>
+        public CloneScheduledPeopleResult CloneScheduledPeople( int sourceAttendanceOccurrenceId, int destinationAttendanceOccurrenceId, PersonAlias scheduledByPersonAlias )
+        {
+            var rockContext = this.Context as RockContext;
+            var result = new CloneScheduledPeopleResult();
+
+            var groupLocationsQuery = new GroupLocationService( rockContext )
+                .Queryable()
+                .AsNoTracking();
+
+            rockContext.SqlLogging( true );
+
+            var occurrences = new AttendanceOccurrenceService( rockContext )
+                .Queryable()
+                .AsNoTracking()
+                .Where( ao => ao.Id == sourceAttendanceOccurrenceId || ao.Id == destinationAttendanceOccurrenceId )
+                .Select( ao => new
+                {
+                    AttendanceOccurrence = ao,
+                    Attendees = ao.Attendees.Where( a =>
+                        ( a.ScheduledToAttend.GetValueOrDefault() == true || a.RequestedToAttend.GetValueOrDefault() == true )
+                        && a.PersonAliasId.HasValue
+                    ),
+                    ScheduleConfig = ( ao.GroupId > 0 && ao.LocationId > 0 && ao.ScheduleId > 0 )
+                        ? groupLocationsQuery
+                            .Where( gl => gl.GroupId == ao.GroupId && gl.LocationId == ao.LocationId )
+                            .SelectMany( gl => gl.GroupLocationScheduleConfigs )
+                            .FirstOrDefault( config => config.ScheduleId == ao.ScheduleId )
+                        : null
+                } )
+                .ToList();
+
+            rockContext.SqlLogging( false );
+
+            if ( occurrences.Count != 2 )
+            {
+                // If we didn't get exactly 2 records back, either the source or destination occurrence doesn't exist.
+                return result;
+            }
+
+            var sourceAttendees = occurrences.First().Attendees;
+            if ( !sourceAttendees.Any() )
+            {
+                // The source occurrence doesn't have any attendees to clone.
+                return result;
+            }
+
+            // TODO (Jason): replace the following with .Except()...
+
+            var destinationAttendees = occurrences.Last().Attendees;
+            if ( !sourceAttendees.Any( s => !destinationAttendees.Any( d => d.PersonAliasId != s.PersonAliasId ) ) )
+            {
+                // All source attendees are already scheduled for the destination occurrence.
+                return result;
+            }
+
+            return result;
+        }
+
         #endregion GroupScheduling Related
 
         #region RSVP Related
@@ -3605,6 +3675,45 @@ namespace Rock.Model
         /// The resource additional person ids.
         /// </value>
         public List<int> ResourceAdditionalPersonIds { get; set; }
+    }
+
+    /// <summary>
+    /// The result of an attempt to clone scheduled people from one attendance occurrence to another.
+    /// </summary>
+    [RockInternal( "1.15.1" )]
+    public class CloneScheduledPeopleResult
+    {
+        /// <summary>
+        /// Gets or sets the count of people successfully cloned from the source attendance occurrence to the destination attendance occurrence.
+        /// </summary>
+        /// <value>
+        /// The count of people successfully cloned from the source attendance occurrence to the destination attendance occurrence.
+        /// </value>
+        public int ClonedCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the count of people skipped due to a blackout within the destination attendance occurrence.
+        /// </summary>
+        /// <value>
+        /// The count of people skipped due to a blackout within the destination attendance occurrence.
+        /// </value>
+        public int BlackoutSkippedCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the count of people skipped due to a conflict within the destination attendance occurrence.
+        /// </summary>
+        /// <value>
+        /// The count of people skipped due to a conflict within the destination attendance occurrence.
+        /// </value>
+        public int ConflictSkippedCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the count of people skipped due to the destination attendance occurrence already being at capacity.
+        /// </summary>
+        /// <value>
+        /// The count of people skipped due to the destination attendance occurrence already being at capacity.
+        /// </value>
+        public int OverCapacitySkippedCount { get; set; }
     }
 
     #endregion Group Scheduling related classes and types

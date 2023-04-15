@@ -20,28 +20,28 @@
                 <h3>Source Settings</h3>
 
                 <DropDownList v-model="selectedSourceDate"
-                              label="Source Dates"
+                              label="Source Week Of"
                               rules="required"
                               :items="availableSourceDates"
-                              :disabled="isBusy" />
+                              :loading="isBusy" />
 
                 <DropDownList v-model="selectedGroups"
                               label="Groups"
                               :items="availableGroups"
                               :multiple="true"
-                              :disabled="isBusy" />
+                              :loading="isBusy" />
 
                 <DropDownList v-model="selectedLocations"
                               label="Locations"
                               :items="availableLocations"
                               :multiple="true"
-                              :disabled="isBusy" />
+                              :loading="isBusy" />
 
                 <DropDownList v-model="selectedSchedules"
                               label="Schedules"
                               :items="availableSchedules"
                               :multiple="true"
-                              :disabled="isBusy" />
+                              :loading="isBusy" />
 
             </div>
 
@@ -49,10 +49,10 @@
                 <h3>Destination Settings</h3>
 
                 <DropDownList v-model="selectedDestinationDate"
-                              label="Destination Dates"
+                              label="Destination Week Of"
                               rules="required"
                               :items="availableDestinationDates"
-                              :disabled="isBusy" />
+                              :loading="isBusy" />
 
             </div>
 
@@ -180,10 +180,24 @@
      * Handles the `save` event of the clone schedules modal.
      */
     function onSave(): void {
+        /*
+         * Selected groups work differently than selected locations & schedules within this context:
+         *  - Only selected groups will be cloned, so if the individual didn't select any groups within this component's
+         *    "Groups" drop down list, pass all of the available groups.
+         *  - ALL locations and schedules for each selected group will be cloned, unless a subset of locations/schedules
+         *    are selected; for locations and schedules, only pass values if the individual actually selected them here.
+         */
+        const actualSelectedGroups: string[] =
+            selectedGroups.value?.length
+                ? selectedGroups.value
+                : availableGroups.value
+                    ?.map((group: ListItemBag) => group.value ?? "")
+                    ?? [];
+
         emit("cloneSchedules", {
             selectedSourceDate: selectedSourceDate.value,
             selectedDestinationDate: selectedDestinationDate.value,
-            selectedGroups: selectedGroups.value,
+            selectedGroups: actualSelectedGroups,
             selectedLocations: selectedLocations.value,
             selectedSchedules: selectedSchedules.value
         });
