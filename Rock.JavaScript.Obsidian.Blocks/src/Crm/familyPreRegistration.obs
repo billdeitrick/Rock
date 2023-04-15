@@ -546,8 +546,9 @@
         }
     }
 
-    async function onClearClicked(): Promise<void> {
-        // TODO JMH Clear (the form?)
+    function onClearClicked(): void {
+        isNavigating.value = true;
+        location.reload();
     }
 
     async function onFormSubmitted(): Promise<void> {
@@ -578,7 +579,7 @@
                 }
 
                 if (result.data.redirectUrl) {
-                    await navigate(result.data.redirectUrl);
+                    navigate(result.data.redirectUrl);
                 }
             }
         }
@@ -587,10 +588,9 @@
         }
     }
 
-    function navigate(url: string): Promise<void> {
+    function navigate(url: string): void {
         isNavigating.value = true;
         location.href = url;
-        return new Promise(_ => { /* Do not resolve the promise since we are redirecting to a new page */ });
     }
 
     /**
