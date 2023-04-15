@@ -150,7 +150,6 @@
             :attributes="config.childAttributes"
             columnBreakpoint="sm"
             :displayWithinExistingRow="true"
-            id="phAttributes2"
             isEditMode
             :numberOfColumns="12 / getColumns(3)"
             :showCategoryLabel="true" />
