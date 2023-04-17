@@ -19,6 +19,10 @@ variables:
 steps:
 - task: NuGetToolInstaller@1
 
+- task: UseNode@1
+  inputs:
+   version: 16
+
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
