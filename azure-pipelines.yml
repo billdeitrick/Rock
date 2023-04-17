@@ -31,18 +31,20 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
 
-# - task: VSBuild@1
-#   inputs:
-#     solution: '$(solution)'
-#     vsVersion: latest
-#     msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
-#     platform: '$(buildPlatform)'
-#     configuration: '$(buildConfiguration)'
+- task: VSBuild@1
+  inputs:
+    solution: '$(solution)'
+    vsVersion: latest
+    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    msbuildArchitecture: x86
+    logFileVerbosity: minimal
 
 # - task: VSTest@2
 #   inputs:
 #     platform: '$(buildPlatform)'
 #     configuration: '$(buildConfiguration)'
 
-- script: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com" $(System.DefaultWorkingDirectory)\Rock.sln /Build "Release"'
-  displayName: "Build Rock"
+# - script: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.com" $(System.DefaultWorkingDirectory)\Rock.sln /Build "Release"'
+#   displayName: "Build Rock"
