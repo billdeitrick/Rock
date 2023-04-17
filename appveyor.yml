@@ -31,6 +31,8 @@ cache:
 before_build:
 - ps: >-
     (Get-Content "C:\projects\Rock\RockWeb\web.config").Replace('<compilation debug="true"', '<compilation debug="false"') | Set-Content "C:\projects\Rock\RockWeb\web.config"
+    
+    Install-Product node 16
 # build configuration
 build:
   project: Rock.sln
